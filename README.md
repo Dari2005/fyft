@@ -14,7 +14,7 @@ app/                  # expo-router screens (file-based navigation)
   index.tsx           # home: party list
   auth.tsx            # sign in / sign up
   create.tsx          # publish a party
-  party/[id].tsx      # party detail (RSVP/comments coming in M3)
+  party/[id].tsx      # party detail (RSVP + live capacity ✅, comments coming in M4)
 components/           # reusable UI (PartyCard, PrimaryButton, TextField)
 hooks/                # data hooks (useParties)
 lib/                  # supabase client, AuthContext, shared types
@@ -55,9 +55,12 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
 - **M2 — Map browse + location**
   `react-native-maps` view of parties, `expo-location` for current position,
   address autocomplete / tap-to-set-pin (replaces manual lat/lng inputs).
-- **M3 — RSVP + live capacity**
-  "Доаѓам / Заинтересиран" buttons, live "going" count with full indicator
-  (realtime subscription), report-party button wired to the `reports` table.
+- **M3 — RSVP + live capacity** ✅ (this commit)
+  "Доаѓам / Заинтересиран" buttons with toggle (tap again to remove),
+  live "going" count + progress bar + ПОЛНО badge (realtime subscription on
+  `rsvps`), report-party button with reason picker wired to the `reports`
+  table. Note: enable `rsvps` in Dashboard → Database → Replication for the
+  live updates to arrive from other users' devices.
 - **M4 — Comments**
   Comment list + composer on the party detail screen.
 - **M5 — Polish & store**

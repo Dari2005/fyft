@@ -1,20 +1,41 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
+import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
+import { reportParty } from '@/lib/reports';
+import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
 
-/**
- * Party detail screen (placeholder for Phase 1 milestone 3).
- * Currently shows the party info; RSVP + comments UI arrives next.
- */
+const REPORT_REASONS = ['спам', 'лажна журка', 'несоодветна содржина', 'друго'];
+
+/** Party detail screen: info, RSVP with live capacity, and report button. */
 export default function PartyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const [party, setParty] = useState<Party | null>(null);
-  const [goingCount, setGoingCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    goingCount,
+    interestedCount,
+    myStatus,
+    loading: rsvpLoading,
+    actionLoading,
+    error: rsvpError,
+    toggleRsvp,
+  } = useRsvps(id, user?.id ?? null);
 
   useEffect(() => {
     const load = async () => {
@@ -41,13 +62,6 @@ export default function PartyDetailScreen() {
           created_at: data.created_at,
           organizer_username: data.profiles?.username ?? undefined,
         });
-
-        const { count } = await supabase
-          .from('rsvps')
-          .select('party_id', { count: 'exact', head: true })
-          .eq('party_id', id)
-          .eq('status', 'going');
-        setGoingCount(count ?? 0);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Грешка при вчитување.');
       } finally {
@@ -56,6 +70,44 @@ export default function PartyDetailScreen() {
     };
     load();
   }, [id]);
+
+  const handleRsvp = async (status: RsvpStatus) => {
+    const result = await toggleRsvp(status);
+    if (result === 'logged-out') {
+      Alert.alert('Најави се', 'Мораш да бидеш најавен за да потврдиш доаѓање.', [
+        { text: 'Откажи', style: 'cancel' },
+        { text: 'Најави се', onPress: () => router.push('/auth') },
+      ]);
+    }
+  };
+
+  const submitReport = async (reason: string) => {
+    if (!user) {
+      Alert.alert('Најави се', 'Мораш да бидеш најавен за да пријавиш журка.', [
+        { text: 'Откажи', style: 'cancel' },
+        { text: 'Најави се', onPress: () => router.push('/auth') },
+      ]);
+      return;
+    }
+    const result = await reportParty(id, user.id, reason);
+    if (result === 'ok') {
+      Alert.alert('Благодариме!', 'Ја примивме твојата пријава и ќе ја разгледаме.');
+    } else if (result === 'already-reported') {
+      Alert.alert('Веќе пријавено', 'Веќе ја пријави оваа журка.');
+    } else {
+      Alert.alert('Грешка', 'Пријавата не успеа. Обиди се повторно.');
+    }
+  };
+
+  const handleReportPress = () => {
+    Alert.alert('Пријави ја журката', 'Зошто ја пријавуваш оваа журка?', [
+      ...REPORT_REASONS.map((reason) => ({
+        text: reason[0].toUpperCase() + reason.slice(1),
+        onPress: () => submitReport(reason),
+      })),
+      { text: 'Откажи', style: 'cancel' },
+    ]);
+  };
 
   if (loading) {
     return (
@@ -73,6 +125,11 @@ export default function PartyDetailScreen() {
     );
   }
 
+  const isFull = party.capacity != null && goingCount >= party.capacity;
+  const capacityPct =
+    party.capacity != null && party.capacity > 0
+      ? Math.min(100, (goingCount / party.capacity) * 100)
+      : 0;
   const capacityLabel =
     party.capacity != null ? `${goingCount} / ${party.capacity} доаѓаат` : `${goingCount} доаѓаат`;
 
@@ -96,16 +153,56 @@ export default function PartyDetailScreen() {
       {party.description && <Text style={styles.description}>{party.description}</Text>}
 
       <View style={styles.capacityBox}>
-        <Text style={styles.capacityText}>✅ {capacityLabel}</Text>
-        {party.capacity != null && goingCount >= party.capacity && (
-          <Text style={styles.full}>Полно е!</Text>
+        <View style={styles.capacityRow}>
+          <Text style={styles.capacityText}>✅ {capacityLabel}</Text>
+          {isFull && (
+            <View style={styles.fullBadge}>
+              <Text style={styles.fullBadgeText}>ПОЛНО</Text>
+            </View>
+          )}
+        </View>
+        {party.capacity != null && (
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${capacityPct}%` },
+                isFull && styles.progressFillFull,
+              ]}
+            />
+          </View>
+        )}
+        {interestedCount > 0 && (
+          <Text style={styles.interested}>⭐ {interestedCount} заинтересирани</Text>
         )}
       </View>
 
+      <View style={styles.rsvpRow}>
+        <View style={styles.rsvpButton}>
+          <PrimaryButton
+            title={myStatus === 'going' ? '✅ Доаѓам' : 'Доаѓам'}
+            variant={myStatus === 'going' ? 'primary' : 'outline'}
+            onPress={() => handleRsvp('going')}
+            loading={actionLoading || rsvpLoading}
+          />
+        </View>
+        <View style={styles.rsvpButton}>
+          <PrimaryButton
+            title={myStatus === 'interested' ? '⭐ Заинтересиран' : 'Заинтересиран'}
+            variant={myStatus === 'interested' ? 'primary' : 'outline'}
+            onPress={() => handleRsvp('interested')}
+            loading={actionLoading || rsvpLoading}
+          />
+        </View>
+      </View>
+      {rsvpError && <Text style={styles.error}>{rsvpError}</Text>}
+
+      <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
+        <Text style={styles.reportText}>🚩 Пријави ја журката</Text>
+      </TouchableOpacity>
+
       <View style={styles.todo}>
-        <Text style={styles.todoText}>
-          🚧 RSVP („Доаѓам" копче) и коментари доаѓаат во следниот milestone (M3).
-        </Text>
+        <Text style={styles.todoText}>🚧 Коментари доаѓаат во следниот milestone (M4).</Text>
       </View>
     </ScrollView>
   );
@@ -127,9 +224,34 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginTop: Spacing.lg,
   },
+  capacityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   capacityText: { color: Colors.text, fontSize: 16, fontWeight: '600' },
-  full: { color: Colors.danger, fontSize: 16, fontWeight: '800', marginTop: Spacing.xs },
-  error: { color: Colors.danger, fontSize: 15 },
+  fullBadge: {
+    backgroundColor: Colors.danger,
+    borderRadius: 8,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+  },
+  fullBadgeText: { color: '#ffffff', fontSize: 13, fontWeight: '800' },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.border,
+    marginTop: Spacing.sm,
+    overflow: 'hidden',
+  },
+  progressFill: { height: '100%', backgroundColor: Colors.primary },
+  progressFillFull: { backgroundColor: Colors.danger },
+  interested: { color: Colors.muted, fontSize: 14, marginTop: Spacing.xs },
+  rsvpRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
+  rsvpButton: { flex: 1 },
+  error: { color: Colors.danger, fontSize: 14, marginTop: Spacing.sm },
+  reportButton: { alignItems: 'center', marginTop: Spacing.lg, paddingVertical: Spacing.sm },
+  reportText: { color: Colors.muted, fontSize: 14 },
   todo: {
     marginTop: Spacing.lg,
     padding: Spacing.md,
