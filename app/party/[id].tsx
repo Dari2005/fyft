@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -12,12 +13,21 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
+import { useComments } from '@/hooks/useComments';
 import { reportParty } from '@/lib/reports';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
 
 const REPORT_REASONS = ['спам', 'лажна журка', 'несоодветна содржина', 'друго'];
+
+const formatCommentTime = (iso: string) =>
+  new Date(iso).toLocaleString('mk-MK', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 /** Party detail screen: info, RSVP with live capacity, and report button. */
 export default function PartyDetailScreen() {
@@ -36,6 +46,18 @@ export default function PartyDetailScreen() {
     error: rsvpError,
     toggleRsvp,
   } = useRsvps(id, user?.id ?? null);
+
+  const {
+    comments,
+    loading: commentsLoading,
+    actionLoading: commentActionLoading,
+    error: commentsError,
+    addComment,
+    deleteComment,
+  } = useComments(id, user?.id ?? null);
+
+  const [draft, setDraft] = useState('');
+  const composerRef = useRef<TextInput>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -121,6 +143,42 @@ export default function PartyDetailScreen() {
             Alert.alert('Грешка', 'Бришењето не успеа. Обиди се повторно.');
           } else {
             router.replace('/');
+          }
+        },
+      },
+    ]);
+  };
+
+  const promptLogin = (message: string) => {
+    Alert.alert('Најави се', message, [
+      { text: 'Откажи', style: 'cancel' },
+      { text: 'Најави се', onPress: () => router.push('/auth') },
+    ]);
+  };
+
+  const handleSendComment = async () => {
+    if (!user) {
+      promptLogin('Мораш да бидеш најавен за да коментираш.');
+      return;
+    }
+    const result = await addComment(draft);
+    if (result === 'ok') {
+      setDraft('');
+    } else if (result === 'error' && !commentsError) {
+      Alert.alert('Грешка', 'Коментарот не е испратен. Обиди се повторно.');
+    }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    Alert.alert('Избриши го коментарот?', 'Оваа акција не може да се врати.', [
+      { text: 'Откажи', style: 'cancel' },
+      {
+        text: 'Избриши',
+        style: 'destructive',
+        onPress: async () => {
+          const result = await deleteComment(commentId);
+          if (result === 'error') {
+            Alert.alert('Грешка', 'Бришењето не успеа. Обиди се повторно.');
           }
         },
       },
@@ -225,8 +283,57 @@ export default function PartyDetailScreen() {
         </TouchableOpacity>
       )}
 
-      <View style={styles.todo}>
-        <Text style={styles.todoText}>🚧 Коментари доаѓаат во следниот milestone (M4).</Text>
+      <View style={styles.commentsSection}>
+        <Text style={styles.sectionTitle}>💬 Коментари ({comments.length})</Text>
+
+        {commentsLoading ? (
+          <ActivityIndicator size="small" color={Colors.primary} />
+        ) : comments.length === 0 ? (
+          <Text style={styles.emptyComments}>Уште нема коментари. Биди прв! 💬</Text>
+        ) : (
+          comments.map((comment) => (
+            <View key={comment.id} style={styles.commentCard}>
+              <View style={styles.commentHeader}>
+                <Text style={styles.commentAuthor}>
+                  @{comment.author_username ?? 'корисник'}
+                </Text>
+                <Text style={styles.commentTime}>{formatCommentTime(comment.created_at)}</Text>
+              </View>
+              <Text style={styles.commentBody}>{comment.body}</Text>
+              {user?.id === comment.user_id && (
+                <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
+                  <Text style={styles.commentDelete}>Избриши</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))
+        )}
+        {commentsError && <Text style={styles.error}>{commentsError}</Text>}
+
+        <View style={styles.composer}>
+          <TextInput
+            ref={composerRef}
+            style={styles.composerInput}
+            placeholder="Напиши коментар..."
+            placeholderTextColor={Colors.muted}
+            value={draft}
+            onChangeText={setDraft}
+            multiline
+            maxLength={1000}
+            onFocus={() => {
+              if (!user) {
+                composerRef.current?.blur();
+                promptLogin('Мораш да бидеш најавен за да коментираш.');
+              }
+            }}
+          />
+          <PrimaryButton
+            title="Испрати"
+            onPress={handleSendComment}
+            loading={commentActionLoading}
+            disabled={draft.trim().length === 0}
+          />
+        </View>
       </View>
     </ScrollView>
   );
@@ -278,13 +385,44 @@ const styles = StyleSheet.create({
   reportText: { color: Colors.muted, fontSize: 14 },
   deleteButton: { alignItems: 'center', marginTop: Spacing.xs, paddingVertical: Spacing.sm },
   deleteText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
-  todo: {
-    marginTop: Spacing.lg,
-    padding: Spacing.md,
+  commentsSection: { marginTop: Spacing.lg },
+  sectionTitle: { color: Colors.text, fontSize: 18, fontWeight: '700', marginBottom: Spacing.sm },
+  commentCard: {
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderStyle: 'dashed',
     borderColor: Colors.border,
     borderRadius: 12,
+    padding: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
-  todoText: { color: Colors.muted, fontSize: 14 },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  commentAuthor: { color: Colors.primary, fontSize: 14, fontWeight: '700' },
+  commentTime: { color: Colors.muted, fontSize: 12 },
+  commentBody: { color: Colors.text, fontSize: 15, lineHeight: 22 },
+  commentDelete: { color: Colors.danger, fontSize: 13, marginTop: Spacing.xs },
+  emptyComments: {
+    color: Colors.muted,
+    fontSize: 15,
+    textAlign: 'center',
+    paddingVertical: Spacing.md,
+  },
+  composer: { marginTop: Spacing.sm },
+  composerInput: {
+    backgroundColor: Colors.surface,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
+    fontSize: 16,
+    minHeight: 48,
+    maxHeight: 120,
+    textAlignVertical: 'top',
+  },
 });

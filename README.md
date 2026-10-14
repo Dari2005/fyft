@@ -14,7 +14,7 @@ app/                  # expo-router screens (file-based navigation)
   index.tsx           # home: party list
   auth.tsx            # sign in / sign up
   create.tsx          # publish a party
-  party/[id].tsx      # party detail (RSVP + live capacity ✅, comments coming in M4)
+  party/[id].tsx      # party detail (RSVP + live capacity ✅, comments ✅)
 components/           # reusable UI (PartyCard, PrimaryButton, TextField)
 hooks/                # data hooks (useParties)
 lib/                  # supabase client, AuthContext, shared types
@@ -61,8 +61,12 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   `rsvps`), report-party button with reason picker wired to the `reports`
   table. Note: enable `rsvps` in Dashboard → Database → Replication for the
   live updates to arrive from other users' devices.
-- **M4 — Comments**
-  Comment list + composer on the party detail screen.
+- **M4 — Comments** ✅ (this commit)
+  Comment list (newest first, author @usernames, mk-MK timestamps) + composer
+  with validation on the party detail screen, realtime subscription on
+  `comments`, own-comment delete with confirmation. Note: enable `comments`
+  in Dashboard → Database → Replication for live updates to arrive from
+  other users' devices.
 - **M5 — Polish & store**
   App icon, splash, profile screen (my parties), EAS build for TestFlight/Play.
 
