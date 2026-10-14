@@ -109,6 +109,24 @@ export default function PartyDetailScreen() {
     ]);
   };
 
+  const handleDeletePress = () => {
+    Alert.alert('Избриши ја журката?', 'Оваа акција не може да се врати.', [
+      { text: 'Откажи', style: 'cancel' },
+      {
+        text: 'Избриши',
+        style: 'destructive',
+        onPress: async () => {
+          const { error: delErr } = await supabase.from('parties').delete().eq('id', id);
+          if (delErr) {
+            Alert.alert('Грешка', 'Бришењето не успеа. Обиди се повторно.');
+          } else {
+            router.replace('/');
+          }
+        },
+      },
+    ]);
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -201,6 +219,12 @@ export default function PartyDetailScreen() {
         <Text style={styles.reportText}>🚩 Пријави ја журката</Text>
       </TouchableOpacity>
 
+      {user?.id === party.organizer_id && (
+        <TouchableOpacity onPress={handleDeletePress} style={styles.deleteButton}>
+          <Text style={styles.deleteText}>🗑️ Избриши ја журката</Text>
+        </TouchableOpacity>
+      )}
+
       <View style={styles.todo}>
         <Text style={styles.todoText}>🚧 Коментари доаѓаат во следниот milestone (M4).</Text>
       </View>
@@ -252,6 +276,8 @@ const styles = StyleSheet.create({
   error: { color: Colors.danger, fontSize: 14, marginTop: Spacing.sm },
   reportButton: { alignItems: 'center', marginTop: Spacing.lg, paddingVertical: Spacing.sm },
   reportText: { color: Colors.muted, fontSize: 14 },
+  deleteButton: { alignItems: 'center', marginTop: Spacing.xs, paddingVertical: Spacing.sm },
+  deleteText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
   todo: {
     marginTop: Spacing.lg,
     padding: Spacing.md,
