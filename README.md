@@ -1,4 +1,4 @@
-# Party App 🎉
+# Fyft 🎉
 
 A mobile app (iOS + Android) where anyone can publish parties — house or club — and
 people can browse them, RSVP, and comment. Built with **React Native (Expo)** +

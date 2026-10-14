@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "party-app",
-    "slug": "party-app",
+    "name": "Fyft",
+    "slug": "fyft",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "partyapp",
+    "scheme": "fyft",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
