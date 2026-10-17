@@ -16,6 +16,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ title: 'Журки во Скопје' }} />
+        <Stack.Screen name="map" options={{ title: 'Мапа' }} />
         <Stack.Screen name="auth" options={{ title: 'Најава', presentation: 'modal' }} />
         <Stack.Screen name="create" options={{ title: 'Нова журка' }} />
         <Stack.Screen name="party/[id]" options={{ title: 'Журка' }} />

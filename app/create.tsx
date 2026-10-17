@@ -9,12 +9,21 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
+import MapView, { Marker, type Region } from 'react-native-maps';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import TextField from '@/components/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 import type { VenueType } from '@/lib/types';
+
+/** Default map region: Skopje center. */
+const SKOPJE_REGION: Region = {
+  latitude: 41.9981,
+  longitude: 21.4254,
+  latitudeDelta: 0.12,
+  longitudeDelta: 0.12,
+};
 
 /** Create-party form. Inserts into public.parties; requires a signed-in user. */
 export default function CreatePartyScreen() {
@@ -25,8 +34,7 @@ export default function CreatePartyScreen() {
   const [venueType, setVenueType] = useState<VenueType>('house');
   const [startsAt, setStartsAt] = useState(''); // "2026-10-25 21:00"
   const [address, setAddress] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
+  const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
   const [capacity, setCapacity] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,12 +64,6 @@ export default function CreatePartyScreen() {
       return;
     }
 
-    const lat = latitude.trim() === '' ? null : Number(latitude.trim());
-    const lng = longitude.trim() === '' ? null : Number(longitude.trim());
-    if ((lat !== null && isNaN(lat)) || (lng !== null && isNaN(lng))) {
-      setError('Географската ширина/должина мора да се броеви (или остави ги празни).');
-      return;
-    }
     const cap = capacity.trim() === '' ? null : parseInt(capacity.trim(), 10);
     if (cap !== null && (isNaN(cap) || cap <= 0)) {
       setError('Капацитетот мора да е позитивен број (или остави го празен).');
@@ -93,8 +95,8 @@ export default function CreatePartyScreen() {
           description: description.trim() === '' ? null : description.trim(),
           venue_type: venueType,
           address: address.trim() === '' ? null : address.trim(),
-          latitude: lat,
-          longitude: lng,
+          latitude: pin?.latitude ?? null,
+          longitude: pin?.longitude ?? null,
           starts_at: date.toISOString(),
           capacity: cap,
         })
@@ -162,14 +164,24 @@ export default function CreatePartyScreen() {
         />
         <TextField label="Адреса" value={address} onChangeText={setAddress} placeholder="ул. Пример 12, Скопје" />
 
-        <View style={styles.coordsRow}>
-          <View style={styles.coordsHalf}>
-            <TextField label="Ширина (lat)" value={latitude} onChangeText={setLatitude} placeholder="42.0029" keyboardType="numbers-and-punctuation" />
-          </View>
-          <View style={styles.coordsHalf}>
-            <TextField label="Должина (lng)" value={longitude} onChangeText={setLongitude} placeholder="21.4254" keyboardType="numbers-and-punctuation" />
-          </View>
-        </View>
+        <Text style={styles.label}>Локација на мапа (опционално)</Text>
+        <MapView
+          style={styles.miniMap}
+          initialRegion={SKOPJE_REGION}
+          onPress={(e) => setPin(e.nativeEvent.coordinate)}
+        >
+          {pin && <Marker coordinate={pin} pinColor={Colors.primary} />}
+        </MapView>
+        <Text style={styles.pinText}>
+          {pin
+            ? `📍 ${pin.latitude.toFixed(4)}, ${pin.longitude.toFixed(4)}`
+            : 'Допрете ја мапата за да поставите пин.'}
+        </Text>
+        {pin && (
+          <TouchableOpacity onPress={() => setPin(null)} style={styles.clearPin}>
+            <Text style={styles.clearPinText}>✕ Отстрани пин</Text>
+          </TouchableOpacity>
+        )}
 
         <TextField label="Капацитет (опционално)" value={capacity} onChangeText={setCapacity} placeholder="50" keyboardType="number-pad" />
 
@@ -199,7 +211,15 @@ const styles = StyleSheet.create({
   venueSelected: { borderColor: Colors.primary, borderWidth: 2 },
   venueText: { color: Colors.muted, fontSize: 15, fontWeight: '600' },
   venueTextSelected: { color: Colors.text },
-  coordsRow: { flexDirection: 'row', gap: Spacing.sm },
-  coordsHalf: { flex: 1 },
+  miniMap: {
+    width: '100%',
+    height: 220,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: Spacing.xs,
+  },
+  pinText: { color: Colors.muted, fontSize: 14, marginBottom: Spacing.xs },
+  clearPin: { alignSelf: 'flex-start', marginBottom: Spacing.md, paddingVertical: 4 },
+  clearPinText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
   error: { color: Colors.danger, fontSize: 14, marginBottom: Spacing.sm },
 });

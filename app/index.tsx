@@ -14,6 +14,11 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.actions}>
+        <View style={styles.mapButton}>
+          <Link href="/map" asChild>
+            <PrimaryButton title="🗺️" onPress={() => {}} />
+          </Link>
+        </View>
         {user ? (
           <>
             <View style={styles.grow}>
@@ -67,6 +72,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   grow: { flex: 1 },
+  mapButton: { width: 56 },
   signOut: { width: 110 },
   list: { padding: Spacing.md, paddingBottom: Spacing.xl },
   empty: { alignItems: 'center', marginTop: Spacing.xl },

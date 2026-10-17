@@ -12,11 +12,12 @@ Phase 2 — intentionally not built here).
 ```
 app/                  # expo-router screens (file-based navigation)
   index.tsx           # home: party list
+  map.tsx             # map: party pins, user location
   auth.tsx            # sign in / sign up
-  create.tsx          # publish a party
+  create.tsx          # publish a party (tap-to-set-pin map)
   party/[id].tsx      # party detail (RSVP + live capacity ✅, comments ✅)
 components/           # reusable UI (PartyCard, PrimaryButton, TextField)
-hooks/                # data hooks (useParties)
+hooks/                # data hooks (useParties, useRsvps, useComments)
 lib/                  # supabase client, AuthContext, shared types
 constants/            # theme colors & spacing
 supabase/schema.sql   # full database schema + RLS policies (run once)
@@ -41,20 +42,25 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
    ```
    Scan the QR code with the **Expo Go** app, or press `w` for web.
 
-> **Note:** `react-native-maps` is installed for the upcoming map view, but it
-> needs a development build — it is not bundled in Expo Go. Until then the app
-> runs fine in Expo Go; when you're ready for the map, build with
-> `npx expo run:android` / `eas build --profile development`. See the project
-> `AGENTS.md` for the native-module rules.
+> **Note:** `react-native-maps` (v1.27.2, the SDK 57 recommended version) is
+> bundled in Expo Go, so the map works with plain `npx expo start` — no
+> development build needed for testing. For a production/store build that
+> uses Google Maps on Android you need a Google Maps API key wired through
+> the `react-native-maps` config plugin in `app.json` (see the
+> [Expo docs](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/)).
 
 ## Phase 1 milestones
 
 - **M1 — Skeleton + Auth** ✅ (this commit)
   Expo router app, Supabase client, sign in/sign up, party list, create-party
   form, schema.sql with RLS + 3/day anti-spam trigger.
-- **M2 — Map browse + location**
-  `react-native-maps` view of parties, `expo-location` for current position,
-  address autocomplete / tap-to-set-pin (replaces manual lat/lng inputs).
+- **M2 — Map browse + location** ✅
+  `app/map.tsx`: full-screen `react-native-maps` view with all parties as
+  pins (🏠 purple, 🎶 green), tap a callout to open the party detail,
+  `expo-location` foreground permission with user-location dot, Skopje
+  fallback region when denied. `app/create.tsx`: tap-to-set-pin mini map
+  replaces the manual lat/lng inputs (pin optional, removable). No dev
+  build needed — `react-native-maps` is bundled in Expo Go for SDK 57.
 - **M3 — RSVP + live capacity** ✅ (this commit)
   "Доаѓам / Заинтересиран" buttons with toggle (tap again to remove),
   live "going" count + progress bar + ПОЛНО badge (realtime subscription on
