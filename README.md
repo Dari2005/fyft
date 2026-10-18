@@ -42,12 +42,11 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
    ```
    Scan the QR code with the **Expo Go** app, or press `w` for web.
 
-> **Note:** `react-native-maps` (v1.27.2, the SDK 57 recommended version) is
-> bundled in Expo Go, so the map works with plain `npx expo start` — no
-> development build needed for testing. For a production/store build that
-> uses Google Maps on Android you need a Google Maps API key wired through
-> the `react-native-maps` config plugin in `app.json` (see the
-> [Expo docs](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/)).
+> **Note:** The map uses **OpenStreetMap/Leaflet** rendered in a WebView
+> (`components/LeafletMap.tsx`) — no API key needed, works in plain Expo Go
+> with `npx expo start`. (An earlier version used `react-native-maps`, but
+> Google Maps tiles failed to load inside Expo Go on Android, so it was
+> replaced.)
 
 ## Phase 1 milestones
 
@@ -55,12 +54,14 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   Expo router app, Supabase client, sign in/sign up, party list, create-party
   form, schema.sql with RLS + 3/day anti-spam trigger.
 - **M2 — Map browse + location** ✅
-  `app/map.tsx`: full-screen `react-native-maps` view with all parties as
-  pins (🏠 purple, 🎶 green), tap a callout to open the party detail,
-  `expo-location` foreground permission with user-location dot, Skopje
-  fallback region when denied. `app/create.tsx`: tap-to-set-pin mini map
-  replaces the manual lat/lng inputs (pin optional, removable). No dev
-  build needed — `react-native-maps` is bundled in Expo Go for SDK 57.
+  `components/LeafletMap.tsx`: Leaflet 1.9.4 + OpenStreetMap (CARTO dark
+  tiles) in a WebView — no API key, works in Expo Go. `app/map.tsx`:
+  full-screen map with all parties as pins (🏠 purple, 🎶 green), tap a pin
+  to open the party detail, `expo-location` foreground permission with
+  user-location dot, Skopje fallback when denied. `app/create.tsx`:
+  tap-to-set-pin mini map replaces the manual lat/lng inputs (pin optional,
+  removable). Phone↔web bridge: `postMessage` (web→phone: marker/map taps)
+  and injected JS `__fyftUpdate` (phone→web: markers/center).
 - **M3 — RSVP + live capacity** ✅ (this commit)
   "Доаѓам / Заинтересиран" buttons with toggle (tap again to remove),
   live "going" count + progress bar + ПОЛНО badge (realtime subscription on
