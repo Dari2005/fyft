@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -131,6 +132,14 @@ export default function PartyDetailScreen() {
     ]);
   };
 
+  const openNavigation = () => {
+    if (party?.latitude == null || party?.longitude == null) return;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${party.latitude},${party.longitude}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert('Грешка', 'Не може да се отвори навигацијата.')
+    );
+  };
+
   const handleDeletePress = () => {
     Alert.alert('Избриши ја журката?', 'Оваа акција не може да се врати.', [
       { text: 'Откажи', style: 'cancel' },
@@ -223,6 +232,11 @@ export default function PartyDetailScreen() {
         })}
       </Text>
       {party.address && <Text style={styles.meta}>📍 {party.address}</Text>}
+      {party.latitude != null && party.longitude != null && (
+        <TouchableOpacity onPress={openNavigation} style={styles.navButton}>
+          <Text style={styles.navText}>🧭 Навигација до журката</Text>
+        </TouchableOpacity>
+      )}
       {party.organizer_username && (
         <Text style={styles.meta}>Организатор: @{party.organizer_username}</Text>
       )}
@@ -385,6 +399,14 @@ const styles = StyleSheet.create({
   reportText: { color: Colors.muted, fontSize: 14 },
   deleteButton: { alignItems: 'center', marginTop: Spacing.xs, paddingVertical: Spacing.sm },
   deleteText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
+  navButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  navText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
   commentsSection: { marginTop: Spacing.lg },
   sectionTitle: { color: Colors.text, fontSize: 18, fontWeight: '700', marginBottom: Spacing.sm },
   commentCard: {
