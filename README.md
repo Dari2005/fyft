@@ -42,15 +42,13 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
    ```
    Scan the QR code with the **Expo Go** app, or press `w` for web.
 
-> **Note:** The map uses **Google Maps** (`react-native-maps`). It needs a
-> Google Maps API key and a **development build** — it does NOT work in
-> plain Expo Go (Expo Go's bundled key fails to load tiles on some
-> devices). Setup: (1) create a Google Cloud project, enable **Maps SDK
-> for Android** (and iOS if needed), create an API key; (2) paste the key
-> into `app.json` (`android.config.googleMaps.apiKey`,
-> `ios.config.googleMapsApiKey`); (3) build a dev client:
-> `eas build --profile development --platform android`, install the APK,
-> then run `npx expo start --dev-client`.
+> **Note:** The map uses **Leaflet + Stadia Maps** ("Alidade Smooth Dark",
+> a Google-like dark style) rendered in a WebView
+> (`components/LeafletMap.tsx`) — works in plain Expo Go with
+> `npx expo start`, no dev build needed. You need a **free Stadia API key**
+> (email signup, no card, at https://stadiamaps.com) in `.env` as
+> `EXPO_PUBLIC_STADIA_API_KEY`; without it the map falls back to plain
+> OpenStreetMap tiles.
 
 ## Phase 1 milestones
 
@@ -58,13 +56,16 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   Expo router app, Supabase client, sign in/sign up, party list, create-party
   form, schema.sql with RLS + 3/day anti-spam trigger.
 - **M2 — Map browse + location** ✅
-  `react-native-maps` (Google Maps provider). `app/map.tsx`:
-  full-screen map with all parties as pins (🏠 purple, 🎶 green), tap a pin
-  to open the party detail, `expo-location` foreground permission with
-  user-location dot, Skopje fallback when denied. `app/create.tsx`:
-  tap-to-set-pin mini map replaces the manual lat/lng inputs (pin optional,
-  removable). Requires a Google Maps API key in `app.json` + a development
-  build (`eas build --profile development`); does not work in Expo Go.
+  `components/LeafletMap.tsx`: Leaflet 1.9.4 in a WebView with Stadia Maps
+  "Alidade Smooth Dark" tiles (Google-like dark style; free Stadia API key
+  via `EXPO_PUBLIC_STADIA_API_KEY`, falls back to plain OSM tiles without
+  it) — works in Expo Go, no dev build. `app/map.tsx`: full-screen map
+  with all parties as pins (🏠 purple, 🎶 green), tap a pin to open the
+  party detail, `expo-location` foreground permission with user-location
+  dot, Skopje fallback when denied. `app/create.tsx`: tap-to-set-pin mini
+  map replaces the manual lat/lng inputs (pin optional, removable).
+  Phone↔web bridge: `postMessage` (web→phone: marker/map taps) and
+  injected JS `__fyftUpdate` (phone→web: markers/center).
 - **M3 — RSVP + live capacity** ✅ (this commit)
   "Доаѓам / Заинтересиран" buttons with toggle (tap again to remove),
   live "going" count + progress bar + ПОЛНО badge (realtime subscription on
