@@ -46,8 +46,8 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
 > a Google-like full-color style) rendered in a WebView
 > (`components/LeafletMap.tsx`) — works in plain Expo Go with
 > `npx expo start`, no dev build needed. You need a **free Stadia API key**
-> (email signup, no card, at https://stadiamaps.com) in `.env` as
-> `EXPO_PUBLIC_STADIA_API_KEY`; without it the map falls back to plain
+> (email signup, no card, at https://www.maptiler.com) in `.env` as
+> `EXPO_PUBLIC_MAPTILER_KEY`; without it the map falls back to plain
 > OpenStreetMap tiles.
 
 ## Phase 1 milestones
@@ -58,7 +58,7 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
 - **M2 — Map browse + location** ✅
   `components/LeafletMap.tsx`: Leaflet 1.9.4 in a WebView with Stadia Maps
   "Alidade Bright" tiles (Google-like full-color style; free Stadia API key
-  via `EXPO_PUBLIC_STADIA_API_KEY`, falls back to plain OSM tiles without
+  via `EXPO_PUBLIC_MAPTILER_KEY`, falls back to plain OSM tiles without
   it) — works in Expo Go, no dev build. `app/map.tsx`: full-screen map
   with all parties as pins (🏠 purple, 🎶 green), tap a pin to open the
   party detail, `expo-location` foreground permission with user-location

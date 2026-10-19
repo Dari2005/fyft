@@ -27,16 +27,19 @@ interface LeafletMapProps {
 }
 
 const LEAFLET_VERSION = '1.9.4';
-const STADIA_API_KEY = process.env.EXPO_PUBLIC_STADIA_API_KEY ?? '';
-// Stadia "Alidade Bright" — a Google-like light map style. Free API key
-// (email signup, no card) at https://stadiamaps.com → put it in .env as
-// EXPO_PUBLIC_STADIA_API_KEY. Falls back to plain OpenStreetMap tiles when
+const MAPTILER_API_KEY = process.env.EXPO_PUBLIC_MAPTILER_KEY ?? '';
+// MapTiler style id — 'streets-v4' (light). Switch to the dark variant here
+// once its exact raster id is confirmed (see MapTiler dashboard → Maps).
+const MAPTILER_STYLE = 'streets-v4';
+// MapTiler Streets — the closest free Google-Maps look. Free API key
+// (email signup, no card) at https://www.maptiler.com → put it in .env as
+// EXPO_PUBLIC_MAPTILER_KEY. Falls back to plain OpenStreetMap tiles when
 // the key is missing.
-const TILE_URL = STADIA_API_KEY
-  ? `https://tiles.stadiamaps.com/tiles/alidade_bright/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`
+const TILE_URL = MAPTILER_API_KEY
+  ? `https://api.maptiler.com/maps/${MAPTILER_STYLE}/256/{z}/{x}/{y}.png?key=${MAPTILER_API_KEY}`
   : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_ATTRIBUTION = STADIA_API_KEY
-  ? '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+const TILE_ATTRIBUTION = MAPTILER_API_KEY
+  ? '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 /**
