@@ -28,12 +28,12 @@ interface LeafletMapProps {
 
 const LEAFLET_VERSION = '1.9.4';
 const STADIA_API_KEY = process.env.EXPO_PUBLIC_STADIA_API_KEY ?? '';
-// Stadia "Alidade Smooth" — a Google-like light map style. Free API key
+// Stadia "Alidade Bright" — a Google-like light map style. Free API key
 // (email signup, no card) at https://stadiamaps.com → put it in .env as
 // EXPO_PUBLIC_STADIA_API_KEY. Falls back to plain OpenStreetMap tiles when
 // the key is missing.
 const TILE_URL = STADIA_API_KEY
-  ? `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`
+  ? `https://tiles.stadiamaps.com/tiles/alidade_bright/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`
   : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_ATTRIBUTION = STADIA_API_KEY
   ? '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

@@ -42,8 +42,8 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
    ```
    Scan the QR code with the **Expo Go** app, or press `w` for web.
 
-> **Note:** The map uses **Leaflet + Stadia Maps** ("Alidade Smooth",
-> a Google-like light style) rendered in a WebView
+> **Note:** The map uses **Leaflet + Stadia Maps** ("Alidade Bright",
+> a Google-like full-color style) rendered in a WebView
 > (`components/LeafletMap.tsx`) — works in plain Expo Go with
 > `npx expo start`, no dev build needed. You need a **free Stadia API key**
 > (email signup, no card, at https://stadiamaps.com) in `.env` as
@@ -57,7 +57,7 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   form, schema.sql with RLS + 3/day anti-spam trigger.
 - **M2 — Map browse + location** ✅
   `components/LeafletMap.tsx`: Leaflet 1.9.4 in a WebView with Stadia Maps
-  "Alidade Smooth" tiles (Google-like light style; free Stadia API key
+  "Alidade Bright" tiles (Google-like full-color style; free Stadia API key
   via `EXPO_PUBLIC_STADIA_API_KEY`, falls back to plain OSM tiles without
   it) — works in Expo Go, no dev build. `app/map.tsx`: full-screen map
   with all parties as pins (🏠 purple, 🎶 green), tap a pin to open the
