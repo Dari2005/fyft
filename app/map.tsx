@@ -1,23 +1,25 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import MapView, { Callout, Marker, type Region } from 'react-native-maps';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { useParties } from '@/hooks/useParties';
-import LeafletMap, { type LeafletCenter } from '@/components/LeafletMap';
 import { Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
 
-/** Fallback center: Skopje — used until location resolves or when denied. */
-const SKOPJE_CENTER: LeafletCenter = { latitude: 41.9981, longitude: 21.4254, zoom: 12 };
+/** Fallback region: Skopje center — used until location resolves or when denied. */
+const SKOPJE_REGION: Region = {
+  latitude: 41.9981,
+  longitude: 21.4254,
+  latitudeDelta: 0.15,
+  longitudeDelta: 0.15,
+};
 
-/** Map screen: browse all published parties as pins (OpenStreetMap/Leaflet). */
+/** Map screen: browse all published parties as pins. */
 export default function MapScreen() {
   const { parties, loading, error } = useParties();
-  const [center, setCenter] = useState<LeafletCenter | null>(null);
-  const [userLocation, setUserLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const [region, setRegion] = useState<Region | null>(null);
+  const [showsUserLocation, setShowsUserLocation] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -25,14 +27,18 @@ export default function MapScreen() {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === 'granted') {
           const pos = await Location.getCurrentPositionAsync({});
-          const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-          setUserLocation(loc);
-          setCenter({ ...loc, zoom: 13 });
+          setShowsUserLocation(true);
+          setRegion({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            latitudeDelta: 0.1,
+            longitudeDelta: 0.1,
+          });
         } else {
-          setCenter(SKOPJE_CENTER);
+          setRegion(SKOPJE_REGION);
         }
       } catch {
-        setCenter(SKOPJE_CENTER);
+        setRegion(SKOPJE_REGION);
       }
     })();
   }, []);
@@ -42,7 +48,7 @@ export default function MapScreen() {
       p.latitude != null && p.longitude != null
   );
 
-  if (!center) {
+  if (!region) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
@@ -53,19 +59,32 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      <LeafletMap
+      <MapView
         style={styles.map}
-        center={center}
-        userLocation={userLocation}
-        markers={pinned.map((p) => ({
-          id: p.id,
-          latitude: p.latitude,
-          longitude: p.longitude,
-          title: p.title,
-          color: p.venue_type === 'house' ? Colors.primary : Colors.success,
-        }))}
-        onMarkerPress={(id) => router.push({ pathname: '/party/[id]', params: { id } })}
-      />
+        initialRegion={region}
+        showsUserLocation={showsUserLocation}
+      >
+        {pinned.map((p) => (
+          <Marker
+            key={p.id}
+            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+            pinColor={p.venue_type === 'house' ? Colors.primary : Colors.success}
+          >
+            <Callout
+              onPress={() =>
+                router.push({ pathname: '/party/[id]', params: { id: p.id } })
+              }
+            >
+              <View style={styles.callout}>
+                <Text style={styles.calloutTitle}>{p.title}</Text>
+                <Text style={styles.calloutMeta}>
+                  {p.venue_type === 'house' ? '🏠 Куќна' : '🎶 Клуб'} · допри за детали →
+                </Text>
+              </View>
+            </Callout>
+          </Marker>
+        ))}
+      </MapView>
 
       {error && (
         <View style={styles.banner}>
@@ -92,6 +111,9 @@ const styles = StyleSheet.create({
   },
   hint: { color: Colors.muted, fontSize: 14 },
   map: { width: '100%', height: '100%' },
+  callout: { minWidth: 160, padding: Spacing.xs },
+  calloutTitle: { fontSize: 15, fontWeight: '700', color: '#111111' },
+  calloutMeta: { fontSize: 13, color: '#555555', marginTop: 2 },
   banner: {
     position: 'absolute',
     bottom: Spacing.lg,

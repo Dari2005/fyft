@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import LeafletMap from '@/components/LeafletMap';
+import MapView, { Marker, type Region } from 'react-native-maps';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import TextField from '@/components/TextField';
@@ -17,8 +17,13 @@ import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 import type { VenueType } from '@/lib/types';
 
-/** Default map center: Skopje. */
-const SKOPJE_CENTER = { latitude: 41.9981, longitude: 21.4254, zoom: 13 };
+/** Default map region: Skopje center. */
+const SKOPJE_REGION: Region = {
+  latitude: 41.9981,
+  longitude: 21.4254,
+  latitudeDelta: 0.12,
+  longitudeDelta: 0.12,
+};
 
 /** Create-party form. Inserts into public.parties; requires a signed-in user. */
 export default function CreatePartyScreen() {
@@ -160,25 +165,13 @@ export default function CreatePartyScreen() {
         <TextField label="Адреса" value={address} onChangeText={setAddress} placeholder="ул. Пример 12, Скопје" />
 
         <Text style={styles.label}>Локација на мапа (опционално)</Text>
-        <LeafletMap
+        <MapView
           style={styles.miniMap}
-          center={SKOPJE_CENTER}
-          zoomControl={false}
-          markers={
-            pin
-              ? [
-                  {
-                    id: 'draft-pin',
-                    latitude: pin.latitude,
-                    longitude: pin.longitude,
-                    title: 'Журката',
-                    color: Colors.primary,
-                  },
-                ]
-              : []
-          }
-          onMapPress={(latitude, longitude) => setPin({ latitude, longitude })}
-        />
+          initialRegion={SKOPJE_REGION}
+          onPress={(e) => setPin(e.nativeEvent.coordinate)}
+        >
+          {pin && <Marker coordinate={pin} pinColor={Colors.primary} />}
+        </MapView>
         <Text style={styles.pinText}>
           {pin
             ? `📍 ${pin.latitude.toFixed(4)}, ${pin.longitude.toFixed(4)}`

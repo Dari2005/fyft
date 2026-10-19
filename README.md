@@ -42,11 +42,15 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
    ```
    Scan the QR code with the **Expo Go** app, or press `w` for web.
 
-> **Note:** The map uses **OpenStreetMap/Leaflet** rendered in a WebView
-> (`components/LeafletMap.tsx`) — no API key needed, works in plain Expo Go
-> with `npx expo start`. (An earlier version used `react-native-maps`, but
-> Google Maps tiles failed to load inside Expo Go on Android, so it was
-> replaced.)
+> **Note:** The map uses **Google Maps** (`react-native-maps`). It needs a
+> Google Maps API key and a **development build** — it does NOT work in
+> plain Expo Go (Expo Go's bundled key fails to load tiles on some
+> devices). Setup: (1) create a Google Cloud project, enable **Maps SDK
+> for Android** (and iOS if needed), create an API key; (2) paste the key
+> into `app.json` (`android.config.googleMaps.apiKey`,
+> `ios.config.googleMapsApiKey`); (3) build a dev client:
+> `eas build --profile development --platform android`, install the APK,
+> then run `npx expo start --dev-client`.
 
 ## Phase 1 milestones
 
@@ -54,14 +58,13 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   Expo router app, Supabase client, sign in/sign up, party list, create-party
   form, schema.sql with RLS + 3/day anti-spam trigger.
 - **M2 — Map browse + location** ✅
-  `components/LeafletMap.tsx`: Leaflet 1.9.4 + OpenStreetMap (CARTO dark
-  tiles) in a WebView — no API key, works in Expo Go. `app/map.tsx`:
+  `react-native-maps` (Google Maps provider). `app/map.tsx`:
   full-screen map with all parties as pins (🏠 purple, 🎶 green), tap a pin
   to open the party detail, `expo-location` foreground permission with
   user-location dot, Skopje fallback when denied. `app/create.tsx`:
   tap-to-set-pin mini map replaces the manual lat/lng inputs (pin optional,
-  removable). Phone↔web bridge: `postMessage` (web→phone: marker/map taps)
-  and injected JS `__fyftUpdate` (phone→web: markers/center).
+  removable). Requires a Google Maps API key in `app.json` + a development
+  build (`eas build --profile development`); does not work in Expo Go.
 - **M3 — RSVP + live capacity** ✅ (this commit)
   "Доаѓам / Заинтересиран" buttons with toggle (tap again to remove),
   live "going" count + progress bar + ПОЛНО badge (realtime subscription on
