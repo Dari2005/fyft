@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -30,9 +32,44 @@ export default function CreatePartyScreen() {
   const [startsAt, setStartsAt] = useState(''); // "2026-10-25 21:00"
   const [address, setAddress] = useState('');
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState(SKOPJE_CENTER);
+  const [searching, setSearching] = useState(false);
   const [capacity, setCapacity] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  /** Geocode the typed address (Photon, no key) and drop the pin on the result. */
+  const searchAddress = async () => {
+    const query = address.trim();
+    if (query.length < 3) {
+      Alert.alert('Внеси адреса', 'Напиши ја улицата / адресата прво.');
+      return;
+    }
+    setSearching(true);
+    try {
+      const url =
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}` +
+        `&limit=1&lat=41.9981&lon=21.4254`;
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error('geocode failed');
+      const json = await res.json();
+      const coords = json?.features?.[0]?.geometry?.coordinates;
+      if (!Array.isArray(coords) || coords.length < 2) {
+        Alert.alert(
+          'Не е пронајдено',
+          'Не ја најдов адресата. Пробај со друго име или стави пин рачно на мапата.'
+        );
+        return;
+      }
+      const [lng, lat] = coords;
+      setPin({ latitude: lat, longitude: lng });
+      setMapCenter({ latitude: lat, longitude: lng, zoom: 16 });
+    } catch {
+      Alert.alert('Грешка', 'Пребарувањето не успеа. Провери ја интернет-врската.');
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const parseDate = (value: string): Date | null => {
     // Accept "YYYY-MM-DD HH:mm" (local time) — MVP simplicity over a date picker.
@@ -158,11 +195,18 @@ export default function CreatePartyScreen() {
           autoCorrect={false}
         />
         <TextField label="Адреса" value={address} onChangeText={setAddress} placeholder="ул. Пример 12, Скопје" />
+        <TouchableOpacity onPress={searchAddress} style={styles.searchButton} disabled={searching}>
+          {searching ? (
+            <ActivityIndicator size="small" color={Colors.primary} />
+          ) : (
+            <Text style={styles.searchButtonText}>🔍 Најди ја адресата на мапа</Text>
+          )}
+        </TouchableOpacity>
 
         <Text style={styles.label}>Локација на мапа (опционално)</Text>
         <LeafletMap
           style={styles.miniMap}
-          center={SKOPJE_CENTER}
+          center={mapCenter}
           zoomControl={false}
           markers={
             pin
@@ -226,6 +270,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   pinText: { color: Colors.muted, fontSize: 14, marginBottom: Spacing.xs },
+  searchButton: {
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  searchButtonText: { color: Colors.primary, fontSize: 15, fontWeight: '700' },
   clearPin: { alignSelf: 'flex-start', marginBottom: Spacing.md, paddingVertical: 4 },
   clearPinText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
   error: { color: Colors.danger, fontSize: 14, marginBottom: Spacing.sm },
