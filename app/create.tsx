@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import LeafletMap from '@/components/LeafletMap';
+import MapView, { Marker, type Region } from 'react-native-maps';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import TextField from '@/components/TextField';
@@ -19,8 +19,13 @@ import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 import type { VenueType } from '@/lib/types';
 
-/** Default map center: Skopje. */
-const SKOPJE_CENTER = { latitude: 41.9981, longitude: 21.4254, zoom: 13 };
+/** Default map region: Skopje center. */
+const SKOPJE_REGION: Region = {
+  latitude: 41.9981,
+  longitude: 21.4254,
+  latitudeDelta: 0.12,
+  longitudeDelta: 0.12,
+};
 
 /** Create-party form. Inserts into public.parties; requires a signed-in user. */
 export default function CreatePartyScreen() {
@@ -32,8 +37,8 @@ export default function CreatePartyScreen() {
   const [startsAt, setStartsAt] = useState(''); // "2026-10-25 21:00"
   const [address, setAddress] = useState('');
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [mapCenter, setMapCenter] = useState(SKOPJE_CENTER);
   const [searching, setSearching] = useState(false);
+  const mapRef = useRef<MapView>(null);
   const [capacity, setCapacity] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -63,7 +68,10 @@ export default function CreatePartyScreen() {
       }
       const [lng, lat] = coords;
       setPin({ latitude: lat, longitude: lng });
-      setMapCenter({ latitude: lat, longitude: lng, zoom: 16 });
+      mapRef.current?.animateToRegion(
+        { latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+        500
+      );
     } catch {
       Alert.alert('Грешка', 'Пребарувањето не успеа. Провери ја интернет-врската.');
     } finally {
@@ -204,25 +212,14 @@ export default function CreatePartyScreen() {
         </TouchableOpacity>
 
         <Text style={styles.label}>Локација на мапа (опционално)</Text>
-        <LeafletMap
+        <MapView
+          ref={mapRef}
           style={styles.miniMap}
-          center={mapCenter}
-          zoomControl={false}
-          markers={
-            pin
-              ? [
-                  {
-                    id: 'draft-pin',
-                    latitude: pin.latitude,
-                    longitude: pin.longitude,
-                    title: 'Журката',
-                    color: Colors.primary,
-                  },
-                ]
-              : []
-          }
-          onMapPress={(latitude, longitude) => setPin({ latitude, longitude })}
-        />
+          initialRegion={SKOPJE_REGION}
+          onPress={(e) => setPin(e.nativeEvent.coordinate)}
+        >
+          {pin && <Marker coordinate={pin} pinColor={Colors.primary} />}
+        </MapView>
         <Text style={styles.pinText}>
           {pin
             ? `📍 ${pin.latitude.toFixed(4)}, ${pin.longitude.toFixed(4)}`
@@ -270,6 +267,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   pinText: { color: Colors.muted, fontSize: 14, marginBottom: Spacing.xs },
+  clearPin: { alignSelf: 'flex-start', marginBottom: Spacing.md, paddingVertical: 4 },
+  clearPinText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
   searchButton: {
     borderWidth: 1,
     borderColor: Colors.primary,
@@ -279,7 +278,5 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   searchButtonText: { color: Colors.primary, fontSize: 15, fontWeight: '700' },
-  clearPin: { alignSelf: 'flex-start', marginBottom: Spacing.md, paddingVertical: 4 },
-  clearPinText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
   error: { color: Colors.danger, fontSize: 14, marginBottom: Spacing.sm },
 });

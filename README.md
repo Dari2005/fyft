@@ -42,9 +42,15 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
    ```
    Scan the QR code with the **Expo Go** app, or press `w` for web.
 
-> **Note:** The map uses **Leaflet + Esri World Dark Gray** tiles rendered
-> in a WebView (`components/LeafletMap.tsx`) — free, no API key or signup
-> needed, works in plain Expo Go with `npx expo start`, no dev build.
+> **Note:** The map uses **Google Maps** (`react-native-maps`). It needs a
+> Google Maps API key and a **development build** — it does NOT work in
+> plain Expo Go (Expo Go's bundled key fails to load tiles on some
+> devices). Setup: (1) Google Cloud project with billing ($30 one-time
+> prepayment, refundable on account closure) → enable **Maps SDK for
+> Android** → create an API key; (2) paste the key into `app.json`
+> (`android.config.googleMaps.apiKey`, `ios.config.googleMapsApiKey`);
+> (3) `eas build --profile development --platform android`, install the
+> APK, then run `npx expo start --dev-client`.
 
 ## Phase 1 milestones
 
@@ -52,15 +58,14 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   Expo router app, Supabase client, sign in/sign up, party list, create-party
   form, schema.sql with RLS + 3/day anti-spam trigger.
 - **M2 — Map browse + location** ✅
-  `components/LeafletMap.tsx`: Leaflet 1.9.4 in a WebView with Esri World
-  Dark Gray tiles (free, no key needed; maxZoom 16 — no tile data beyond
-  that for Skopje) — works in Expo Go, no dev build. `app/map.tsx`: full-screen map
-  with all parties as pins (🏠 purple, 🎶 green), tap a pin to open the
-  party detail, `expo-location` foreground permission with user-location
-  dot, Skopje fallback when denied. `app/create.tsx`: tap-to-set-pin mini
-  map replaces the manual lat/lng inputs (pin optional, removable).
-  Phone↔web bridge: `postMessage` (web→phone: marker/map taps) and
-  injected JS `__fyftUpdate` (phone→web: markers/center).
+  `react-native-maps` (Google Maps provider; needs API key + dev build, see
+  note above). `app/map.tsx`: full-screen map with all parties as pins
+  (🏠 purple, 🎶 green), tap a pin to open the party detail,
+  `expo-location` foreground permission with user-location dot, Skopje
+  fallback when denied. `app/create.tsx`: tap-to-set-pin mini map + address
+  search ("🔍 Најди ја адресата на мапа" geocodes via Photon, no key) that
+  drops and zooms to the pin; manual lat/lng inputs removed (pin optional,
+  removable).
 - **M3 — RSVP + live capacity** ✅ (this commit)
   "Доаѓам / Заинтересиран" buttons with toggle (tap again to remove),
   live "going" count + progress bar + ПОЛНО badge (realtime subscription on
