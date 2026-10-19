@@ -27,7 +27,8 @@ interface LeafletMapProps {
 }
 
 const LEAFLET_VERSION = '1.9.4';
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+// Standard OpenStreetMap tiles: free, no API key required.
+const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 /**
  * Builds the static HTML shell for the map. All dynamic data (center,
@@ -59,9 +60,8 @@ function buildHtml(zoomControl: boolean): string {
 (function () {
   var map = L.map('map', { zoomControl: ${zoomControl ? 'true' : 'false'} }).setView([41.9981, 21.4254], 12);
   L.tileLayer('${TILE_URL}', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
   }).addTo(map);
 
   var markerLayer = L.layerGroup().addTo(map);
