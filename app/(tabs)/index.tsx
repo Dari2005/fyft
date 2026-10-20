@@ -97,16 +97,10 @@ export default function MapScreen() {
         </View>
       )}
 
-      {/* Floating navigation: full-screen map is the app's landing screen. */}
+      {/* Floating overlay: brand title + create shortcut. */}
       <View style={styles.overlay} pointerEvents="box-none">
         <View style={styles.topBar} pointerEvents="box-none">
           <Text style={styles.appTitle}>Fyft</Text>
-          <TouchableOpacity
-            onPress={() => router.push('/list')}
-            style={styles.listButton}
-          >
-            <Text style={styles.listButtonText}>📋 Листа</Text>
-          </TouchableOpacity>
         </View>
         <TouchableOpacity
           onPress={() => router.push('/create')}
@@ -169,15 +163,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-  listButton: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 20,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  listButtonText: { color: Colors.text, fontSize: 15, fontWeight: '700' },
   fab: {
     position: 'absolute',
     right: Spacing.lg,

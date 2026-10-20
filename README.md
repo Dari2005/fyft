@@ -78,8 +78,12 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   `comments`, own-comment delete with confirmation. Note: enable `comments`
   in Dashboard → Database → Replication for live updates to arrive from
   other users' devices.
-- **M5 — Polish & store**
-  App icon, splash, profile screen (my parties), EAS build for TestFlight/Play.
+- **M5 — Polish & store** (in progress)
+  Navigation redesigned to a bottom tab bar (Instagram / YouTube Music
+  style): **Журки** (list) left, **Мапа** center (landing tab, full-screen
+  Google Map with ＋ create FAB), **Профил** right — profile screen shows
+  avatar initial, username/email, "Мои журки" (own published parties) and
+  sign out. Still to do: app icon, splash, EAS build for TestFlight/Play.
 
 **Phase 2 (out of scope):** real ticket purchasing, payments, refunds — needs a
 legal entity and a payment provider.

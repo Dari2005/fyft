@@ -15,8 +15,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: Colors.background },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Мапа', headerShown: false }} />
-        <Stack.Screen name="list" options={{ title: 'Журки во Скопје' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ title: 'Најава', presentation: 'modal' }} />
         <Stack.Screen name="create" options={{ title: 'Нова журка' }} />
         <Stack.Screen name="party/[id]" options={{ title: 'Журка' }} />

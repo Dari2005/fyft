@@ -6,25 +6,18 @@ import PartyCard from '@/components/PartyCard';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 
-/** Party list screen. Reached from the map via "📋 Листа". */
+/** Party list tab (left tab). Reached from the bottom tab bar. */
 export default function PartyListScreen() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
 
   return (
     <View style={styles.container}>
       <View style={styles.actions}>
         {user ? (
-          <>
-            <View style={styles.grow}>
-              <Link href="/create" asChild>
-                <PrimaryButton title="＋ Нова журка" onPress={() => {}} />
-              </Link>
-            </View>
-            <View style={styles.signOut}>
-              <PrimaryButton title="Одјави се" variant="outline" onPress={signOut} />
-            </View>
-          </>
+          <Link href="/create" asChild style={styles.grow}>
+            <PrimaryButton title="＋ Нова журка" onPress={() => {}} />
+          </Link>
         ) : (
           <Link href="/auth" asChild style={styles.grow}>
             <PrimaryButton title="Најави се за да објавиш журка" onPress={() => {}} />
@@ -67,7 +60,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   grow: { flex: 1 },
-  signOut: { width: 110 },
   list: { padding: Spacing.md, paddingBottom: Spacing.xl },
   empty: { alignItems: 'center', marginTop: Spacing.xl },
   emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
