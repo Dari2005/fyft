@@ -32,6 +32,7 @@ export function useParties(): UsePartiesResult {
         title: row.title,
         description: row.description,
         venue_type: row.venue_type,
+        genre: row.genre ?? null,
         latitude: row.latitude,
         longitude: row.longitude,
         address: row.address,

@@ -77,6 +77,7 @@ export default function PartyDetailScreen() {
           title: data.title,
           description: data.description,
           venue_type: data.venue_type,
+          genre: data.genre ?? null,
           latitude: data.latitude,
           longitude: data.longitude,
           address: data.address,

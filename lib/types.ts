@@ -2,12 +2,41 @@
 
 export type VenueType = 'house' | 'club';
 
+/** Music genre of a party. Stored in parties.genre (nullable). */
+export type Genre =
+  | 'techno'
+  | 'house'
+  | 'hiphop'
+  | 'pop'
+  | 'narodno'
+  | 'rock'
+  | 'disco'
+  | 'other';
+
+/** All genres with Macedonian labels, in display order. */
+export const GENRES: { value: Genre; label: string }[] = [
+  { value: 'techno', label: '🎧 Техно' },
+  { value: 'house', label: '🎵 Хаус' },
+  { value: 'hiphop', label: '🎤 Хип-хоп' },
+  { value: 'pop', label: '✨ Поп' },
+  { value: 'narodno', label: '🪗 Народно' },
+  { value: 'rock', label: '🎸 Рок' },
+  { value: 'disco', label: '🪩 Диско' },
+  { value: 'other', label: '🎉 Друго' },
+];
+
+export function genreLabel(genre: Genre | null | undefined): string | null {
+  if (!genre) return null;
+  return GENRES.find((g) => g.value === genre)?.label ?? null;
+}
+
 export interface Party {
   id: string;
   organizer_id: string;
   title: string;
   description: string | null;
   venue_type: VenueType;
+  genre: Genre | null;
   latitude: number | null;
   longitude: number | null;
   address: string | null;

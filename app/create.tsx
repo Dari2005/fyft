@@ -17,7 +17,7 @@ import { useAuth } from '@/lib/AuthContext';
 import TextField from '@/components/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
-import type { VenueType } from '@/lib/types';
+import { GENRES, type Genre, type VenueType } from '@/lib/types';
 
 /** Default map region: Skopje center. */
 const SKOPJE_REGION: Region = {
@@ -34,6 +34,7 @@ export default function CreatePartyScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [venueType, setVenueType] = useState<VenueType>('house');
+  const [genre, setGenre] = useState<Genre | null>(null);
   const [startsAt, setStartsAt] = useState(''); // "2026-10-25 21:00"
   const [address, setAddress] = useState('');
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -127,21 +128,35 @@ export default function CreatePartyScreen() {
         return;
       }
 
-      const { data, error: insertError } = await supabase
+      const payload: Record<string, unknown> = {
+        organizer_id: user.id,
+        title: trimmedTitle,
+        description: description.trim() === '' ? null : description.trim(),
+        venue_type: venueType,
+        address: address.trim() === '' ? null : address.trim(),
+        latitude: pin?.latitude ?? null,
+        longitude: pin?.longitude ?? null,
+        starts_at: date.toISOString(),
+        capacity: cap,
+      };
+      if (genre) payload.genre = genre;
+
+      // If the DB genre column is missing (migration not run yet), retry
+      // without it so publishing never breaks.
+      let insertResult = await supabase
         .from('parties')
-        .insert({
-          organizer_id: user.id,
-          title: trimmedTitle,
-          description: description.trim() === '' ? null : description.trim(),
-          venue_type: venueType,
-          address: address.trim() === '' ? null : address.trim(),
-          latitude: pin?.latitude ?? null,
-          longitude: pin?.longitude ?? null,
-          starts_at: date.toISOString(),
-          capacity: cap,
-        })
+        .insert(payload)
         .select('id')
         .single();
+      if (insertResult.error && genre && insertResult.error.message.includes('genre')) {
+        delete payload.genre;
+        insertResult = await supabase
+          .from('parties')
+          .insert(payload)
+          .select('id')
+          .single();
+      }
+      const { data, error: insertError } = insertResult;
 
       if (insertError) throw insertError;
       router.replace({ pathname: '/party/[id]', params: { id: data.id } });
@@ -190,6 +205,21 @@ export default function CreatePartyScreen() {
                 style={[styles.venueText, venueType === opt.value && styles.venueTextSelected]}
               >
                 {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.label}>Жанр</Text>
+        <View style={styles.genreWrap}>
+          {GENRES.map((g) => (
+            <TouchableOpacity
+              key={g.value}
+              style={[styles.genreChip, genre === g.value && styles.venueSelected]}
+              onPress={() => setGenre(genre === g.value ? null : g.value)}
+            >
+              <Text style={[styles.venueText, genre === g.value && styles.venueTextSelected]}>
+                {g.label}
               </Text>
             </TouchableOpacity>
           ))}
@@ -259,6 +289,20 @@ const styles = StyleSheet.create({
   venueSelected: { borderColor: Colors.primary, borderWidth: 2 },
   venueText: { color: Colors.muted, fontSize: 15, fontWeight: '600' },
   venueTextSelected: { color: Colors.text },
+  genreWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  genreChip: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.surface,
+  },
   miniMap: {
     width: '100%',
     height: 220,
