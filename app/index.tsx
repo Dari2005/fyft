@@ -1,81 +1,194 @@
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { Link } from 'expo-router';
-import { useAuth } from '@/lib/AuthContext';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Callout, Marker, type Region } from 'react-native-maps';
+import { router } from 'expo-router';
+import * as Location from 'expo-location';
 import { useParties } from '@/hooks/useParties';
-import PartyCard from '@/components/PartyCard';
-import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
+import type { Party } from '@/lib/types';
 
-/** Home screen: list of published parties. */
-export default function HomeScreen() {
-  const { user, signOut } = useAuth();
-  const { parties, loading, error, refresh } = useParties();
+/** Fallback region: Skopje center — used until location resolves or when denied. */
+const SKOPJE_REGION: Region = {
+  latitude: 41.9981,
+  longitude: 21.4254,
+  latitudeDelta: 0.15,
+  longitudeDelta: 0.15,
+};
+
+/** Map screen: browse all published parties as pins. */
+export default function MapScreen() {
+  const { parties, loading, error } = useParties();
+  const [region, setRegion] = useState<Region | null>(null);
+  const [showsUserLocation, setShowsUserLocation] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await Location.getCurrentPositionAsync({});
+          setShowsUserLocation(true);
+          setRegion({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            latitudeDelta: 0.1,
+            longitudeDelta: 0.1,
+          });
+        } else {
+          setRegion(SKOPJE_REGION);
+        }
+      } catch {
+        setRegion(SKOPJE_REGION);
+      }
+    })();
+  }, []);
+
+  const pinned = parties.filter(
+    (p): p is Party & { latitude: number; longitude: number } =>
+      p.latitude != null && p.longitude != null
+  );
+
+  if (!region) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.hint}>Ја одредувам локацијата…</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.actions}>
-        <View style={styles.mapButton}>
-          <Link href="/map" asChild>
-            <PrimaryButton title="🗺️" onPress={() => {}} />
-          </Link>
-        </View>
-        {user ? (
-          <>
-            <View style={styles.grow}>
-              <Link href="/create" asChild>
-                <PrimaryButton title="＋ Нова журка" onPress={() => {}} />
-              </Link>
-            </View>
-            <View style={styles.signOut}>
-              <PrimaryButton title="Одјави се" variant="outline" onPress={signOut} />
-            </View>
-          </>
-        ) : (
-          <Link href="/auth" asChild style={styles.grow}>
-            <PrimaryButton title="Најави се за да објавиш журка" onPress={() => {}} />
-          </Link>
-        )}
-      </View>
+      <MapView
+        style={styles.map}
+        initialRegion={region}
+        showsUserLocation={showsUserLocation}
+      >
+        {pinned.map((p) => (
+          <Marker
+            key={p.id}
+            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+            pinColor={p.venue_type === 'house' ? Colors.primary : Colors.success}
+          >
+            <Callout
+              onPress={() =>
+                router.push({ pathname: '/party/[id]', params: { id: p.id } })
+              }
+            >
+              <View style={styles.callout}>
+                <Text style={styles.calloutTitle}>{p.title}</Text>
+                <Text style={styles.calloutMeta}>
+                  {p.venue_type === 'house' ? '🏠 Куќна' : '🎶 Клуб'} · допри за детали →
+                </Text>
+              </View>
+            </Callout>
+          </Marker>
+        ))}
+      </MapView>
 
-      <FlatList
-        data={parties}
-        keyExtractor={(p) => p.id}
-        renderItem={({ item }) => <PartyCard party={item} />}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
-        ListEmptyComponent={
-          loading ? null : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>
-                {error ? 'Не можев да ги вчитам журките' : 'Нема објавени журки уште'}
-              </Text>
-              <Text style={styles.emptyText}>
-                {error
-                  ? 'Провери дали си го извршил supabase/schema.sql и поставил .env'
-                  : 'Биди првиот што ќе објави!'}
-              </Text>
-            </View>
-          )
-        }
-      />
+      {error && (
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>Грешка при вчитување на журките.</Text>
+        </View>
+      )}
+      {!loading && !error && pinned.length === 0 && (
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>Уште нема журки со локација на мапата.</Text>
+        </View>
+      )}
+
+      {/* Floating navigation: full-screen map is the app's landing screen. */}
+      <View style={styles.overlay} pointerEvents="box-none">
+        <View style={styles.topBar} pointerEvents="box-none">
+          <Text style={styles.appTitle}>Fyft</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/list')}
+            style={styles.listButton}
+          >
+            <Text style={styles.listButtonText}>📋 Листа</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/create')}
+          style={styles.fab}
+        >
+          <Text style={styles.fabText}>＋</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  actions: {
-    flexDirection: 'row',
+  center: {
+    flex: 1,
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
+    justifyContent: 'center',
+    backgroundColor: Colors.background,
     gap: Spacing.sm,
   },
-  grow: { flex: 1 },
-  mapButton: { width: 56 },
-  signOut: { width: 110 },
-  list: { padding: Spacing.md, paddingBottom: Spacing.xl },
-  empty: { alignItems: 'center', marginTop: Spacing.xl },
-  emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
-  emptyText: { color: Colors.muted, fontSize: 14, marginTop: Spacing.xs, textAlign: 'center' },
+  hint: { color: Colors.muted, fontSize: 14 },
+  map: { width: '100%', height: '100%' },
+  callout: { minWidth: 160, padding: Spacing.xs },
+  calloutTitle: { fontSize: 15, fontWeight: '700', color: '#111111' },
+  calloutMeta: { fontSize: 13, color: '#555555', marginTop: 2 },
+  banner: {
+    position: 'absolute',
+    bottom: Spacing.lg,
+    left: Spacing.lg,
+    right: Spacing.lg,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  bannerText: { color: Colors.text, fontSize: 14, textAlign: 'center' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'space-between',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.xl,
+  },
+  appTitle: {
+    color: Colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  listButton: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 20,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  listButtonText: { color: Colors.text, fontSize: 15, fontWeight: '700' },
+  fab: {
+    position: 'absolute',
+    right: Spacing.lg,
+    bottom: Spacing.xl,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+  },
+  fabText: { color: '#ffffff', fontSize: 28, fontWeight: '700', marginTop: -2 },
 });
