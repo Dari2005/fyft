@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
-import { genreLabel } from '@/lib/types';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -30,7 +29,6 @@ export default function PartyCard({ party }: { party: Party }) {
             </Text>
             <Text style={styles.organizer} numberOfLines={1}>
               {party.organizer_username ? `@${party.organizer_username}` : ''}
-              {genreLabel(party.genre) ? ` · ${genreLabel(party.genre)}` : ''}
               {party.capacity != null ? ` · до ${party.capacity} гости` : ''}
             </Text>
           </View>

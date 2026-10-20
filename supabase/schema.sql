@@ -24,7 +24,6 @@ create table if not exists public.parties (
   title text not null check (char_length(title) between 3 and 120),
   description text,
   venue_type text not null check (venue_type in ('house', 'club')),
-  genre text check (genre in ('techno', 'house', 'hiphop', 'pop', 'narodno', 'rock', 'disco', 'other')),
   latitude double precision,
   longitude double precision,
   address text,

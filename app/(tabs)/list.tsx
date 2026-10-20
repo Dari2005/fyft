@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   FlatList,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,28 +14,24 @@ import { useParties } from '@/hooks/useParties';
 import PartyCard from '@/components/PartyCard';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
-import { GENRES, type Genre } from '@/lib/types';
 
-/** Party list tab (left tab): search bar + genre filter chips + party list. */
+/** Party list tab (left tab): search bar + party list. */
 export default function PartyListScreen() {
   const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
   const [query, setQuery] = useState('');
-  const [genre, setGenre] = useState<Genre | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return parties.filter((p) => {
-      if (genre && p.genre !== genre) return false;
-      if (!q) return true;
-      return (
+    if (!q) return parties;
+    return parties.filter(
+      (p) =>
         p.title.toLowerCase().includes(q) ||
         (p.address?.toLowerCase().includes(q) ?? false)
-      );
-    });
-  }, [parties, query, genre]);
+    );
+  }, [parties, query]);
 
-  const isFiltering = query.trim() !== '' || genre !== null;
+  const isFiltering = query.trim() !== '';
 
   return (
     <View style={styles.container}>
@@ -70,33 +65,6 @@ export default function PartyListScreen() {
         )}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipsScroll}
-        contentContainerStyle={styles.chipsRow}
-      >
-        <TouchableOpacity
-          style={[styles.chip, genre === null && styles.chipActive]}
-          onPress={() => setGenre(null)}
-        >
-          <Text style={[styles.chipText, genre === null && styles.chipTextActive]}>
-            Сите
-          </Text>
-        </TouchableOpacity>
-        {GENRES.map((g) => (
-          <TouchableOpacity
-            key={g.value}
-            style={[styles.chip, genre === g.value && styles.chipActive]}
-            onPress={() => setGenre(genre === g.value ? null : g.value)}
-          >
-            <Text style={[styles.chipText, genre === g.value && styles.chipTextActive]}>
-              {g.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
       <FlatList
         data={filtered}
         keyExtractor={(p) => p.id}
@@ -110,14 +78,14 @@ export default function PartyListScreen() {
                 {error
                   ? 'Не можев да ги вчитам журките'
                   : isFiltering
-                    ? 'Нема журки за тој филтер'
+                    ? 'Нема журки за тоа пребарување'
                     : 'Нема објавени журки уште'}
               </Text>
               <Text style={styles.emptyText}>
                 {error
                   ? 'Провери дали си го извршил supabase/schema.sql и поставил .env'
                   : isFiltering
-                    ? 'Пробај со друг жанр или друго пребарување.'
+                    ? 'Пробај со друго пребарување.'
                     : 'Биди првиот што ќе објави!'}
               </Text>
             </View>
@@ -158,24 +126,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   clearText: { color: Colors.muted, fontSize: 16, paddingHorizontal: 4 },
-  chipsScroll: { flexGrow: 0, marginTop: Spacing.sm },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 20,
-    paddingVertical: 7,
-    paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.surface,
-  },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { color: Colors.muted, fontSize: 14, fontWeight: '600' },
-  chipTextActive: { color: Colors.primaryText },
   list: { padding: Spacing.md, paddingBottom: Spacing.xl },
   empty: { alignItems: 'center', marginTop: Spacing.xl },
   emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
