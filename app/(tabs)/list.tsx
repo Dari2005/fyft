@@ -9,16 +9,18 @@ import {
   View,
 } from 'react-native';
 import { Link } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/AuthContext';
 import { useParties } from '@/hooks/useParties';
 import PartyCard from '@/components/PartyCard';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 
-/** Party list tab (left tab): search bar + party list. */
+/** Party list tab (left tab): brand header, search bar + party list. */
 export default function PartyListScreen() {
   const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -35,6 +37,11 @@ export default function PartyListScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}>
+        <Text style={styles.brand}>Fyft</Text>
+        <Text style={styles.heading}>Parties in Skopje</Text>
+      </View>
+
       <View style={styles.actions}>
         {user ? (
           <Link href="/create" asChild style={styles.grow}>
@@ -98,6 +105,9 @@ export default function PartyListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  header: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs },
+  brand: { color: Colors.primaryBright, fontSize: 20, fontWeight: '800' },
+  heading: { color: Colors.text, fontSize: 30, fontWeight: '800', marginTop: 2 },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',

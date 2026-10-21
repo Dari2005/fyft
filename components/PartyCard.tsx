@@ -18,7 +18,9 @@ export default function PartyCard({ party }: { party: Party }) {
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
       <Pressable style={styles.card}>
         <View style={styles.row}>
-          <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠' : '🎶'}</Text>
+          <View style={styles.thumb}>
+            <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠' : '🎶'}</Text>
+          </View>
           <View style={styles.info}>
             <Text style={styles.title} numberOfLines={1}>
               {party.title}
@@ -41,16 +43,25 @@ export default function PartyCard({ party }: { party: Party }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
   },
   row: { flexDirection: 'row', alignItems: 'center' },
-  venue: { fontSize: 30, marginRight: Spacing.md },
+  thumb: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+    backgroundColor: 'rgba(147, 51, 234, 0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  venue: { fontSize: 28 },
   info: { flex: 1 },
-  title: { color: Colors.text, fontSize: 17, fontWeight: '700' },
-  meta: { color: Colors.muted, fontSize: 14, marginTop: 2 },
+  title: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+  meta: { color: Colors.muted, fontSize: 14, marginTop: 3 },
   organizer: { color: Colors.muted, fontSize: 13, marginTop: 2 },
 });

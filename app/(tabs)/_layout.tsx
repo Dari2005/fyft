@@ -1,3 +1,4 @@
+import { View, type ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
@@ -6,6 +7,38 @@ import { Colors } from '@/constants/theme';
 export const unstable_settings = {
   initialRouteName: 'index',
 };
+
+/** Tab icon with a violet pill behind it when the tab is active. */
+function TabIcon({
+  focused,
+  color,
+  size,
+  name,
+  nameFocused,
+}: {
+  focused: boolean;
+  color: ColorValue;
+  size: number;
+  name: keyof typeof Ionicons.glyphMap;
+  nameFocused: keyof typeof Ionicons.glyphMap;
+}) {
+  return (
+    <View
+      style={{
+        backgroundColor: focused ? Colors.primary : 'transparent',
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 3,
+      }}
+    >
+      <Ionicons
+        name={focused ? nameFocused : name}
+        size={size}
+        color={focused ? '#ffffff' : color}
+      />
+    </View>
+  );
+}
 
 /**
  * Bottom tab bar (Instagram / YouTube Music style):
@@ -17,29 +50,32 @@ export default function TabsLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: Colors.background },
         headerTintColor: Colors.text,
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitleStyle: { fontWeight: '800' },
         tabBarStyle: {
-          backgroundColor: Colors.surface,
+          backgroundColor: '#120a24',
           borderTopColor: Colors.border,
-          height: 60,
+          height: 62,
           paddingBottom: 6,
           paddingTop: 4,
         },
-        tabBarActiveTintColor: Colors.text,
+        tabBarActiveTintColor: Colors.primaryBright,
         tabBarInactiveTintColor: Colors.muted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
       }}
     >
       <Tabs.Screen
         name="list"
         options={{
           title: 'Parties in Skopje',
+          headerShown: false,
           tabBarLabel: 'Parties',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'list' : 'list-outline'}
-              size={size}
+            <TabIcon
+              focused={focused}
               color={color}
+              size={size}
+              name="list-outline"
+              nameFocused="list"
             />
           ),
         }}
@@ -51,10 +87,12 @@ export default function TabsLayout() {
           tabBarLabel: 'Map',
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'map' : 'map-outline'}
-              size={size}
+            <TabIcon
+              focused={focused}
               color={color}
+              size={size}
+              name="map-outline"
+              nameFocused="map"
             />
           ),
         }}
@@ -65,10 +103,12 @@ export default function TabsLayout() {
           title: 'Profile',
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'person-circle' : 'person-circle-outline'}
-              size={size}
+            <TabIcon
+              focused={focused}
               color={color}
+              size={size}
+              name="person-circle-outline"
+              nameFocused="person-circle"
             />
           ),
         }}

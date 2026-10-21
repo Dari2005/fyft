@@ -48,18 +48,18 @@ export default function PrimaryButton({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingVertical: 15,
     paddingHorizontal: Spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: Spacing.xs,
   },
   primary: { backgroundColor: Colors.primary },
-  outline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.primary },
+  outline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.primary },
   danger: { backgroundColor: Colors.danger },
   disabled: { opacity: 0.5 },
-  label: { fontSize: 16, fontWeight: '600' },
+  label: { fontSize: 16, fontWeight: '800' },
   labelPrimary: { color: Colors.primaryText },
-  labelOutline: { color: Colors.primary },
+  labelOutline: { color: Colors.primaryBright },
 });
