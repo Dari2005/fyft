@@ -26,6 +26,8 @@ export interface Party {
   title: string;
   description: string | null;
   venue_type: VenueType;
+  /** Free-text party type typed by the organizer (e.g. "Birthday", "Rave"). */
+  party_type: string | null;
   media: PartyMedia[];
   latitude: number | null;
   longitude: number | null;

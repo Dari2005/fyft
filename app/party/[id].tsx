@@ -97,6 +97,7 @@ export default function PartyDetailScreen() {
           title: data.title,
           description: data.description,
           venue_type: data.venue_type,
+          party_type: data.party_type ?? null,
           media: parsePartyMedia(data.media),
           latitude: data.latitude,
           longitude: data.longitude,
@@ -241,7 +242,14 @@ export default function PartyDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠 House party' : '🎶 Club party'}</Text>
+      <View style={styles.venueRow}>
+        <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠 House party' : '🎶 Club party'}</Text>
+        {party.party_type && (
+          <View style={styles.typeTag}>
+            <Text style={styles.typeTagText}>{party.party_type}</Text>
+          </View>
+        )}
+      </View>
       <Text style={styles.title}>{party.title}</Text>
       <Text style={styles.meta}>
         {new Date(party.starts_at).toLocaleString('en-US', {
@@ -401,6 +409,19 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
   venue: { color: Colors.primary, fontSize: 14, fontWeight: '700' },
+  venueRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
+  typeTag: {
+    backgroundColor: Colors.primary,
+    borderRadius: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+  },
+  typeTagText: {
+    color: Colors.primaryText,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
   title: { color: Colors.text, fontSize: 26, fontWeight: '800', marginTop: Spacing.xs },
   meta: { color: Colors.muted, fontSize: 15, marginTop: Spacing.xs },
   description: { color: Colors.text, fontSize: 16, marginTop: Spacing.md, lineHeight: 24 },

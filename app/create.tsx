@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
@@ -37,7 +40,14 @@ export default function CreatePartyScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [venueType, setVenueType] = useState<VenueType>('house');
-  const [startsAt, setStartsAt] = useState(''); // "2026-10-25 21:00"
+  const [partyType, setPartyType] = useState('');
+  const [startsAt, setStartsAt] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(21, 0, 0, 0);
+    return d;
+  });
+  const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
   const [address, setAddress] = useState('');
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
   const [searching, setSearching] = useState(false);
@@ -109,11 +119,27 @@ export default function CreatePartyScreen() {
     }
   };
 
-  const parseDate = (value: string): Date | null => {
-    // Accept "YYYY-MM-DD HH:mm" (local time) — MVP simplicity over a date picker.
-    const normalized = value.trim().replace(' ', 'T');
-    const d = new Date(normalized);
-    return isNaN(d.getTime()) ? null : d;
+  /** Date/time picker flow: on Android, date dialog chains into time dialog. */
+  const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'android') {
+      if (event.type === 'set' && selected) {
+        if (pickerMode === 'date') {
+          const next = new Date(startsAt);
+          next.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
+          setStartsAt(next);
+          setPickerMode('time');
+        } else {
+          const next = new Date(startsAt);
+          next.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+          setStartsAt(next);
+          setPickerMode(null);
+        }
+      } else {
+        setPickerMode(null);
+      }
+    } else if (selected) {
+      setStartsAt(selected);
+    }
   };
 
   const submit = async () => {
@@ -128,11 +154,7 @@ export default function CreatePartyScreen() {
       setError('Title must be at least 3 characters.');
       return;
     }
-    const date = parseDate(startsAt);
-    if (!date) {
-      setError('Enter the date in YYYY-MM-DD HH:mm format (e.g. 2026-10-25 21:00).');
-      return;
-    }
+    const date = startsAt;
 
     const cap = capacity.trim() === '' ? null : parseInt(capacity.trim(), 10);
     if (cap !== null && (isNaN(cap) || cap <= 0)) {
@@ -168,6 +190,7 @@ export default function CreatePartyScreen() {
         title: trimmedTitle,
         description: description.trim() === '' ? null : description.trim(),
         venue_type: venueType,
+        party_type: partyType.trim() === '' ? null : partyType.trim(),
         address: address.trim() === '' ? null : address.trim(),
         latitude: pin?.latitude ?? null,
         longitude: pin?.longitude ?? null,
@@ -181,15 +204,23 @@ export default function CreatePartyScreen() {
         .insert(payload)
         .select('id')
         .single();
-      // If the media column is missing (migration not run yet), retry without
-      // it so publishing never breaks.
-      if (insertResult.error && insertResult.error.message.includes('media')) {
-        delete payload.media;
-        insertResult = await supabase
-          .from('parties')
-          .insert(payload)
-          .select('id')
-          .single();
+      // If a column is missing (migration not run yet), drop it and retry so
+      // publishing never breaks.
+      if (insertResult.error) {
+        let dropped = false;
+        for (const col of ['media', 'party_type']) {
+          if (insertResult.error.message.includes(col)) {
+            delete payload[col];
+            dropped = true;
+          }
+        }
+        if (dropped) {
+          insertResult = await supabase
+            .from('parties')
+            .insert(payload)
+            .select('id')
+            .single();
+        }
       }
       const { data, error: insertError } = insertResult;
 
@@ -272,12 +303,51 @@ export default function CreatePartyScreen() {
         </View>
 
         <TextField
-          label="Starts at (YYYY-MM-DD HH:mm) *"
-          value={startsAt}
-          onChangeText={setStartsAt}
-          placeholder="2026-10-25 21:00"
-          autoCorrect={false}
+          label="Party type"
+          value={partyType}
+          onChangeText={setPartyType}
+          placeholder="e.g. Birthday, Rave, BBQ, Techno night…"
+          maxLength={30}
         />
+
+        <Text style={styles.label}>Starts at *</Text>
+        <View style={styles.dateRow}>
+          <TouchableOpacity style={styles.dateButton} onPress={() => setPickerMode('date')}>
+            <Text style={styles.dateButtonText}>
+              📅{' '}
+              {startsAt.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.dateButton} onPress={() => setPickerMode('time')}>
+            <Text style={styles.dateButtonText}>
+              🕐{' '}
+              {startsAt.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {pickerMode && (
+          <DateTimePicker
+            value={startsAt}
+            mode={pickerMode}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            minimumDate={new Date()}
+            onChange={onPickerChange}
+          />
+        )}
+        {Platform.OS === 'ios' && pickerMode && (
+          <TouchableOpacity onPress={() => setPickerMode(null)} style={styles.pickerDone}>
+            <Text style={styles.pickerDoneText}>Done</Text>
+          </TouchableOpacity>
+        )}
+
         <TextField label="Address" value={address} onChangeText={setAddress} placeholder="e.g. Example St. 12, Skopje" />
         <TouchableOpacity onPress={searchAddress} style={styles.searchButton} disabled={searching}>
           {searching ? (
@@ -383,5 +453,18 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   searchButtonText: { color: Colors.primary, fontSize: 15, fontWeight: '700' },
+  dateRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
+  dateButton: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: Spacing.md,
+  },
+  dateButtonText: { color: Colors.text, fontSize: 15, fontWeight: '600' },
+  pickerDone: { alignSelf: 'flex-end', marginBottom: Spacing.md, paddingVertical: 4 },
+  pickerDoneText: { color: Colors.primaryBright, fontSize: 15, fontWeight: '700' },
   error: { color: Colors.danger, fontSize: 14, marginBottom: Spacing.sm },
 });

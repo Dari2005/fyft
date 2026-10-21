@@ -12,13 +12,11 @@ export const unstable_settings = {
 function TabIcon({
   focused,
   color,
-  size,
   name,
   nameFocused,
 }: {
   focused: boolean;
   color: ColorValue;
-  size: number;
   name: keyof typeof Ionicons.glyphMap;
   nameFocused: keyof typeof Ionicons.glyphMap;
 }) {
@@ -33,7 +31,7 @@ function TabIcon({
     >
       <Ionicons
         name={focused ? nameFocused : name}
-        size={size}
+        size={27}
         color={focused ? '#ffffff' : color}
       />
     </View>
@@ -69,11 +67,10 @@ export default function TabsLayout() {
           title: 'Parties in Skopje',
           headerShown: false,
           tabBarLabel: 'Parties',
-          tabBarIcon: ({ color, size, focused }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               focused={focused}
               color={color}
-              size={size}
               name="list-outline"
               nameFocused="list"
             />
@@ -86,11 +83,10 @@ export default function TabsLayout() {
           title: 'Map',
           tabBarLabel: 'Map',
           headerShown: false,
-          tabBarIcon: ({ color, size, focused }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               focused={focused}
               color={color}
-              size={size}
               name="map-outline"
               nameFocused="map"
             />
@@ -102,11 +98,10 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size, focused }) => (
+          tabBarIcon: ({ color, focused }) => (
             <TabIcon
               focused={focused}
               color={color}
-              size={size}
               name="person-circle-outline"
               nameFocused="person-circle"
             />

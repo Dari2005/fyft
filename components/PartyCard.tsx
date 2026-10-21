@@ -18,6 +18,11 @@ export default function PartyCard({ party }: { party: Party }) {
   return (
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
       <Pressable style={styles.card}>
+        {party.party_type && (
+          <View style={styles.typeTag}>
+            <Text style={styles.typeTagText}>{party.party_type}</Text>
+          </View>
+        )}
         <View style={styles.row}>
           {cover ? (
             <View style={styles.thumbWrap}>
@@ -60,6 +65,22 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
+    position: 'relative',
+  },
+  typeTag: {
+    position: 'absolute',
+    top: -9,
+    right: Spacing.md,
+    backgroundColor: Colors.primary,
+    borderRadius: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+  },
+  typeTagText: {
+    color: Colors.primaryText,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
   row: { flexDirection: 'row', alignItems: 'center' },
   thumb: {
