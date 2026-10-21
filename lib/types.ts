@@ -2,12 +2,31 @@
 
 export type VenueType = 'house' | 'club';
 
+/** One media item attached to a party (stored in parties.media jsonb). */
+export interface PartyMedia {
+  url: string;
+  type: 'image' | 'video';
+}
+
+/** Safely parse the parties.media jsonb value into PartyMedia[]. */
+export function parsePartyMedia(value: unknown): PartyMedia[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (m): m is PartyMedia =>
+      !!m &&
+      typeof m === 'object' &&
+      typeof (m as PartyMedia).url === 'string' &&
+      ((m as PartyMedia).type === 'image' || (m as PartyMedia).type === 'video')
+  );
+}
+
 export interface Party {
   id: string;
   organizer_id: string;
   title: string;
   description: string | null;
   venue_type: VenueType;
+  media: PartyMedia[];
   latitude: number | null;
   longitude: number | null;
   address: string | null;

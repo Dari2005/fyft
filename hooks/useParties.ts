@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Party } from '@/lib/types';
+import { parsePartyMedia, type Party } from '@/lib/types';
 
 interface UsePartiesResult {
   parties: Party[];
@@ -32,6 +32,7 @@ export function useParties(): UsePartiesResult {
         title: row.title,
         description: row.description,
         venue_type: row.venue_type,
+        media: parsePartyMedia(row.media),
         latitude: row.latitude,
         longitude: row.longitude,
         address: row.address,

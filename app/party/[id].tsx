@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
+  Image,
   Linking,
   ScrollView,
   StyleSheet,
@@ -11,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
@@ -18,9 +21,26 @@ import { useComments } from '@/hooks/useComments';
 import { reportParty } from '@/lib/reports';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
-import type { Party } from '@/lib/types';
+import { parsePartyMedia, type Party } from '@/lib/types';
 
 const REPORT_REASONS = ['spam', 'fake party', 'inappropriate content', 'other'];
+
+const GALLERY_WIDTH = Dimensions.get('window').width - Spacing.md * 2;
+
+/** One video in the party gallery, with native playback controls. */
+function GalleryVideo({ url }: { url: string }) {
+  const player = useVideoPlayer(url, (p) => {
+    p.loop = false;
+  });
+  return (
+    <VideoView
+      player={player}
+      style={styles.galleryItem}
+      nativeControls
+      contentFit="cover"
+    />
+  );
+}
 
 const formatCommentTime = (iso: string) =>
   new Date(iso).toLocaleString('en-US', {
@@ -77,6 +97,7 @@ export default function PartyDetailScreen() {
           title: data.title,
           description: data.description,
           venue_type: data.venue_type,
+          media: parsePartyMedia(data.media),
           latitude: data.latitude,
           longitude: data.longitude,
           address: data.address,
@@ -242,6 +263,28 @@ export default function PartyDetailScreen() {
       )}
       {party.description && <Text style={styles.description}>{party.description}</Text>}
 
+      {party.media.length > 0 && (
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          style={styles.gallery}
+        >
+          {party.media.map((m, i) =>
+            m.type === 'image' ? (
+              <Image
+                key={`${m.url}-${i}`}
+                source={{ uri: m.url }}
+                style={styles.galleryItem}
+                resizeMode="cover"
+              />
+            ) : (
+              <GalleryVideo key={`${m.url}-${i}`} url={m.url} />
+            )
+          )}
+        </ScrollView>
+      )}
+
       <View style={styles.capacityBox}>
         <View style={styles.capacityRow}>
           <Text style={styles.capacityText}>✅ {capacityLabel}</Text>
@@ -361,6 +404,14 @@ const styles = StyleSheet.create({
   title: { color: Colors.text, fontSize: 26, fontWeight: '800', marginTop: Spacing.xs },
   meta: { color: Colors.muted, fontSize: 15, marginTop: Spacing.xs },
   description: { color: Colors.text, fontSize: 16, marginTop: Spacing.md, lineHeight: 24 },
+  gallery: { marginTop: Spacing.md },
+  galleryItem: {
+    width: GALLERY_WIDTH,
+    height: 240,
+    borderRadius: 14,
+    backgroundColor: Colors.surface,
+    marginRight: Spacing.sm,
+  },
   capacityBox: {
     backgroundColor: Colors.surface,
     borderWidth: 1,

@@ -43,6 +43,13 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      "expo-video",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Fyft uses your photos so you can add pictures and videos to your parties."
+        }
       ]
     ],
     "experiments": {

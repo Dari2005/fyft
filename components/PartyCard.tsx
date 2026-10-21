@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
@@ -14,13 +14,25 @@ function formatDate(iso: string): string {
 }
 
 export default function PartyCard({ party }: { party: Party }) {
+  const cover = party.media.find((m) => m.type === 'image');
   return (
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
       <Pressable style={styles.card}>
         <View style={styles.row}>
-          <View style={styles.thumb}>
-            <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠' : '🎶'}</Text>
-          </View>
+          {cover ? (
+            <View style={styles.thumbWrap}>
+              <Image source={{ uri: cover.url }} style={styles.thumbImg} />
+              {party.media.length > 1 && (
+                <View style={styles.mediaCount}>
+                  <Text style={styles.mediaCountText}>{party.media.length}</Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.thumb}>
+              <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠' : '🎶'}</Text>
+            </View>
+          )}
           <View style={styles.info}>
             <Text style={styles.title} numberOfLines={1}>
               {party.title}
@@ -59,6 +71,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: Spacing.md,
   },
+  thumbWrap: { position: 'relative', marginRight: Spacing.md },
+  thumbImg: { width: 58, height: 58, borderRadius: 14, backgroundColor: Colors.border },
+  mediaCount: {
+    position: 'absolute',
+    right: -6,
+    bottom: -6,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  mediaCountText: { color: Colors.primaryText, fontSize: 11, fontWeight: '800' },
   venue: { fontSize: 28 },
   info: { flex: 1 },
   title: { color: Colors.text, fontSize: 18, fontWeight: '800' },

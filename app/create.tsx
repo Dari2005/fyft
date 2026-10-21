@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,13 +12,15 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
+import { MAX_MEDIA_ITEMS, uploadPartyMedia } from '@/lib/media';
 import TextField from '@/components/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
-import type { VenueType } from '@/lib/types';
+import type { PartyMedia, VenueType } from '@/lib/types';
 
 /** Default map region: Skopje center. */
 const SKOPJE_REGION: Region = {
@@ -40,8 +43,35 @@ export default function CreatePartyScreen() {
   const [searching, setSearching] = useState(false);
   const mapRef = useRef<MapView>(null);
   const [capacity, setCapacity] = useState('');
+  const [mediaAssets, setMediaAssets] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  /** Pick photos/videos from the library (max MAX_MEDIA_ITEMS per party). */
+  const pickMedia = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        'Permission needed',
+        'Allow photo access so you can add pictures and videos to your party.'
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_MEDIA_ITEMS,
+      quality: 0.8,
+      videoMaxDuration: 60,
+    });
+    if (!result.canceled) {
+      setMediaAssets((prev) => [...prev, ...result.assets].slice(0, MAX_MEDIA_ITEMS));
+    }
+  };
+
+  const removeMedia = (index: number) => {
+    setMediaAssets((prev) => prev.filter((_, i) => i !== index));
+  };
 
   /** Geocode the typed address (Photon, no key) and drop the pin on the result. */
   const searchAddress = async () => {
@@ -127,21 +157,41 @@ export default function CreatePartyScreen() {
         return;
       }
 
-      const { data, error: insertError } = await supabase
+      // Upload photos/videos first (if any), then insert the party with them.
+      let media: PartyMedia[] = [];
+      if (mediaAssets.length > 0) {
+        media = await uploadPartyMedia(user.id, mediaAssets);
+      }
+
+      const payload: Record<string, unknown> = {
+        organizer_id: user.id,
+        title: trimmedTitle,
+        description: description.trim() === '' ? null : description.trim(),
+        venue_type: venueType,
+        address: address.trim() === '' ? null : address.trim(),
+        latitude: pin?.latitude ?? null,
+        longitude: pin?.longitude ?? null,
+        starts_at: date.toISOString(),
+        capacity: cap,
+        media,
+      };
+
+      let insertResult = await supabase
         .from('parties')
-        .insert({
-          organizer_id: user.id,
-          title: trimmedTitle,
-          description: description.trim() === '' ? null : description.trim(),
-          venue_type: venueType,
-          address: address.trim() === '' ? null : address.trim(),
-          latitude: pin?.latitude ?? null,
-          longitude: pin?.longitude ?? null,
-          starts_at: date.toISOString(),
-          capacity: cap,
-        })
+        .insert(payload)
         .select('id')
         .single();
+      // If the media column is missing (migration not run yet), retry without
+      // it so publishing never breaks.
+      if (insertResult.error && insertResult.error.message.includes('media')) {
+        delete payload.media;
+        insertResult = await supabase
+          .from('parties')
+          .insert(payload)
+          .select('id')
+          .single();
+      }
+      const { data, error: insertError } = insertResult;
 
       if (insertError) throw insertError;
       router.replace({ pathname: '/party/[id]', params: { id: data.id } });
@@ -172,6 +222,32 @@ export default function CreatePartyScreen() {
           numberOfLines={4}
           textAlignVertical="top"
         />
+
+        <Text style={styles.label}>Photos & Videos</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.mediaStrip}
+        >
+          {mediaAssets.map((asset, i) => (
+            <View key={`${asset.uri}-${i}`} style={styles.mediaThumbWrap}>
+              <Image source={{ uri: asset.uri }} style={styles.mediaThumb} />
+              {asset.type === 'video' && <Text style={styles.videoBadge}>🎥</Text>}
+              <TouchableOpacity
+                style={styles.mediaRemove}
+                onPress={() => removeMedia(i)}
+              >
+                <Text style={styles.mediaRemoveText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          {mediaAssets.length < MAX_MEDIA_ITEMS && (
+            <TouchableOpacity style={styles.mediaAdd} onPress={pickMedia}>
+              <Text style={styles.mediaAddText}>＋</Text>
+              <Text style={styles.mediaAddLabel}>Add</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
 
         <Text style={styles.label}>Venue type *</Text>
         <View style={styles.venueRow}>
@@ -259,6 +335,35 @@ const styles = StyleSheet.create({
   venueSelected: { borderColor: Colors.primary, borderWidth: 2 },
   venueText: { color: Colors.muted, fontSize: 15, fontWeight: '600' },
   venueTextSelected: { color: Colors.text },
+  mediaStrip: { marginBottom: Spacing.md },
+  mediaThumbWrap: { marginRight: Spacing.sm, position: 'relative' },
+  mediaThumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: Colors.surface },
+  videoBadge: { position: 'absolute', left: 6, bottom: 6, fontSize: 14 },
+  mediaRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mediaRemoveText: { color: '#ffffff', fontSize: 12, fontWeight: '700' },
+  mediaAdd: {
+    width: 76,
+    height: 76,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  mediaAddText: { color: Colors.primaryBright, fontSize: 24, fontWeight: '700' },
+  mediaAddLabel: { color: Colors.muted, fontSize: 12, fontWeight: '600' },
   miniMap: {
     width: '100%',
     height: 220,
