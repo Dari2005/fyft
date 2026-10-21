@@ -42,7 +42,7 @@ export function useParties(): UsePartiesResult {
       }));
       setParties(mapped);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Грешка при вчитување на журките.');
+      setError(e instanceof Error ? e.message : 'Failed to load parties.');
     } finally {
       setLoading(false);
     }

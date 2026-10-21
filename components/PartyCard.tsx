@@ -5,7 +5,7 @@ import type { Party } from '@/lib/types';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString('mk-MK', {
+  return d.toLocaleString('en-US', {
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',
@@ -29,7 +29,7 @@ export default function PartyCard({ party }: { party: Party }) {
             </Text>
             <Text style={styles.organizer} numberOfLines={1}>
               {party.organizer_username ? `@${party.organizer_username}` : ''}
-              {party.capacity != null ? ` · до ${party.capacity} гости` : ''}
+              {party.capacity != null ? ` · up to ${party.capacity} guests` : ''}
             </Text>
           </View>
         </View>

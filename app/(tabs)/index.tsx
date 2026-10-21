@@ -52,7 +52,7 @@ export default function MapScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.hint}>Ја одредувам локацијата…</Text>
+        <Text style={styles.hint}>Locating you…</Text>
       </View>
     );
   }
@@ -78,7 +78,7 @@ export default function MapScreen() {
               <View style={styles.callout}>
                 <Text style={styles.calloutTitle}>{p.title}</Text>
                 <Text style={styles.calloutMeta}>
-                  {p.venue_type === 'house' ? '🏠 Куќна' : '🎶 Клуб'} · допри за детали →
+                  {p.venue_type === 'house' ? '🏠 House' : '🎶 Club'} · tap for details →
                 </Text>
               </View>
             </Callout>
@@ -88,12 +88,12 @@ export default function MapScreen() {
 
       {error && (
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>Грешка при вчитување на журките.</Text>
+          <Text style={styles.bannerText}>Failed to load parties.</Text>
         </View>
       )}
       {!loading && !error && pinned.length === 0 && (
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>Уште нема журки со локација на мапата.</Text>
+          <Text style={styles.bannerText}>No parties with a location on the map yet.</Text>
         </View>
       )}
 

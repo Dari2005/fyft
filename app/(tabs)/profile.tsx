@@ -33,19 +33,19 @@ export default function ProfileScreen() {
     return (
       <View style={styles.center}>
         <Text style={styles.bigEmoji}>👤</Text>
-        <Text style={styles.title}>Не си најавен</Text>
+        <Text style={styles.title}>You are not signed in</Text>
         <Text style={styles.subtitle}>
-          Најави се за да објавуваш журки и да го гледаш твојот профил.
+          Sign in to publish parties and see your profile.
         </Text>
         <Link href="/auth" asChild>
-          <PrimaryButton title="Најави се" onPress={() => {}} />
+          <PrimaryButton title="Sign In" onPress={() => {}} />
         </Link>
       </View>
     );
   }
 
   const myParties = parties.filter((p) => p.organizer_id === user.id);
-  const displayName = username ?? user.email?.split('@')[0] ?? 'Корисник';
+  const displayName = username ?? user.email?.split('@')[0] ?? 'User';
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -57,11 +57,11 @@ export default function ProfileScreen() {
         <Text style={styles.name}>{displayName}</Text>
         <Text style={styles.email}>{user.email}</Text>
         <View style={styles.signOut}>
-          <PrimaryButton title="Одјави се" variant="outline" onPress={signOut} />
+          <PrimaryButton title="Sign Out" variant="outline" onPress={signOut} />
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Мои журки ({myParties.length})</Text>
+      <Text style={styles.sectionTitle}>My Parties ({myParties.length})</Text>
       <FlatList
         data={myParties}
         keyExtractor={(p) => p.id}
@@ -69,7 +69,7 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={styles.empty}>
-            Немаш објавено журки уште. Тапни ＋ на мапата за првата!
+            You haven't published any parties yet. Tap ＋ on the map for your first one!
           </Text>
         }
       />

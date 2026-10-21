@@ -20,10 +20,10 @@ import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
 
-const REPORT_REASONS = ['спам', 'лажна журка', 'несоодветна содржина', 'друго'];
+const REPORT_REASONS = ['spam', 'fake party', 'inappropriate content', 'other'];
 
 const formatCommentTime = (iso: string) =>
-  new Date(iso).toLocaleString('mk-MK', {
+  new Date(iso).toLocaleString('en-US', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -86,7 +86,7 @@ export default function PartyDetailScreen() {
           organizer_username: data.profiles?.username ?? undefined,
         });
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Грешка при вчитување.');
+        setError(e instanceof Error ? e.message : 'Failed to load.');
       } finally {
         setLoading(false);
       }
@@ -97,38 +97,38 @@ export default function PartyDetailScreen() {
   const handleRsvp = async (status: RsvpStatus) => {
     const result = await toggleRsvp(status);
     if (result === 'logged-out') {
-      Alert.alert('Најави се', 'Мораш да бидеш најавен за да потврдиш доаѓање.', [
-        { text: 'Откажи', style: 'cancel' },
-        { text: 'Најави се', onPress: () => router.push('/auth') },
+      Alert.alert('Sign In', 'You must be signed in to RSVP.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign In', onPress: () => router.push('/auth') },
       ]);
     }
   };
 
   const submitReport = async (reason: string) => {
     if (!user) {
-      Alert.alert('Најави се', 'Мораш да бидеш најавен за да пријавиш журка.', [
-        { text: 'Откажи', style: 'cancel' },
-        { text: 'Најави се', onPress: () => router.push('/auth') },
+      Alert.alert('Sign In', 'You must be signed in to report a party.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign In', onPress: () => router.push('/auth') },
       ]);
       return;
     }
     const result = await reportParty(id, user.id, reason);
     if (result === 'ok') {
-      Alert.alert('Благодариме!', 'Ја примивме твојата пријава и ќе ја разгледаме.');
+      Alert.alert('Thank you!', 'We received your report and will review it.');
     } else if (result === 'already-reported') {
-      Alert.alert('Веќе пријавено', 'Веќе ја пријави оваа журка.');
+      Alert.alert('Already reported', 'You already reported this party.');
     } else {
-      Alert.alert('Грешка', 'Пријавата не успеа. Обиди се повторно.');
+      Alert.alert('Error', 'Report failed. Try again.');
     }
   };
 
   const handleReportPress = () => {
-    Alert.alert('Пријави ја журката', 'Зошто ја пријавуваш оваа журка?', [
+    Alert.alert('Report this party', 'Why are you reporting this party?', [
       ...REPORT_REASONS.map((reason) => ({
         text: reason[0].toUpperCase() + reason.slice(1),
         onPress: () => submitReport(reason),
       })),
-      { text: 'Откажи', style: 'cancel' },
+      { text: 'Cancel', style: 'cancel' },
     ]);
   };
 
@@ -136,20 +136,20 @@ export default function PartyDetailScreen() {
     if (party?.latitude == null || party?.longitude == null) return;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${party.latitude},${party.longitude}`;
     Linking.openURL(url).catch(() =>
-      Alert.alert('Грешка', 'Не може да се отвори навигацијата.')
+      Alert.alert('Error', 'Could not open navigation.')
     );
   };
 
   const handleDeletePress = () => {
-    Alert.alert('Избриши ја журката?', 'Оваа акција не може да се врати.', [
-      { text: 'Откажи', style: 'cancel' },
+    Alert.alert('Delete this party?', 'This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Избриши',
+        text: 'Delete',
         style: 'destructive',
         onPress: async () => {
           const { error: delErr } = await supabase.from('parties').delete().eq('id', id);
           if (delErr) {
-            Alert.alert('Грешка', 'Бришењето не успеа. Обиди се повторно.');
+            Alert.alert('Error', 'Delete failed. Try again.');
           } else {
             router.replace('/');
           }
@@ -159,35 +159,35 @@ export default function PartyDetailScreen() {
   };
 
   const promptLogin = (message: string) => {
-    Alert.alert('Најави се', message, [
-      { text: 'Откажи', style: 'cancel' },
-      { text: 'Најави се', onPress: () => router.push('/auth') },
+    Alert.alert('Sign In', message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign In', onPress: () => router.push('/auth') },
     ]);
   };
 
   const handleSendComment = async () => {
     if (!user) {
-      promptLogin('Мораш да бидеш најавен за да коментираш.');
+      promptLogin('You must be signed in to comment.');
       return;
     }
     const result = await addComment(draft);
     if (result === 'ok') {
       setDraft('');
     } else if (result === 'error' && !commentsError) {
-      Alert.alert('Грешка', 'Коментарот не е испратен. Обиди се повторно.');
+      Alert.alert('Error', 'Comment not sent. Try again.');
     }
   };
 
   const handleDeleteComment = (commentId: string) => {
-    Alert.alert('Избриши го коментарот?', 'Оваа акција не може да се врати.', [
-      { text: 'Откажи', style: 'cancel' },
+    Alert.alert('Delete this comment?', 'This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Избриши',
+        text: 'Delete',
         style: 'destructive',
         onPress: async () => {
           const result = await deleteComment(commentId);
           if (result === 'error') {
-            Alert.alert('Грешка', 'Бришењето не успеа. Обиди се повторно.');
+            Alert.alert('Error', 'Delete failed. Try again.');
           }
         },
       },
@@ -205,7 +205,7 @@ export default function PartyDetailScreen() {
   if (error || !party) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error ?? 'Журката не е пронајдена.'}</Text>
+        <Text style={styles.error}>{error ?? 'Party not found.'}</Text>
       </View>
     );
   }
@@ -216,14 +216,14 @@ export default function PartyDetailScreen() {
       ? Math.min(100, (goingCount / party.capacity) * 100)
       : 0;
   const capacityLabel =
-    party.capacity != null ? `${goingCount} / ${party.capacity} доаѓаат` : `${goingCount} доаѓаат`;
+    party.capacity != null ? `${goingCount} / ${party.capacity} going` : `${goingCount} going`;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠 Куќна журка' : '🎶 Клубска журка'}</Text>
+      <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠 House party' : '🎶 Club party'}</Text>
       <Text style={styles.title}>{party.title}</Text>
       <Text style={styles.meta}>
-        {new Date(party.starts_at).toLocaleString('mk-MK', {
+        {new Date(party.starts_at).toLocaleString('en-US', {
           weekday: 'long',
           day: '2-digit',
           month: 'long',
@@ -234,11 +234,11 @@ export default function PartyDetailScreen() {
       {party.address && <Text style={styles.meta}>📍 {party.address}</Text>}
       {party.latitude != null && party.longitude != null && (
         <TouchableOpacity onPress={openNavigation} style={styles.navButton}>
-          <Text style={styles.navText}>🧭 Навигација до журката</Text>
+          <Text style={styles.navText}>🧭 Navigate to the party</Text>
         </TouchableOpacity>
       )}
       {party.organizer_username && (
-        <Text style={styles.meta}>Организатор: @{party.organizer_username}</Text>
+        <Text style={styles.meta}>Organizer: @{party.organizer_username}</Text>
       )}
       {party.description && <Text style={styles.description}>{party.description}</Text>}
 
@@ -247,7 +247,7 @@ export default function PartyDetailScreen() {
           <Text style={styles.capacityText}>✅ {capacityLabel}</Text>
           {isFull && (
             <View style={styles.fullBadge}>
-              <Text style={styles.fullBadgeText}>ПОЛНО</Text>
+              <Text style={styles.fullBadgeText}>FULL</Text>
             </View>
           )}
         </View>
@@ -263,14 +263,14 @@ export default function PartyDetailScreen() {
           </View>
         )}
         {interestedCount > 0 && (
-          <Text style={styles.interested}>⭐ {interestedCount} заинтересирани</Text>
+          <Text style={styles.interested}>⭐ {interestedCount} interested</Text>
         )}
       </View>
 
       <View style={styles.rsvpRow}>
         <View style={styles.rsvpButton}>
           <PrimaryButton
-            title={myStatus === 'going' ? '✅ Доаѓам' : 'Доаѓам'}
+            title={myStatus === 'going' ? '✅ Going' : 'Going'}
             variant={myStatus === 'going' ? 'primary' : 'outline'}
             onPress={() => handleRsvp('going')}
             loading={actionLoading || rsvpLoading}
@@ -278,7 +278,7 @@ export default function PartyDetailScreen() {
         </View>
         <View style={styles.rsvpButton}>
           <PrimaryButton
-            title={myStatus === 'interested' ? '⭐ Заинтересиран' : 'Заинтересиран'}
+            title={myStatus === 'interested' ? '⭐ Interested' : 'Interested'}
             variant={myStatus === 'interested' ? 'primary' : 'outline'}
             onPress={() => handleRsvp('interested')}
             loading={actionLoading || rsvpLoading}
@@ -288,35 +288,35 @@ export default function PartyDetailScreen() {
       {rsvpError && <Text style={styles.error}>{rsvpError}</Text>}
 
       <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
-        <Text style={styles.reportText}>🚩 Пријави ја журката</Text>
+        <Text style={styles.reportText}>🚩 Report this party</Text>
       </TouchableOpacity>
 
       {user?.id === party.organizer_id && (
         <TouchableOpacity onPress={handleDeletePress} style={styles.deleteButton}>
-          <Text style={styles.deleteText}>🗑️ Избриши ја журката</Text>
+          <Text style={styles.deleteText}>🗑️ Delete this party</Text>
         </TouchableOpacity>
       )}
 
       <View style={styles.commentsSection}>
-        <Text style={styles.sectionTitle}>💬 Коментари ({comments.length})</Text>
+        <Text style={styles.sectionTitle}>💬 Comments ({comments.length})</Text>
 
         {commentsLoading ? (
           <ActivityIndicator size="small" color={Colors.primary} />
         ) : comments.length === 0 ? (
-          <Text style={styles.emptyComments}>Уште нема коментари. Биди прв! 💬</Text>
+          <Text style={styles.emptyComments}>No comments yet. Be the first! 💬</Text>
         ) : (
           comments.map((comment) => (
             <View key={comment.id} style={styles.commentCard}>
               <View style={styles.commentHeader}>
                 <Text style={styles.commentAuthor}>
-                  @{comment.author_username ?? 'корисник'}
+                  @{comment.author_username ?? 'user'}
                 </Text>
                 <Text style={styles.commentTime}>{formatCommentTime(comment.created_at)}</Text>
               </View>
               <Text style={styles.commentBody}>{comment.body}</Text>
               {user?.id === comment.user_id && (
                 <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
-                  <Text style={styles.commentDelete}>Избриши</Text>
+                  <Text style={styles.commentDelete}>Delete</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -328,7 +328,7 @@ export default function PartyDetailScreen() {
           <TextInput
             ref={composerRef}
             style={styles.composerInput}
-            placeholder="Напиши коментар..."
+            placeholder="Write a comment..."
             placeholderTextColor={Colors.muted}
             value={draft}
             onChangeText={setDraft}
@@ -337,12 +337,12 @@ export default function PartyDetailScreen() {
             onFocus={() => {
               if (!user) {
                 composerRef.current?.blur();
-                promptLogin('Мораш да бидеш најавен за да коментираш.');
+                promptLogin('You must be signed in to comment.');
               }
             }}
           />
           <PrimaryButton
-            title="Испрати"
+            title="Send"
             onPress={handleSendComment}
             loading={commentActionLoading}
             disabled={draft.trim().length === 0}

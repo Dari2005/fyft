@@ -31,15 +31,15 @@ export default function AuthScreen() {
     const trimmedEmail = email.trim().toLowerCase();
 
     if (!trimmedEmail.includes('@')) {
-      setError('Внеси валидна е-пошта.');
+      setError('Enter a valid email.');
       return;
     }
     if (password.length < 6) {
-      setError('Лозинката мора да има најмалку 6 карактери.');
+      setError('Password must be at least 6 characters.');
       return;
     }
     if (mode === 'signup' && username.trim().length < 3) {
-      setError('Корисничкото име мора да има најмалку 3 карактери.');
+      setError('Username must be at least 3 characters.');
       return;
     }
 
@@ -57,7 +57,7 @@ export default function AuthScreen() {
 
       if (mode === 'signup') {
         // If email confirmation is enabled in Supabase, there is no session yet.
-        setNotice('Профилот е креиран! Провери ја е-поштата за потврда, па најави се.');
+        setNotice('Account created! Check your email to confirm, then sign in.');
         setMode('signin');
       } else {
         router.replace('/');
@@ -73,19 +73,19 @@ export default function AuthScreen() {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.heading}>{mode === 'signin' ? 'Добредојде назад 🎉' : 'Креирај профил'}</Text>
+        <Text style={styles.heading}>{mode === 'signin' ? 'Welcome back 🎉' : 'Create account'}</Text>
 
         {mode === 'signup' && (
           <TextField
-            label="Корисничко име"
+            label="Username"
             value={username}
             onChangeText={setUsername}
-            placeholder="на пр. dari_2026"
+            placeholder="e.g. dari_2026"
             autoCapitalize="none"
           />
         )}
         <TextField
-          label="Е-пошта"
+          label="Email"
           value={email}
           onChangeText={setEmail}
           placeholder="ti@example.com"
@@ -94,7 +94,7 @@ export default function AuthScreen() {
           autoCorrect={false}
         />
         <TextField
-          label="Лозинка"
+          label="Password"
           value={password}
           onChangeText={setPassword}
           placeholder="••••••••"
@@ -106,14 +106,14 @@ export default function AuthScreen() {
         {notice && <Text style={styles.notice}>{notice}</Text>}
 
         <PrimaryButton
-          title={mode === 'signin' ? 'Најави се' : 'Регистрирај се'}
+          title={mode === 'signin' ? 'Sign In' : 'Sign Up'}
           onPress={submit}
           loading={loading}
         />
 
         <View style={styles.switchRow}>
           <Text style={styles.muted}>
-            {mode === 'signin' ? 'Немаш профил?' : 'Веќе имаш профил?'}
+            {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
           </Text>
           <TouchableOpacity
             onPress={() => {
@@ -123,7 +123,7 @@ export default function AuthScreen() {
             }}
           >
             <Text style={styles.switchLink}>
-              {mode === 'signin' ? ' Регистрирај се' : ' Најави се'}
+              {mode === 'signin' ? ' Sign Up' : ' Sign In'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -134,10 +134,10 @@ export default function AuthScreen() {
 
 function prettifyAuthError(message: string): string {
   const lower = message.toLowerCase();
-  if (lower.includes('invalid login credentials')) return 'Погрешна е-пошта или лозинка.';
+  if (lower.includes('invalid login credentials')) return 'Wrong email or password.';
   if (lower.includes('already registered') || lower.includes('already exists'))
-    return 'Оваа е-пошта е веќе регистрирана — најави се.';
-  if (lower.includes('email not confirmed')) return 'Потврди ја е-поштата пред најава.';
+    return 'This email is already registered — sign in instead.';
+  if (lower.includes('email not confirmed')) return 'Confirm your email before signing in.';
   return message;
 }
 

@@ -38,11 +38,11 @@ export default function PartyListScreen() {
       <View style={styles.actions}>
         {user ? (
           <Link href="/create" asChild style={styles.grow}>
-            <PrimaryButton title="＋ Нова журка" onPress={() => {}} />
+            <PrimaryButton title="＋ New Party" onPress={() => {}} />
           </Link>
         ) : (
           <Link href="/auth" asChild style={styles.grow}>
-            <PrimaryButton title="Најави се за да објавиш журка" onPress={() => {}} />
+            <PrimaryButton title="Sign in to publish a party" onPress={() => {}} />
           </Link>
         )}
       </View>
@@ -52,7 +52,7 @@ export default function PartyListScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Пребарај журка или адреса…"
+          placeholder="Search a party or address…"
           placeholderTextColor={Colors.muted}
           style={styles.searchInput}
           autoCorrect={false}
@@ -76,17 +76,17 @@ export default function PartyListScreen() {
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>
                 {error
-                  ? 'Не можев да ги вчитам журките'
+                  ? "Couldn't load the parties"
                   : isFiltering
-                    ? 'Нема журки за тоа пребарување'
-                    : 'Нема објавени журки уште'}
+                    ? 'No parties match your search'
+                    : 'No parties published yet'}
               </Text>
               <Text style={styles.emptyText}>
                 {error
-                  ? 'Провери дали си го извршил supabase/schema.sql и поставил .env'
+                  ? 'Check that you ran supabase/schema.sql and set up .env'
                   : isFiltering
-                    ? 'Пробај со друго пребарување.'
-                    : 'Биди првиот што ќе објави!'}
+                    ? 'Try a different search.'
+                    : 'Be the first to publish one!'}
               </Text>
             </View>
           )

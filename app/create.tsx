@@ -47,7 +47,7 @@ export default function CreatePartyScreen() {
   const searchAddress = async () => {
     const query = address.trim();
     if (query.length < 3) {
-      Alert.alert('Внеси адреса', 'Напиши ја улицата / адресата прво.');
+      Alert.alert('Enter an address', 'Type the street / address first.');
       return;
     }
     setSearching(true);
@@ -61,8 +61,8 @@ export default function CreatePartyScreen() {
       const coords = json?.features?.[0]?.geometry?.coordinates;
       if (!Array.isArray(coords) || coords.length < 2) {
         Alert.alert(
-          'Не е пронајдено',
-          'Не ја најдов адресата. Пробај со друго име или стави пин рачно на мапата.'
+          'Not found',
+"I couldn't find that address. Try a different name or drop the pin on the map manually."
         );
         return;
       }
@@ -73,7 +73,7 @@ export default function CreatePartyScreen() {
         500
       );
     } catch {
-      Alert.alert('Грешка', 'Пребарувањето не успеа. Провери ја интернет-врската.');
+      Alert.alert('Error', 'Search failed. Check your internet connection.');
     } finally {
       setSearching(false);
     }
@@ -95,18 +95,18 @@ export default function CreatePartyScreen() {
 
     const trimmedTitle = title.trim();
     if (trimmedTitle.length < 3) {
-      setError('Насловот мора да има најмалку 3 карактери.');
+      setError('Title must be at least 3 characters.');
       return;
     }
     const date = parseDate(startsAt);
     if (!date) {
-      setError('Внеси датум во формат ГГГГ-ММ-ДД ЧЧ:ММ (на пр. 2026-10-25 21:00).');
+      setError('Enter the date in YYYY-MM-DD HH:mm format (e.g. 2026-10-25 21:00).');
       return;
     }
 
     const cap = capacity.trim() === '' ? null : parseInt(capacity.trim(), 10);
     if (cap !== null && (isNaN(cap) || cap <= 0)) {
-      setError('Капацитетот мора да е позитивен број (или остави го празен).');
+      setError('Capacity must be a positive number (or leave it empty).');
       return;
     }
 
@@ -123,7 +123,7 @@ export default function CreatePartyScreen() {
         .eq('organizer_id', user.id)
         .gte('created_at', todayStart.toISOString());
       if ((count ?? 0) >= 3) {
-        setError('Денес веќе објави 3 журки — лимитот е 3 дневно. Пробај утре.');
+        setError("You've already published 3 parties today — the limit is 3 per day. Try again tomorrow.");
         return;
       }
 
@@ -146,7 +146,7 @@ export default function CreatePartyScreen() {
       if (insertError) throw insertError;
       router.replace({ pathname: '/party/[id]', params: { id: data.id } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Грешка при објавување.');
+      setError(e instanceof Error ? e.message : 'Failed to publish.');
     } finally {
       setSaving(false);
     }
@@ -159,26 +159,26 @@ export default function CreatePartyScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {!user && (
-          <Text style={styles.notice}>Мораш да си наjавен за да објавиш журка.</Text>
+          <Text style={styles.notice}>You must be signed in to publish a party.</Text>
         )}
 
-        <TextField label="Наслов *" value={title} onChangeText={setTitle} placeholder="на пр. Куќна журка кај Кисела Вода" maxLength={120} />
+        <TextField label="Title *" value={title} onChangeText={setTitle} placeholder="e.g. House party at Kisela Voda" maxLength={120} />
         <TextField
-          label="Опис"
+          label="Description"
           value={description}
           onChangeText={setDescription}
-          placeholder="Донеси си пијачка, почнуваме во 21:00…"
+          placeholder="Bring your own drinks, we start at 21:00…"
           multiline
           numberOfLines={4}
           textAlignVertical="top"
         />
 
-        <Text style={styles.label}>Тип на место *</Text>
+        <Text style={styles.label}>Venue type *</Text>
         <View style={styles.venueRow}>
           {(
             [
-              { value: 'house', label: '🏠 Куќна' },
-              { value: 'club', label: '🎶 Клуб' },
+              { value: 'house', label: '🏠 House' },
+              { value: 'club', label: '🎶 Club' },
             ] as { value: VenueType; label: string }[]
           ).map((opt) => (
             <TouchableOpacity
@@ -196,22 +196,22 @@ export default function CreatePartyScreen() {
         </View>
 
         <TextField
-          label="Почеток (ГГГГ-ММ-ДД ЧЧ:ММ) *"
+          label="Starts at (YYYY-MM-DD HH:mm) *"
           value={startsAt}
           onChangeText={setStartsAt}
           placeholder="2026-10-25 21:00"
           autoCorrect={false}
         />
-        <TextField label="Адреса" value={address} onChangeText={setAddress} placeholder="ул. Пример 12, Скопје" />
+        <TextField label="Address" value={address} onChangeText={setAddress} placeholder="e.g. Example St. 12, Skopje" />
         <TouchableOpacity onPress={searchAddress} style={styles.searchButton} disabled={searching}>
           {searching ? (
             <ActivityIndicator size="small" color={Colors.primary} />
           ) : (
-            <Text style={styles.searchButtonText}>🔍 Најди ја адресата на мапа</Text>
+            <Text style={styles.searchButtonText}>🔍 Find the address on the map</Text>
           )}
         </TouchableOpacity>
 
-        <Text style={styles.label}>Локација на мапа (опционално)</Text>
+        <Text style={styles.label}>Location on map (optional)</Text>
         <MapView
           ref={mapRef}
           style={styles.miniMap}
@@ -223,19 +223,19 @@ export default function CreatePartyScreen() {
         <Text style={styles.pinText}>
           {pin
             ? `📍 ${pin.latitude.toFixed(4)}, ${pin.longitude.toFixed(4)}`
-            : 'Допрете ја мапата за да поставите пин.'}
+            : 'Tap the map to drop a pin.'}
         </Text>
         {pin && (
           <TouchableOpacity onPress={() => setPin(null)} style={styles.clearPin}>
-            <Text style={styles.clearPinText}>✕ Отстрани пин</Text>
+            <Text style={styles.clearPinText}>✕ Remove pin</Text>
           </TouchableOpacity>
         )}
 
-        <TextField label="Капацитет (опционално)" value={capacity} onChangeText={setCapacity} placeholder="50" keyboardType="number-pad" />
+        <TextField label="Capacity (optional)" value={capacity} onChangeText={setCapacity} placeholder="50" keyboardType="number-pad" />
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        <PrimaryButton title="Објави журка" onPress={submit} loading={saving} />
+        <PrimaryButton title="Publish Party" onPress={submit} loading={saving} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

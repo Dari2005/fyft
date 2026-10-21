@@ -16,9 +16,9 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ title: 'Најава', presentation: 'modal' }} />
-        <Stack.Screen name="create" options={{ title: 'Нова журка' }} />
-        <Stack.Screen name="party/[id]" options={{ title: 'Журка' }} />
+        <Stack.Screen name="auth" options={{ title: 'Sign In', presentation: 'modal' }} />
+        <Stack.Screen name="create" options={{ title: 'New Party' }} />
+        <Stack.Screen name="party/[id]" options={{ title: 'Party' }} />
       </Stack>
     </AuthProvider>
   );

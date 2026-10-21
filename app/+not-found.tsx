@@ -5,12 +5,12 @@ import { Colors } from '@/constants/theme';
 export default function NotFoundScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: 'Грешка' }} />
+      <Stack.Screen options={{ title: 'Error' }} />
       <View style={styles.container}>
-        <Text style={styles.title}>Оваа страна не постои.</Text>
+        <Text style={styles.title}>This page does not exist.</Text>
 
         <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Назад на почетна</Text>
+          <Text style={styles.linkText}>Back to home</Text>
         </Link>
       </View>
     </>

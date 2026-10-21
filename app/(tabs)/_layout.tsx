@@ -33,8 +33,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="list"
         options={{
-          title: 'Журки во Скопје',
-          tabBarLabel: 'Журки',
+          title: 'Parties in Skopje',
+          tabBarLabel: 'Parties',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'list' : 'list-outline'}
@@ -47,8 +47,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Мапа',
-          tabBarLabel: 'Мапа',
+          title: 'Map',
+          tabBarLabel: 'Map',
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -62,8 +62,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Профил',
-          tabBarLabel: 'Профил',
+          title: 'Profile',
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'person-circle' : 'person-circle-outline'}

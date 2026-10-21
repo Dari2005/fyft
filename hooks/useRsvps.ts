@@ -69,7 +69,7 @@ export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult
       setMyStatus((mine.data?.status as RsvpStatus | undefined) ?? null);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Грешка при вчитување на RSVP.');
+      setError(e instanceof Error ? e.message : 'Failed to load RSVPs.');
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult
         await fetchRsvps();
         return 'ok';
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Грешка при зачувување на RSVP.');
+        setError(e instanceof Error ? e.message : 'Failed to save RSVP.');
         return 'error';
       } finally {
         setActionLoading(false);

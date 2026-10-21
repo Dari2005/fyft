@@ -54,7 +54,7 @@ export function useComments(partyId: string, userId: string | null): UseComments
       );
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Грешка при вчитување на коментари.');
+      setError(e instanceof Error ? e.message : 'Failed to load comments.');
     } finally {
       setLoading(false);
     }
@@ -96,7 +96,7 @@ export function useComments(partyId: string, userId: string | null): UseComments
         await fetchComments();
         return 'ok';
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Грешка при испраќање на коментар.');
+        setError(e instanceof Error ? e.message : 'Failed to send comment.');
         return 'error';
       } finally {
         setActionLoading(false);
@@ -115,7 +115,7 @@ export function useComments(partyId: string, userId: string | null): UseComments
         await fetchComments();
         return 'ok';
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Грешка при бришење на коментар.');
+        setError(e instanceof Error ? e.message : 'Failed to delete comment.');
         return 'error';
       } finally {
         setActionLoading(false);
