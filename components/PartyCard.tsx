@@ -35,7 +35,7 @@ export default function PartyCard({ party }: { party: Party }) {
             </View>
           ) : (
             <View style={styles.thumb}>
-              <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠' : '🎶'}</Text>
+              <Text style={styles.venue}>🎉</Text>
             </View>
           )}
           <View style={styles.info}>

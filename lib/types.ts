@@ -1,7 +1,5 @@
 /** Shared TypeScript types matching the Supabase schema in supabase/schema.sql */
 
-export type VenueType = 'house' | 'club';
-
 /** One media item attached to a party (stored in parties.media jsonb). */
 export interface PartyMedia {
   url: string;
@@ -25,7 +23,6 @@ export interface Party {
   organizer_id: string;
   title: string;
   description: string | null;
-  venue_type: VenueType;
   /** Free-text party type typed by the organizer (e.g. "Birthday", "Rave"). */
   party_type: string | null;
   media: PartyMedia[];

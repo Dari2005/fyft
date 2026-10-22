@@ -96,7 +96,6 @@ export default function PartyDetailScreen() {
           organizer_id: data.organizer_id,
           title: data.title,
           description: data.description,
-          venue_type: data.venue_type,
           party_type: data.party_type ?? null,
           media: parsePartyMedia(data.media),
           latitude: data.latitude,
@@ -242,14 +241,13 @@ export default function PartyDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.venueRow}>
-        <Text style={styles.venue}>{party.venue_type === 'house' ? '🏠 House party' : '🎶 Club party'}</Text>
-        {party.party_type && (
+      {party.party_type && (
+        <View style={styles.venueRow}>
           <View style={styles.typeTag}>
             <Text style={styles.typeTagText}>{party.party_type}</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
       <Text style={styles.title}>{party.title}</Text>
       <Text style={styles.meta}>
         {new Date(party.starts_at).toLocaleString('en-US', {
@@ -408,7 +406,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
-  venue: { color: Colors.primary, fontSize: 14, fontWeight: '700' },
   venueRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
   typeTag: {
     backgroundColor: Colors.primary,

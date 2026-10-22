@@ -68,7 +68,7 @@ export default function MapScreen() {
           <Marker
             key={p.id}
             coordinate={{ latitude: p.latitude, longitude: p.longitude }}
-            pinColor={p.venue_type === 'house' ? Colors.primary : Colors.success}
+            pinColor={Colors.primary}
           >
             <Callout
               onPress={() =>
@@ -78,7 +78,7 @@ export default function MapScreen() {
               <View style={styles.callout}>
                 <Text style={styles.calloutTitle}>{p.title}</Text>
                 <Text style={styles.calloutMeta}>
-                  {p.venue_type === 'house' ? '🏠 House' : '🎶 Club'} · tap for details →
+                  {p.party_type ? `${p.party_type} · ` : ''}tap for details →
                 </Text>
               </View>
             </Callout>

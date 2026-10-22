@@ -23,7 +23,7 @@ create table if not exists public.parties (
   organizer_id uuid not null references public.profiles (id) on delete cascade,
   title text not null check (char_length(title) between 3 and 120),
   description text,
-  venue_type text not null check (venue_type in ('house', 'club')),
+  venue_type text,
   media jsonb not null default '[]'::jsonb,
   party_type text,
   latitude double precision,

@@ -23,7 +23,7 @@ import { MAX_MEDIA_ITEMS, uploadPartyMedia } from '@/lib/media';
 import TextField from '@/components/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
-import type { PartyMedia, VenueType } from '@/lib/types';
+import type { PartyMedia } from '@/lib/types';
 
 /** Default map region: Skopje center. */
 const SKOPJE_REGION: Region = {
@@ -39,7 +39,6 @@ export default function CreatePartyScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [venueType, setVenueType] = useState<VenueType>('house');
   const [partyType, setPartyType] = useState('');
   const [startsAt, setStartsAt] = useState<Date>(() => {
     const d = new Date();
@@ -189,7 +188,6 @@ export default function CreatePartyScreen() {
         organizer_id: user.id,
         title: trimmedTitle,
         description: description.trim() === '' ? null : description.trim(),
-        venue_type: venueType,
         party_type: partyType.trim() === '' ? null : partyType.trim(),
         address: address.trim() === '' ? null : address.trim(),
         latitude: pin?.latitude ?? null,
@@ -205,7 +203,8 @@ export default function CreatePartyScreen() {
         .select('id')
         .single();
       // If a column is missing (migration not run yet), drop it and retry so
-      // publishing never breaks.
+      // publishing never breaks. Same for venue_type: the column is being
+      // retired — if the DB still requires it, satisfy it with a default.
       if (insertResult.error) {
         let dropped = false;
         for (const col of ['media', 'party_type']) {
@@ -213,6 +212,10 @@ export default function CreatePartyScreen() {
             delete payload[col];
             dropped = true;
           }
+        }
+        if (insertResult.error.message.includes('venue_type')) {
+          payload.venue_type = 'house';
+          dropped = true;
         }
         if (dropped) {
           insertResult = await supabase
@@ -279,28 +282,6 @@ export default function CreatePartyScreen() {
             </TouchableOpacity>
           )}
         </ScrollView>
-
-        <Text style={styles.label}>Venue type *</Text>
-        <View style={styles.venueRow}>
-          {(
-            [
-              { value: 'house', label: '🏠 House' },
-              { value: 'club', label: '🎶 Club' },
-            ] as { value: VenueType; label: string }[]
-          ).map((opt) => (
-            <TouchableOpacity
-              key={opt.value}
-              style={[styles.venueOption, venueType === opt.value && styles.venueSelected]}
-              onPress={() => setVenueType(opt.value)}
-            >
-              <Text
-                style={[styles.venueText, venueType === opt.value && styles.venueTextSelected]}
-              >
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         <TextField
           label="Party type"
@@ -392,19 +373,6 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.lg },
   notice: { color: Colors.primary, fontSize: 14, marginBottom: Spacing.md },
   label: { color: Colors.text, fontSize: 14, fontWeight: '600', marginBottom: Spacing.xs },
-  venueRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
-  venueOption: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-  },
-  venueSelected: { borderColor: Colors.primary, borderWidth: 2 },
-  venueText: { color: Colors.muted, fontSize: 15, fontWeight: '600' },
-  venueTextSelected: { color: Colors.text },
   mediaStrip: { marginBottom: Spacing.md },
   mediaThumbWrap: { marginRight: Spacing.sm, position: 'relative' },
   mediaThumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: Colors.surface },
