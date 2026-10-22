@@ -1,0 +1,10 @@
+PASTE_YOUR_GOOGLE_MAPS_API_KEY_HERE
+
+HOW TO USE (for Dari):
+1. Copy this file to: maps-key.txt
+2. Open maps-key.txt, delete this whole text, and paste ONLY your real
+   Google Maps API key (no quotes, no spaces around it).
+3. Every time you unpack a new Fyft zip: copy maps-key.txt next to .env
+   into the new folder — before eas build.
+4. NEVER commit maps-key.txt to git (it is gitignored). The example file
+   stays as documentation.
