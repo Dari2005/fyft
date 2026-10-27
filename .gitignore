@@ -43,3 +43,4 @@ yarn-error.*
 
 # local secrets — never commit
 maps-key.txt
+google-maps-key.local

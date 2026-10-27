@@ -1,62 +1,72 @@
-/**
- * Dynamic Expo config — reads the Google Maps API key from a LOCAL file
- * so the key never has to be pasted into app.json (and never lands in git).
- *
- * Where the key comes from (first hit wins):
- *   1. Env var GOOGLE_MAPS_KEY (or EXPO_PUBLIC_GOOGLE_MAPS_KEY)
- *   2. maps-key.txt in the project root — Dari restores this file next to .env
- *      every time he unpacks a new zip. The file must contain ONLY the key,
- *      nothing else, no quotes, no spaces around it.
- *   3. Fallback: the PASTE_YOUR_GOOGLE_MAPS_API_KEY_HERE placeholder —
- *      the build still succeeds, but the map tiles won't load.
- */
+// Fyft dynamic Expo config — Google Maps API key wiring + icon font embedding.
+//
+// The Maps key is NEVER committed (public repo!). It is resolved in this order:
+//   1. process.env.GOOGLE_MAPS_API_KEY -> EAS secret (cloud builds: `eas secret:create`,
+//      must be in the "development" environment — builds use --profile development)
+//   2. ./google-maps-key.local         -> local file, gitignored, restored next to .env
+//   3. placeholder                     -> map stays black, build still works
+//
+// The config logs (without printing the key) which source won, so starting
+// Metro locally shows whether the key is wired BEFORE spending a build.
+//
+// It also embeds the Ionicons font via the expo-font plugin: @expo/vector-icons
+// glyphs silently render blank in development builds when the font is only
+// loaded dynamically, so the font must ship inside the native build.
 const fs = require("fs");
 const path = require("path");
 
+const KEY_FILE = path.join(__dirname, "google-maps-key.local");
 const PLACEHOLDER = "PASTE_YOUR_GOOGLE_MAPS_API_KEY_HERE";
 
-function loadMapsKey() {
-  if (process.env.GOOGLE_MAPS_KEY) return process.env.GOOGLE_MAPS_KEY.trim();
-  if (process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY)
-    return process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY.trim();
-
-  const keyFile = path.join(__dirname, "maps-key.txt");
-  if (fs.existsSync(keyFile)) {
-    const key = fs.readFileSync(keyFile, "utf8").trim();
-    if (key) return key;
+function readMapsKey() {
+  if (process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY.trim()) {
+    console.log("[app.config] Google Maps key: from GOOGLE_MAPS_API_KEY env");
+    return process.env.GOOGLE_MAPS_API_KEY.trim();
   }
-
+  try {
+    if (fs.existsSync(KEY_FILE)) {
+      const k = fs.readFileSync(KEY_FILE, "utf8").trim();
+      if (k && k !== PLACEHOLDER) {
+        console.log("[app.config] Google Maps key: loaded from google-maps-key.local");
+        return k;
+      }
+    }
+  } catch (_) {
+    // fall through to placeholder
+  }
+  console.warn(
+    "[app.config] Google Maps key: NOT FOUND — placeholder used, map will be black. " +
+      "Create google-maps-key.local (key only, one line) next to .env and rebuild."
+  );
   return PLACEHOLDER;
 }
 
-const mapsKey = loadMapsKey();
-if (mapsKey === PLACEHOLDER) {
-  console.warn(
-    "[app.config] maps-key.txt not found — using placeholder Google Maps key; the map will render black. Add maps-key.txt (key only) in the project root and rebuild."
-  );
-}
+const IONICONS_FONT =
+  "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf";
 
 module.exports = ({ config }) => {
+  const key = readMapsKey();
   const ios = config.ios || {};
   const android = config.android || {};
+  const androidConfig = android.config || {};
+
+  const plugins = [...(config.plugins || [])];
+  if (!plugins.some((p) => (Array.isArray(p) ? p[0] : p) === "expo-font")) {
+    plugins.push(["expo-font", { fonts: [IONICONS_FONT] }]);
+  }
 
   return {
     ...config,
+    plugins,
     ios: {
       ...ios,
-      config: {
-        ...(ios.config || {}),
-        googleMapsApiKey: mapsKey,
-      },
+      config: { ...(ios.config || {}), googleMapsApiKey: key },
     },
     android: {
       ...android,
       config: {
-        ...(android.config || {}),
-        googleMaps: {
-          ...((android.config || {}).googleMaps || {}),
-          apiKey: mapsKey,
-        },
+        ...androidConfig,
+        googleMaps: { ...(androidConfig.googleMaps || {}), apiKey: key },
       },
     },
   };
