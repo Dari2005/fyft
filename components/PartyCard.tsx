@@ -1,7 +1,8 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Colors, Spacing } from '@/constants/theme';
-import type { Party } from '@/lib/types';
+import { formatDistance } from '@/lib/geo';
+import type { Party, PartyStats } from '@/lib/types';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -13,8 +14,25 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function PartyCard({ party }: { party: Party }) {
+interface PartyCardProps {
+  party: Party;
+  stats?: PartyStats;
+  /** Distance from the user in km, when location is known. */
+  distanceKm?: number | null;
+}
+
+export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) {
   const cover = party.media.find((m) => m.type === 'image');
+  const badges: string[] = [];
+  if (stats?.average != null) {
+    badges.push(`★ ${stats.average.toFixed(1)} (${stats.ratingCount})`);
+  }
+  if (distanceKm != null) {
+    badges.push(`📍 ${formatDistance(distanceKm)}`);
+  }
+  if (stats && stats.goingCount > 0) {
+    badges.push(`✅ ${stats.goingCount} going`);
+  }
   return (
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
       <Pressable style={styles.card}>
@@ -50,6 +68,11 @@ export default function PartyCard({ party }: { party: Party }) {
               {party.organizer_username ? `@${party.organizer_username}` : ''}
               {party.capacity != null ? ` · up to ${party.capacity} guests` : ''}
             </Text>
+            {badges.length > 0 && (
+              <Text style={styles.badges} numberOfLines={1}>
+                {badges.join('  ·  ')}
+              </Text>
+            )}
           </View>
         </View>
       </Pressable>
@@ -112,4 +135,5 @@ const styles = StyleSheet.create({
   title: { color: Colors.text, fontSize: 18, fontWeight: '800' },
   meta: { color: Colors.muted, fontSize: 14, marginTop: 3 },
   organizer: { color: Colors.muted, fontSize: 13, marginTop: 2 },
+  badges: { color: '#fbbf24', fontSize: 13, fontWeight: '600', marginTop: 2 },
 });

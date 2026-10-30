@@ -14,14 +14,18 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
 import { useComments } from '@/hooks/useComments';
+import { usePartyRating } from '@/hooks/usePartyRating';
 import { reportParty } from '@/lib/reports';
+import { uploadPartyMedia } from '@/lib/media';
 import PrimaryButton from '@/components/PrimaryButton';
+import Stars from '@/components/Stars';
 import { Colors, Spacing } from '@/constants/theme';
-import { parsePartyMedia, type Party } from '@/lib/types';
+import { parsePartyMedia, type Party, type PartyMedia } from '@/lib/types';
 
 const REPORT_REASONS = ['spam', 'fake party', 'inappropriate content', 'other'];
 
@@ -36,6 +40,21 @@ function GalleryVideo({ url }: { url: string }) {
     <VideoView
       player={player}
       style={styles.galleryItem}
+      nativeControls
+      contentFit="cover"
+    />
+  );
+}
+
+/** One video attached to a comment, with native playback controls. */
+function CommentVideo({ url }: { url: string }) {
+  const player = useVideoPlayer(url, (p) => {
+    p.loop = false;
+  });
+  return (
+    <VideoView
+      player={player}
+      style={styles.commentMedia}
       nativeControls
       contentFit="cover"
     />
@@ -77,7 +96,18 @@ export default function PartyDetailScreen() {
     deleteComment,
   } = useComments(id, user?.id ?? null);
 
+  const {
+    average: ratingAverage,
+    count: ratingCount,
+    myRating,
+    rate,
+    removeRating,
+  } = usePartyRating(id, user?.id ?? null);
+
   const [draft, setDraft] = useState('');
+  const [pendingMedia, setPendingMedia] =
+    useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [sending, setSending] = useState(false);
   const composerRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -186,16 +216,70 @@ export default function PartyDetailScreen() {
     ]);
   };
 
+  const handleRate = async (stars: number) => {
+    const result = await rate(stars);
+    if (result === 'logged-out') {
+      promptLogin('You must be signed in to rate a party.');
+    } else if (result === 'error') {
+      Alert.alert('Error', 'Rating failed. Try again.');
+    }
+  };
+
+  const handleRemoveRating = async () => {
+    const result = await removeRating();
+    if (result === 'error') {
+      Alert.alert('Error', 'Could not remove your rating.');
+    }
+  };
+
+  /** Pick ONE photo/video to attach to the comment being written. */
+  const pickCommentMedia = async () => {
+    if (!user) {
+      promptLogin('You must be signed in to comment.');
+      return;
+    }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        'Permission needed',
+        'Allow photo access so you can attach pictures and videos.'
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'],
+      allowsMultipleSelection: false,
+      quality: 0.8,
+      videoMaxDuration: 60,
+    });
+    if (!result.canceled) {
+      setPendingMedia(result.assets[0]);
+    }
+  };
+
   const handleSendComment = async () => {
     if (!user) {
       promptLogin('You must be signed in to comment.');
       return;
     }
-    const result = await addComment(draft);
-    if (result === 'ok') {
-      setDraft('');
-    } else if (result === 'error' && !commentsError) {
-      Alert.alert('Error', 'Comment not sent. Try again.');
+    setSending(true);
+    try {
+      let media: PartyMedia | null = null;
+      if (pendingMedia) {
+        const uploaded = await uploadPartyMedia(user.id, [pendingMedia]);
+        media = uploaded[0] ?? null;
+      }
+      const result = await addComment(draft, media);
+      if (result === 'ok') {
+        setDraft('');
+        setPendingMedia(null);
+      } else if (result === 'error' && !commentsError) {
+        Alert.alert('Error', 'Comment not sent. Try again.');
+      }
+    } catch {
+      Alert.alert('Error', 'Upload failed. Try again.');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -336,6 +420,34 @@ export default function PartyDetailScreen() {
       </View>
       {rsvpError && <Text style={styles.error}>{rsvpError}</Text>}
 
+      <View style={styles.ratingBox}>
+        <View style={styles.ratingHeader}>
+          <Text style={styles.ratingTitle}>⭐ Party rating</Text>
+          <Text style={styles.ratingSummary}>
+            {ratingAverage != null
+              ? `${ratingAverage.toFixed(1)} · ${ratingCount} rating${ratingCount === 1 ? '' : 's'}`
+              : 'No ratings yet'}
+          </Text>
+        </View>
+        {user?.id === party.organizer_id ? (
+          <Text style={styles.ratingHint}>You cannot rate your own party.</Text>
+        ) : (
+          <>
+            <Stars value={myRating ?? 0} onRate={handleRate} size={30} />
+            <Text style={styles.ratingHint}>
+              {myRating
+                ? `Your rating: ${myRating}/5 — tap to change`
+                : 'Tap a star to rate this party'}
+            </Text>
+            {myRating != null && (
+              <TouchableOpacity onPress={handleRemoveRating}>
+                <Text style={styles.ratingRemove}>Remove my rating</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+      </View>
+
       <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
         <Text style={styles.reportText}>🚩 Report this party</Text>
       </TouchableOpacity>
@@ -357,12 +469,38 @@ export default function PartyDetailScreen() {
           comments.map((comment) => (
             <View key={comment.id} style={styles.commentCard}>
               <View style={styles.commentHeader}>
-                <Text style={styles.commentAuthor}>
-                  @{comment.author_username ?? 'user'}
-                </Text>
+                <View style={styles.commentAuthorRow}>
+                  {comment.author_avatar_url ? (
+                    <Image
+                      source={{ uri: comment.author_avatar_url }}
+                      style={styles.commentAvatar}
+                    />
+                  ) : (
+                    <View style={[styles.commentAvatar, styles.commentAvatarFallback]}>
+                      <Text style={styles.commentAvatarText}>
+                        {(comment.author_username ?? 'u').charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={styles.commentAuthor}>
+                    @{comment.author_username ?? 'user'}
+                  </Text>
+                </View>
                 <Text style={styles.commentTime}>{formatCommentTime(comment.created_at)}</Text>
               </View>
-              <Text style={styles.commentBody}>{comment.body}</Text>
+              {!!comment.body && (
+                <Text style={styles.commentBody}>{comment.body}</Text>
+              )}
+              {comment.media_url &&
+                (comment.media_type === 'video' ? (
+                  <CommentVideo url={comment.media_url} />
+                ) : (
+                  <Image
+                    source={{ uri: comment.media_url }}
+                    style={styles.commentMedia}
+                    resizeMode="cover"
+                  />
+                ))}
               {user?.id === comment.user_id && (
                 <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
                   <Text style={styles.commentDelete}>Delete</Text>
@@ -390,12 +528,44 @@ export default function PartyDetailScreen() {
               }
             }}
           />
-          <PrimaryButton
-            title="Send"
-            onPress={handleSendComment}
-            loading={commentActionLoading}
-            disabled={draft.trim().length === 0}
-          />
+          {pendingMedia && (
+            <View style={styles.pendingRow}>
+              {pendingMedia.type === 'video' ? (
+                <Text style={styles.pendingText}>
+                  🎬 Video attached
+                </Text>
+              ) : (
+                <Image
+                  source={{ uri: pendingMedia.uri }}
+                  style={styles.pendingThumb}
+                />
+              )}
+              <Text style={styles.pendingText} numberOfLines={1}>
+                {pendingMedia.type === 'video'
+                  ? 'Ready to send'
+                  : 'Photo attached'}
+              </Text>
+              <TouchableOpacity onPress={() => setPendingMedia(null)}>
+                <Text style={styles.pendingRemove}>✕ Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <View style={styles.composerActions}>
+            <TouchableOpacity
+              onPress={pickCommentMedia}
+              style={styles.attachButton}
+            >
+              <Text style={styles.attachText}>📷 Photo / Video</Text>
+            </TouchableOpacity>
+            <View style={styles.sendButton}>
+              <PrimaryButton
+                title="Send"
+                onPress={handleSendComment}
+                loading={sending || commentActionLoading}
+                disabled={draft.trim().length === 0 && !pendingMedia}
+              />
+            </View>
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -493,9 +663,42 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   commentAuthor: { color: Colors.primary, fontSize: 14, fontWeight: '700' },
+  commentAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  commentAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.border },
+  commentAvatarFallback: {
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  commentAvatarText: { color: Colors.primaryText, fontSize: 12, fontWeight: '800' },
   commentTime: { color: Colors.muted, fontSize: 12 },
   commentBody: { color: Colors.text, fontSize: 15, lineHeight: 22 },
+  commentMedia: {
+    width: '100%',
+    height: 210,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    marginTop: Spacing.xs,
+  },
   commentDelete: { color: Colors.danger, fontSize: 13, marginTop: Spacing.xs },
+  ratingBox: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+    gap: Spacing.xs,
+  },
+  ratingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ratingTitle: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+  ratingSummary: { color: Colors.muted, fontSize: 14 },
+  ratingHint: { color: Colors.muted, fontSize: 13 },
+  ratingRemove: { color: Colors.danger, fontSize: 13, marginTop: 2 },
   emptyComments: {
     color: Colors.muted,
     fontSize: 15,
@@ -503,6 +706,36 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
   },
   composer: { marginTop: Spacing.sm },
+  pendingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: Spacing.sm,
+  },
+  pendingThumb: { width: 44, height: 44, borderRadius: 8 },
+  pendingText: { color: Colors.text, fontSize: 14, flexShrink: 1 },
+  pendingRemove: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
+  composerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  attachButton: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
+  },
+  attachText: { color: Colors.text, fontSize: 14, fontWeight: '600' },
+  sendButton: { flex: 1 },
   composerInput: {
     backgroundColor: Colors.surface,
     color: Colors.text,

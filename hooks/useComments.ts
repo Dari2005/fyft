@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { PartyComment } from '@/lib/types';
+import type { PartyComment, PartyMedia } from '@/lib/types';
 
 const MAX_BODY_LENGTH = 1000;
 
@@ -10,11 +10,14 @@ interface UseCommentsResult {
   actionLoading: boolean;
   error: string | null;
   /**
-   * Add a comment. Returns 'logged-out' when there is no signed-in user
-   * (caller redirects to the auth screen), 'ok' on success, 'error' on
-   * validation failure or insert failure.
+   * Add a comment: text, one photo/video, or both. Returns 'logged-out'
+   * when there is no signed-in user (caller redirects to the auth
+   * screen), 'ok' on success, 'error' on validation or insert failure.
    */
-  addComment: (body: string) => Promise<'logged-out' | 'ok' | 'error'>;
+  addComment: (
+    body: string,
+    media?: PartyMedia | null
+  ) => Promise<'logged-out' | 'ok' | 'error'>;
   deleteComment: (id: string) => Promise<'ok' | 'error'>;
   refresh: () => Promise<void>;
 }
@@ -38,7 +41,7 @@ export function useComments(partyId: string, userId: string | null): UseComments
     try {
       const { data, error: qErr } = await supabase
         .from('comments')
-        .select('*, profiles!comments_user_id_fkey(username)')
+        .select('*, profiles!comments_user_id_fkey(username, avatar_url)')
         .eq('party_id', partyId)
         .order('created_at', { ascending: false });
       if (qErr) throw qErr;
@@ -48,8 +51,11 @@ export function useComments(partyId: string, userId: string | null): UseComments
           party_id: row.party_id,
           user_id: row.user_id,
           body: row.body,
+          media_url: row.media_url ?? null,
+          media_type: row.media_type ?? null,
           created_at: row.created_at,
           author_username: row.profiles?.username ?? undefined,
+          author_avatar_url: row.profiles?.avatar_url ?? null,
         }))
       );
       setError(null);
@@ -82,16 +88,24 @@ export function useComments(partyId: string, userId: string | null): UseComments
   }, [partyId, fetchComments]);
 
   const addComment = useCallback(
-    async (body: string): Promise<'logged-out' | 'ok' | 'error'> => {
+    async (
+      body: string,
+      media?: PartyMedia | null
+    ): Promise<'logged-out' | 'ok' | 'error'> => {
       if (!userId) return 'logged-out';
       const trimmed = body.trim();
-      if (trimmed.length === 0 || trimmed.length > MAX_BODY_LENGTH) return 'error';
+      if (trimmed.length > MAX_BODY_LENGTH) return 'error';
+      if (trimmed.length === 0 && !media) return 'error';
       setActionLoading(true);
       setError(null);
       try {
-        const { error: insErr } = await supabase
-          .from('comments')
-          .insert({ party_id: partyId, user_id: userId, body: trimmed });
+        const { error: insErr } = await supabase.from('comments').insert({
+          party_id: partyId,
+          user_id: userId,
+          body: trimmed,
+          media_url: media?.url ?? null,
+          media_type: media?.type ?? null,
+        });
         if (insErr) throw insErr;
         await fetchComments();
         return 'ok';
