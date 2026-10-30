@@ -1,17 +1,13 @@
-// Fyft dynamic Expo config — Google Maps API key wiring + icon font embedding.
+// Fyft dynamic Expo config — Google Maps API key wiring.
 //
 // The Maps key is NEVER committed (public repo!). It is resolved in this order:
-//   1. process.env.GOOGLE_MAPS_API_KEY -> EAS secret (cloud builds: `eas secret:create`,
-//      must be in the "development" environment — builds use --profile development)
+//   1. process.env.GOOGLE_MAPS_API_KEY -> EAS env var (cloud builds; must be in
+//      the "development" environment — builds use --profile development)
 //   2. ./google-maps-key.local         -> local file, gitignored, restored next to .env
 //   3. placeholder                     -> map stays black, build still works
 //
 // The config logs (without printing the key) which source won, so starting
 // Metro locally shows whether the key is wired BEFORE spending a build.
-//
-// It also embeds the Ionicons font via the expo-font plugin: @expo/vector-icons
-// glyphs silently render blank in development builds when the font is only
-// loaded dynamically, so the font must ship inside the native build.
 const fs = require("fs");
 const path = require("path");
 
@@ -41,23 +37,14 @@ function readMapsKey() {
   return PLACEHOLDER;
 }
 
-const IONICONS_FONT =
-  "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf";
-
 module.exports = ({ config }) => {
   const key = readMapsKey();
   const ios = config.ios || {};
   const android = config.android || {};
   const androidConfig = android.config || {};
 
-  const plugins = [...(config.plugins || [])];
-  if (!plugins.some((p) => (Array.isArray(p) ? p[0] : p) === "expo-font")) {
-    plugins.push(["expo-font", { fonts: [IONICONS_FONT] }]);
-  }
-
   return {
     ...config,
-    plugins,
     ios: {
       ...ios,
       config: { ...(ios.config || {}), googleMapsApiKey: key },
