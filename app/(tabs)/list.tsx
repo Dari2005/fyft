@@ -23,10 +23,10 @@ import { Colors, Spacing } from '@/constants/theme';
 type SortMode = 'soonest' | 'nearest' | 'going';
 type TimeFilter = 'all' | 'today' | 'weekend';
 
-const SORTS: { key: SortMode; label: string }[] = [
-  { key: 'soonest', label: '🕒 Soonest' },
-  { key: 'nearest', label: '📍 Near me' },
-  { key: 'going', label: '🔥 Most going' },
+const SORTS: { key: SortMode; icon: string; label: string }[] = [
+  { key: 'soonest', icon: '🕒', label: 'Soonest' },
+  { key: 'nearest', icon: '📍', label: 'Near me' },
+  { key: 'going', icon: '🔥', label: 'Most going' },
 ];
 
 const TIMES: { key: TimeFilter; label: string }[] = [
@@ -193,9 +193,17 @@ export default function PartyListScreen() {
             onPress={() => handleSort(s.key)}
             style={[styles.chip, sort === s.key && styles.chipActive]}
           >
-            <Text style={[styles.chipText, sort === s.key && styles.chipTextActive]}>
-              {s.key === 'nearest' && locating ? '📍 Locating…' : s.label}
-            </Text>
+            {/* Icon and label are separate Text nodes on purpose: with the
+                emoji inside the same string, the label stopped rendering
+                on Android once the chip's active style kicked in. */}
+            <View style={styles.chipInner}>
+              <Text style={styles.chipText}>{s.icon}</Text>
+              <Text
+                style={[styles.chipText, sort === s.key && styles.chipTextActive]}
+              >
+                {s.key === 'nearest' && locating ? 'Locating…' : s.label}
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
         <View style={styles.chipDivider} />
@@ -303,6 +311,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipInner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   chipText: { color: Colors.muted, fontSize: 13, fontWeight: '600' },
   chipTextActive: { color: Colors.primaryText },
   chipDivider: {
