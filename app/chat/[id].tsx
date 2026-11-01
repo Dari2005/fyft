@@ -196,6 +196,16 @@ export default function PartyChatScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
+      ) : comments.length === 0 ? (
+        // Empty state lives outside the inverted FlatList on purpose:
+        // inside an inverted list it inherits the list's flip transform
+        // and renders mirrored on Android.
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>No messages yet 💬</Text>
+          <Text style={styles.emptyText}>
+            Be the first to say something about this party!
+          </Text>
+        </View>
       ) : (
         <FlatList
           inverted
@@ -203,14 +213,6 @@ export default function PartyChatScreen() {
           keyExtractor={(c) => c.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No messages yet 💬</Text>
-              <Text style={styles.emptyText}>
-                Be the first to say something about this party!
-              </Text>
-            </View>
-          }
         />
       )}
       {error && <Text style={styles.error}>{error}</Text>}
@@ -304,7 +306,12 @@ const styles = StyleSheet.create({
   time: { color: Colors.muted, fontSize: 11, alignSelf: 'flex-end', marginTop: 2 },
   timeMine: { color: 'rgba(255,255,255,0.75)' },
   delete: { color: Colors.danger, fontSize: 12, alignSelf: 'flex-end' },
-  empty: { alignItems: 'center', marginTop: Spacing.xl, transform: [{ scaleY: -1 }] },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+  },
   emptyTitle: { color: Colors.text, fontSize: 17, fontWeight: '700' },
   emptyText: { color: Colors.muted, fontSize: 14, marginTop: Spacing.xs, textAlign: 'center' },
   error: {
