@@ -18,7 +18,6 @@ import { useParties } from '@/hooks/useParties';
 import { usePartyStats } from '@/hooks/usePartyStats';
 import { haversineKm } from '@/lib/geo';
 import PartyCard from '@/components/PartyCard';
-import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 
 type SortMode = 'soonest' | 'nearest' | 'rated' | 'going';
@@ -173,18 +172,6 @@ export default function PartyListScreen() {
         <Text style={styles.heading}>Parties in Skopje</Text>
       </View>
 
-      <View style={styles.actions}>
-        {user ? (
-          <Link href="/create" asChild style={styles.grow}>
-            <PrimaryButton title="＋ New Party" onPress={() => {}} />
-          </Link>
-        ) : (
-          <Link href="/auth" asChild style={styles.grow}>
-            <PrimaryButton title="Sign in to publish a party" onPress={() => {}} />
-          </Link>
-        )}
-      </View>
-
       <View style={styles.searchWrap}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
@@ -273,6 +260,14 @@ export default function PartyListScreen() {
           )
         }
       />
+
+      <Link href={user ? '/create' : '/auth'} asChild>
+        <TouchableOpacity style={styles.fab} activeOpacity={0.85}>
+          <Text style={styles.fabText}>
+            {user ? '＋ New Party' : '＋ Sign in to publish'}
+          </Text>
+        </TouchableOpacity>
+      </Link>
     </View>
   );
 }
@@ -282,14 +277,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs },
   brand: { color: Colors.primaryBright, fontSize: 20, fontWeight: '800' },
   heading: { color: Colors.text, fontSize: 30, fontWeight: '800', marginTop: 2 },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  grow: { flex: 1 },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -333,7 +320,22 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginHorizontal: 2,
   },
-  list: { padding: Spacing.md, paddingBottom: Spacing.xl },
+  list: { padding: Spacing.md, paddingBottom: 96 },
+  fab: {
+    position: 'absolute',
+    left: Spacing.md,
+    bottom: Spacing.lg,
+    backgroundColor: Colors.primary,
+    borderRadius: 26,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  fabText: { color: Colors.primaryText, fontSize: 15, fontWeight: '800' },
   empty: { alignItems: 'center', marginTop: Spacing.xl },
   emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
   emptyText: { color: Colors.muted, fontSize: 14, marginTop: Spacing.xs, textAlign: 'center' },
