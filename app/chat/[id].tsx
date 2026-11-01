@@ -4,8 +4,10 @@ import {
   Alert,
   FlatList,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -60,6 +62,24 @@ export default function PartyChatScreen() {
   const [pendingMedia, setPendingMedia] =
     useState<ImagePicker.ImagePickerAsset | null>(null);
   const [sending, setSending] = useState(false);
+
+  // On Android the window does not resize for the keyboard in this build,
+  // so the composer would stay hidden behind it. Track the keyboard height
+  // and pad the screen by it, lifting the composer (and the list) with it.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const show = Keyboard.addListener('keyboardDidShow', (e) =>
+      setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hide = Keyboard.addListener('keyboardDidHide', () =>
+      setKeyboardHeight(0)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // Header shows which party's chat this is.
   useEffect(() => {
@@ -156,7 +176,11 @@ export default function PartyChatScreen() {
               </Text>
             </View>
           ))}
-        <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
+        <Pressable
+          style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}
+          onLongPress={mine ? () => handleDelete(item.id) : undefined}
+          delayLongPress={400}
+        >
           {!mine && (
             <Text style={styles.author}>@{item.author_username ?? 'user'}</Text>
           )}
@@ -176,19 +200,14 @@ export default function PartyChatScreen() {
           <Text style={[styles.time, mine && styles.timeMine]}>
             {formatTime(item.created_at)}
           </Text>
-          {mine && (
-            <TouchableOpacity onPress={() => handleDelete(item.id)}>
-              <Text style={styles.delete}>Delete</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        </Pressable>
       </View>
     );
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { paddingBottom: keyboardHeight }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
@@ -305,7 +324,6 @@ const styles = StyleSheet.create({
   },
   time: { color: Colors.muted, fontSize: 11, alignSelf: 'flex-end', marginTop: 2 },
   timeMine: { color: 'rgba(255,255,255,0.75)' },
-  delete: { color: Colors.danger, fontSize: 12, alignSelf: 'flex-end' },
   empty: {
     flex: 1,
     alignItems: 'center',
