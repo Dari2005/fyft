@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Callout, Marker, type Region } from 'react-native-maps';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import * as Location from 'expo-location';
 import { useParties } from '@/hooks/useParties';
 import { Colors, Spacing } from '@/constants/theme';
@@ -20,6 +20,13 @@ export default function MapScreen() {
   const { parties, loading, error } = useParties();
   const [region, setRegion] = useState<Region | null>(null);
   const [showsUserLocation, setShowsUserLocation] = useState(false);
+  // The native Google MapView must exist ONLY while this screen is focused:
+  // when navigation detaches/reattaches the tab (or a stack screen covers
+  // it), a live MapView crashes Android with "child already has a parent".
+  // While unfocused we render an empty placeholder; the camera position is
+  // kept in lastRegion so the map reopens where the user left it.
+  const isFocused = useIsFocused();
+  const [lastRegion, setLastRegion] = useState<Region | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -59,32 +66,37 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        initialRegion={region}
-        showsUserLocation={showsUserLocation}
-      >
-        {pinned.map((p) => (
-          <Marker
-            key={p.id}
-            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
-            pinColor={Colors.primary}
-          >
-            <Callout
-              onPress={() =>
-                router.push({ pathname: '/party/[id]', params: { id: p.id } })
-              }
+      {isFocused ? (
+        <MapView
+          style={styles.map}
+          initialRegion={lastRegion ?? region}
+          showsUserLocation={showsUserLocation}
+          onRegionChangeComplete={setLastRegion}
+        >
+          {pinned.map((p) => (
+            <Marker
+              key={p.id}
+              coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+              pinColor={Colors.primary}
             >
-              <View style={styles.callout}>
-                <Text style={styles.calloutTitle}>{p.title}</Text>
-                <Text style={styles.calloutMeta}>
-                  {p.party_type ? `${p.party_type} · ` : ''}tap for details →
-                </Text>
-              </View>
-            </Callout>
-          </Marker>
-        ))}
-      </MapView>
+              <Callout
+                onPress={() =>
+                  router.push({ pathname: '/party/[id]', params: { id: p.id } })
+                }
+              >
+                <View style={styles.callout}>
+                  <Text style={styles.calloutTitle}>{p.title}</Text>
+                  <Text style={styles.calloutMeta}>
+                    {p.party_type ? `${p.party_type} · ` : ''}tap for details →
+                  </Text>
+                </View>
+              </Callout>
+            </Marker>
+          ))}
+        </MapView>
+      ) : (
+        <View style={styles.map} />
+      )}
 
       {error && (
         <View style={styles.banner}>
