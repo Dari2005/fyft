@@ -212,7 +212,7 @@ export default function PartyDetailScreen() {
         </TouchableOpacity>
       )}
       {party.organizer_username && (
-        <Text style={styles.meta}>Organizer: @{party.organizer_username}</Text>
+        <Text style={styles.meta}>@{party.organizer_username}</Text>
       )}
       {party.description && <Text style={styles.description}>{party.description}</Text>}
 
