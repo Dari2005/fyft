@@ -67,12 +67,14 @@ export function useComments(partyId: string, userId: string | null): UseComments
   }, [partyId]);
 
   // Initial load + realtime subscription for live comment updates.
+  // Unique channel suffix per effect run — see useRsvps for why (reusing a
+  // still-subscribed channel name throws when adding .on() callbacks).
   useEffect(() => {
     setLoading(true);
     fetchComments();
 
     const channel = supabase
-      .channel(`comments-party-${partyId}`)
+      .channel(`comments-party-${partyId}-${Math.random().toString(36).slice(2, 9)}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'comments', filter: `party_id=eq.${partyId}` },

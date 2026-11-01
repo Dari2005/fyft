@@ -76,12 +76,16 @@ export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult
   }, [partyId, userId]);
 
   // Initial load + realtime subscription for live capacity updates.
+  // The channel name gets a unique suffix per effect run: when the effect
+  // re-runs (e.g. auth resolves and userId changes), supabase.channel(name)
+  // would otherwise return the previous still-subscribed channel and
+  // adding .on() callbacks to it throws.
   useEffect(() => {
     setLoading(true);
     fetchRsvps();
 
     const channel = supabase
-      .channel(`rsvps-party-${partyId}`)
+      .channel(`rsvps-party-${partyId}-${Math.random().toString(36).slice(2, 9)}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'rsvps', filter: `party_id=eq.${partyId}` },
