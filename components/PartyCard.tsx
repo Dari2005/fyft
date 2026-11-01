@@ -61,10 +61,11 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
               {formatDate(party.starts_at)}
               {party.address ? ` · ${party.address}` : ''}
             </Text>
-            <Text style={styles.organizer} numberOfLines={1}>
-              {party.organizer_username ? `@${party.organizer_username}` : ''}
-              {party.capacity != null ? ` · up to ${party.capacity} guests` : ''}
-            </Text>
+            {party.capacity != null && (
+              <Text style={styles.organizer} numberOfLines={1}>
+                {`up to ${party.capacity} guests`}
+              </Text>
+            )}
             {badges.length > 0 && (
               <Text style={styles.badges} numberOfLines={1}>
                 {badges.join('  ·  ')}

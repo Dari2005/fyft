@@ -211,9 +211,6 @@ export default function PartyDetailScreen() {
           <Text style={styles.navText}>🧭 Navigate to the party</Text>
         </TouchableOpacity>
       )}
-      {party.organizer_username && (
-        <Text style={styles.meta}>@{party.organizer_username}</Text>
-      )}
       {party.description && <Text style={styles.description}>{party.description}</Text>}
 
       {party.media.length > 0 && (
