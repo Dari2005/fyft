@@ -19,6 +19,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth" options={{ title: 'Sign In', presentation: 'modal' }} />
         <Stack.Screen name="create" options={{ title: 'New Party' }} />
         <Stack.Screen name="party/[id]" options={{ title: 'Party' }} />
+        <Stack.Screen name="chat/[id]" options={{ title: 'Party Chat' }} />
       </Stack>
     </AuthProvider>
   );

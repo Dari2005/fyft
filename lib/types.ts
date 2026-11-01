@@ -56,20 +56,8 @@ export interface PartyComment {
   author_avatar_url?: string | null;
 }
 
-/** One user's 1-5 star rating of a party (party_ratings table). */
-export interface PartyRating {
-  party_id: string;
-  user_id: string;
-  rating: number;
-  created_at: string;
-}
-
 /** Aggregated per-party numbers shown on cards and used for sorting. */
 export interface PartyStats {
-  /** Average star rating, or null when nobody rated yet. */
-  average: number | null;
-  /** How many users rated. */
-  ratingCount: number;
   /** How many users RSVP'd "going". */
   goingCount: number;
 }

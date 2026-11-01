@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -8,24 +8,19 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
 import { useComments } from '@/hooks/useComments';
-import { usePartyRating } from '@/hooks/usePartyRating';
 import { reportParty } from '@/lib/reports';
-import { uploadPartyMedia } from '@/lib/media';
 import PrimaryButton from '@/components/PrimaryButton';
-import Stars from '@/components/Stars';
 import { Colors, Spacing } from '@/constants/theme';
-import { parsePartyMedia, type Party, type PartyMedia } from '@/lib/types';
+import { parsePartyMedia, type Party } from '@/lib/types';
 
 const REPORT_REASONS = ['spam', 'fake party', 'inappropriate content', 'other'];
 
@@ -46,30 +41,7 @@ function GalleryVideo({ url }: { url: string }) {
   );
 }
 
-/** One video attached to a comment, with native playback controls. */
-function CommentVideo({ url }: { url: string }) {
-  const player = useVideoPlayer(url, (p) => {
-    p.loop = false;
-  });
-  return (
-    <VideoView
-      player={player}
-      style={styles.commentMedia}
-      nativeControls
-      contentFit="cover"
-    />
-  );
-}
-
-const formatCommentTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-/** Party detail screen: info, RSVP with live capacity, and report button. */
+/** Party detail screen: info, RSVP with live capacity, report button. */
 export default function PartyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
@@ -87,28 +59,9 @@ export default function PartyDetailScreen() {
     toggleRsvp,
   } = useRsvps(id, user?.id ?? null);
 
-  const {
-    comments,
-    loading: commentsLoading,
-    actionLoading: commentActionLoading,
-    error: commentsError,
-    addComment,
-    deleteComment,
-  } = useComments(id, user?.id ?? null);
-
-  const {
-    average: ratingAverage,
-    count: ratingCount,
-    myRating,
-    rate,
-    removeRating,
-  } = usePartyRating(id, user?.id ?? null);
-
-  const [draft, setDraft] = useState('');
-  const [pendingMedia, setPendingMedia] =
-    useState<ImagePicker.ImagePickerAsset | null>(null);
-  const [sending, setSending] = useState(false);
-  const composerRef = useRef<TextInput>(null);
+  // Comments live in the party chat screen now — here we only need the count
+  // for the "Join chat" button.
+  const { comments } = useComments(id, user?.id ?? null);
 
   useEffect(() => {
     const load = async () => {
@@ -203,96 +156,6 @@ export default function PartyDetailScreen() {
             Alert.alert('Error', 'Delete failed. Try again.');
           } else {
             router.replace('/');
-          }
-        },
-      },
-    ]);
-  };
-
-  const promptLogin = (message: string) => {
-    Alert.alert('Sign In', message, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign In', onPress: () => router.push('/auth') },
-    ]);
-  };
-
-  const handleRate = async (stars: number) => {
-    const result = await rate(stars);
-    if (result === 'logged-out') {
-      promptLogin('You must be signed in to rate a party.');
-    } else if (result === 'error') {
-      Alert.alert('Error', 'Rating failed. Try again.');
-    }
-  };
-
-  const handleRemoveRating = async () => {
-    const result = await removeRating();
-    if (result === 'error') {
-      Alert.alert('Error', 'Could not remove your rating.');
-    }
-  };
-
-  /** Pick ONE photo/video to attach to the comment being written. */
-  const pickCommentMedia = async () => {
-    if (!user) {
-      promptLogin('You must be signed in to comment.');
-      return;
-    }
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(
-        'Permission needed',
-        'Allow photo access so you can attach pictures and videos.'
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsMultipleSelection: false,
-      quality: 0.8,
-      videoMaxDuration: 60,
-    });
-    if (!result.canceled) {
-      setPendingMedia(result.assets[0]);
-    }
-  };
-
-  const handleSendComment = async () => {
-    if (!user) {
-      promptLogin('You must be signed in to comment.');
-      return;
-    }
-    setSending(true);
-    try {
-      let media: PartyMedia | null = null;
-      if (pendingMedia) {
-        const uploaded = await uploadPartyMedia(user.id, [pendingMedia]);
-        media = uploaded[0] ?? null;
-      }
-      const result = await addComment(draft, media);
-      if (result === 'ok') {
-        setDraft('');
-        setPendingMedia(null);
-      } else if (result === 'error' && !commentsError) {
-        Alert.alert('Error', 'Comment not sent. Try again.');
-      }
-    } catch {
-      Alert.alert('Error', 'Upload failed. Try again.');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleDeleteComment = (commentId: string) => {
-    Alert.alert('Delete this comment?', 'This action cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const result = await deleteComment(commentId);
-          if (result === 'error') {
-            Alert.alert('Error', 'Delete failed. Try again.');
           }
         },
       },
@@ -420,32 +283,17 @@ export default function PartyDetailScreen() {
       </View>
       {rsvpError && <Text style={styles.error}>{rsvpError}</Text>}
 
-      <View style={styles.ratingBox}>
-        <View style={styles.ratingHeader}>
-          <Text style={styles.ratingTitle}>⭐ Party rating</Text>
-          <Text style={styles.ratingSummary}>
-            {ratingAverage != null
-              ? `${ratingAverage.toFixed(1)} · ${ratingCount} rating${ratingCount === 1 ? '' : 's'}`
-              : 'No ratings yet'}
-          </Text>
-        </View>
-        {user?.id === party.organizer_id ? (
-          <Text style={styles.ratingHint}>You cannot rate your own party.</Text>
-        ) : (
-          <>
-            <Stars value={myRating ?? 0} onRate={handleRate} size={30} />
-            <Text style={styles.ratingHint}>
-              {myRating
-                ? `Your rating: ${myRating}/5 — tap to change`
-                : 'Tap a star to rate this party'}
-            </Text>
-            {myRating != null && (
-              <TouchableOpacity onPress={handleRemoveRating}>
-                <Text style={styles.ratingRemove}>Remove my rating</Text>
-              </TouchableOpacity>
-            )}
-          </>
-        )}
+      <View style={styles.chatButton}>
+        <PrimaryButton
+          title={
+            comments.length > 0
+              ? `💬 Join party chat (${comments.length})`
+              : '💬 Join party chat'
+          }
+          onPress={() =>
+            router.push({ pathname: '/chat/[id]', params: { id: party.id } })
+          }
+        />
       </View>
 
       <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
@@ -453,121 +301,25 @@ export default function PartyDetailScreen() {
       </TouchableOpacity>
 
       {user?.id === party.organizer_id && (
-        <TouchableOpacity onPress={handleDeletePress} style={styles.deleteButton}>
-          <Text style={styles.deleteText}>🗑️ Delete this party</Text>
-        </TouchableOpacity>
-      )}
-
-      <View style={styles.commentsSection}>
-        <Text style={styles.sectionTitle}>💬 Comments ({comments.length})</Text>
-
-        {commentsLoading ? (
-          <ActivityIndicator size="small" color={Colors.primary} />
-        ) : comments.length === 0 ? (
-          <Text style={styles.emptyComments}>No comments yet. Be the first! 💬</Text>
-        ) : (
-          comments.map((comment) => (
-            <View key={comment.id} style={styles.commentCard}>
-              <View style={styles.commentHeader}>
-                <View style={styles.commentAuthorRow}>
-                  {comment.author_avatar_url ? (
-                    <Image
-                      source={{ uri: comment.author_avatar_url }}
-                      style={styles.commentAvatar}
-                    />
-                  ) : (
-                    <View style={[styles.commentAvatar, styles.commentAvatarFallback]}>
-                      <Text style={styles.commentAvatarText}>
-                        {(comment.author_username ?? 'u').charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                  <Text style={styles.commentAuthor}>
-                    @{comment.author_username ?? 'user'}
-                  </Text>
-                </View>
-                <Text style={styles.commentTime}>{formatCommentTime(comment.created_at)}</Text>
-              </View>
-              {!!comment.body && (
-                <Text style={styles.commentBody}>{comment.body}</Text>
-              )}
-              {comment.media_url &&
-                (comment.media_type === 'video' ? (
-                  <CommentVideo url={comment.media_url} />
-                ) : (
-                  <Image
-                    source={{ uri: comment.media_url }}
-                    style={styles.commentMedia}
-                    resizeMode="cover"
-                  />
-                ))}
-              {user?.id === comment.user_id && (
-                <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
-                  <Text style={styles.commentDelete}>Delete</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))
-        )}
-        {commentsError && <Text style={styles.error}>{commentsError}</Text>}
-
-        <View style={styles.composer}>
-          <TextInput
-            ref={composerRef}
-            style={styles.composerInput}
-            placeholder="Write a comment..."
-            placeholderTextColor={Colors.muted}
-            value={draft}
-            onChangeText={setDraft}
-            multiline
-            maxLength={1000}
-            onFocus={() => {
-              if (!user) {
-                composerRef.current?.blur();
-                promptLogin('You must be signed in to comment.');
+        <View style={styles.organizerRow}>
+          <View style={styles.rsvpButton}>
+            <PrimaryButton
+              title="✏️ Edit party"
+              variant="outline"
+              onPress={() =>
+                router.push({ pathname: '/create', params: { edit: party.id } })
               }
-            }}
-          />
-          {pendingMedia && (
-            <View style={styles.pendingRow}>
-              {pendingMedia.type === 'video' ? (
-                <Text style={styles.pendingText}>
-                  🎬 Video attached
-                </Text>
-              ) : (
-                <Image
-                  source={{ uri: pendingMedia.uri }}
-                  style={styles.pendingThumb}
-                />
-              )}
-              <Text style={styles.pendingText} numberOfLines={1}>
-                {pendingMedia.type === 'video'
-                  ? 'Ready to send'
-                  : 'Photo attached'}
-              </Text>
-              <TouchableOpacity onPress={() => setPendingMedia(null)}>
-                <Text style={styles.pendingRemove}>✕ Remove</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          <View style={styles.composerActions}>
-            <TouchableOpacity
-              onPress={pickCommentMedia}
-              style={styles.attachButton}
-            >
-              <Text style={styles.attachText}>📷 Photo / Video</Text>
-            </TouchableOpacity>
-            <View style={styles.sendButton}>
-              <PrimaryButton
-                title="Send"
-                onPress={handleSendComment}
-                loading={sending || commentActionLoading}
-                disabled={draft.trim().length === 0 && !pendingMedia}
-              />
-            </View>
+            />
+          </View>
+          <View style={styles.rsvpButton}>
+            <PrimaryButton
+              title="🗑️ Delete party"
+              variant="outline"
+              onPress={handleDeletePress}
+            />
           </View>
         </View>
-      </View>
+      )}
     </ScrollView>
   );
 }
@@ -638,6 +390,8 @@ const styles = StyleSheet.create({
   reportText: { color: Colors.muted, fontSize: 14 },
   deleteButton: { alignItems: 'center', marginTop: Spacing.xs, paddingVertical: Spacing.sm },
   deleteText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
+  chatButton: { marginTop: Spacing.md },
+  organizerRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
   navButton: {
     backgroundColor: Colors.primary,
     borderRadius: 12,

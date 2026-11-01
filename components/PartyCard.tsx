@@ -24,9 +24,6 @@ interface PartyCardProps {
 export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) {
   const cover = party.media.find((m) => m.type === 'image');
   const badges: string[] = [];
-  if (stats?.average != null) {
-    badges.push(`★ ${stats.average.toFixed(1)} (${stats.ratingCount})`);
-  }
   if (distanceKm != null) {
     badges.push(`📍 ${formatDistance(distanceKm)}`);
   }

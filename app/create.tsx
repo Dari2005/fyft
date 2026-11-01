@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker, {
   type DateTimePickerEvent,
@@ -23,7 +23,7 @@ import { MAX_MEDIA_ITEMS, uploadPartyMedia } from '@/lib/media';
 import TextField from '@/components/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
-import type { PartyMedia } from '@/lib/types';
+import { parsePartyMedia, type PartyMedia } from '@/lib/types';
 
 /** Default map region: Skopje center. */
 const SKOPJE_REGION: Region = {
@@ -33,9 +33,16 @@ const SKOPJE_REGION: Region = {
   longitudeDelta: 0.12,
 };
 
-/** Create-party form. Inserts into public.parties; requires a signed-in user. */
+/**
+ * Create-party form. Inserts into public.parties; requires a signed-in user.
+ * With ?edit=<partyId> it becomes the edit form for that party (organizer
+ * only): fields are prefilled and saving UPDATEs the row instead.
+ */
 export default function CreatePartyScreen() {
   const { user } = useAuth();
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const editId = typeof edit === 'string' && edit ? edit : null;
+  const navigation = useNavigation();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -53,8 +60,48 @@ export default function CreatePartyScreen() {
   const mapRef = useRef<MapView>(null);
   const [capacity, setCapacity] = useState('');
   const [mediaAssets, setMediaAssets] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  /** Media already saved on the party (edit mode), kept unless removed. */
+  const [existingMedia, setExistingMedia] = useState<PartyMedia[]>([]);
+  const [loadingParty, setLoadingParty] = useState(!!editId);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({ title: editId ? 'Edit Party' : 'New Party' });
+  }, [editId, navigation]);
+
+  /** Edit mode: load the party and prefill every field. */
+  useEffect(() => {
+    if (!editId || !user) return;
+    (async () => {
+      const { data, error: qErr } = await supabase
+        .from('parties')
+        .select('*')
+        .eq('id', editId)
+        .single();
+      if (qErr || !data) {
+        setError('Could not load this party.');
+        setLoadingParty(false);
+        return;
+      }
+      if (data.organizer_id !== user.id) {
+        setError('You can only edit your own parties.');
+        setLoadingParty(false);
+        return;
+      }
+      setTitle(data.title);
+      setDescription(data.description ?? '');
+      setPartyType(data.party_type ?? '');
+      setStartsAt(new Date(data.starts_at));
+      setAddress(data.address ?? '');
+      if (data.latitude != null && data.longitude != null) {
+        setPin({ latitude: data.latitude, longitude: data.longitude });
+      }
+      setCapacity(data.capacity != null ? String(data.capacity) : '');
+      setExistingMedia(parsePartyMedia(data.media));
+      setLoadingParty(false);
+    })();
+  }, [editId, user]);
 
   /** Pick photos/videos from the library (max MAX_MEDIA_ITEMS per party). */
   const pickMedia = async () => {
@@ -66,20 +113,26 @@ export default function CreatePartyScreen() {
       );
       return;
     }
+    const remaining = MAX_MEDIA_ITEMS - existingMedia.length;
+    if (remaining <= 0) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'],
       allowsMultipleSelection: true,
-      selectionLimit: MAX_MEDIA_ITEMS,
+      selectionLimit: remaining,
       quality: 0.8,
       videoMaxDuration: 60,
     });
     if (!result.canceled) {
-      setMediaAssets((prev) => [...prev, ...result.assets].slice(0, MAX_MEDIA_ITEMS));
+      setMediaAssets((prev) => [...prev, ...result.assets].slice(0, remaining));
     }
   };
 
   const removeMedia = (index: number) => {
     setMediaAssets((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingMedia = (index: number) => {
+    setExistingMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
   /** Geocode the typed address (Photon, no key) and drop the pin on the result. */
@@ -163,6 +216,31 @@ export default function CreatePartyScreen() {
 
     setSaving(true);
     try {
+      // Edit mode: upload only the newly picked media, keep the rest, UPDATE.
+      if (editId) {
+        let uploaded: PartyMedia[] = [];
+        if (mediaAssets.length > 0) {
+          uploaded = await uploadPartyMedia(user.id, mediaAssets);
+        }
+        const { error: updErr } = await supabase
+          .from('parties')
+          .update({
+            title: trimmedTitle,
+            description: description.trim() === '' ? null : description.trim(),
+            party_type: partyType.trim() === '' ? null : partyType.trim(),
+            address: address.trim() === '' ? null : address.trim(),
+            latitude: pin?.latitude ?? null,
+            longitude: pin?.longitude ?? null,
+            starts_at: date.toISOString(),
+            capacity: cap,
+            media: [...existingMedia, ...uploaded],
+          })
+          .eq('id', editId);
+        if (updErr) throw updErr;
+        router.replace({ pathname: '/party/[id]', params: { id: editId } });
+        return;
+      }
+
       // TODO(anti-spam): the hard enforcement of the 3-parties-per-day limit lives
       // in the `party_creation_limit` trigger in supabase/schema.sql. This app-side
       // count is only a UX nicety so the user gets feedback before hitting the DB.
@@ -236,6 +314,14 @@ export default function CreatePartyScreen() {
     }
   };
 
+  if (editId && loadingParty) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -263,6 +349,18 @@ export default function CreatePartyScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.mediaStrip}
         >
+          {existingMedia.map((m, i) => (
+            <View key={`saved-${m.url}-${i}`} style={styles.mediaThumbWrap}>
+              <Image source={{ uri: m.url }} style={styles.mediaThumb} />
+              {m.type === 'video' && <Text style={styles.videoBadge}>🎥</Text>}
+              <TouchableOpacity
+                style={styles.mediaRemove}
+                onPress={() => removeExistingMedia(i)}
+              >
+                <Text style={styles.mediaRemoveText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
           {mediaAssets.map((asset, i) => (
             <View key={`${asset.uri}-${i}`} style={styles.mediaThumbWrap}>
               <Image source={{ uri: asset.uri }} style={styles.mediaThumb} />
@@ -275,7 +373,7 @@ export default function CreatePartyScreen() {
               </TouchableOpacity>
             </View>
           ))}
-          {mediaAssets.length < MAX_MEDIA_ITEMS && (
+          {existingMedia.length + mediaAssets.length < MAX_MEDIA_ITEMS && (
             <TouchableOpacity style={styles.mediaAdd} onPress={pickMedia}>
               <Text style={styles.mediaAddText}>＋</Text>
               <Text style={styles.mediaAddLabel}>Add</Text>
@@ -319,7 +417,7 @@ export default function CreatePartyScreen() {
             value={startsAt}
             mode={pickerMode}
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            minimumDate={new Date()}
+            minimumDate={editId ? undefined : new Date()}
             onChange={onPickerChange}
           />
         )}
@@ -362,7 +460,11 @@ export default function CreatePartyScreen() {
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        <PrimaryButton title="Publish Party" onPress={submit} loading={saving} />
+        <PrimaryButton
+          title={editId ? 'Save Changes' : 'Publish Party'}
+          onPress={submit}
+          loading={saving}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -370,6 +472,12 @@ export default function CreatePartyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.background,
+  },
   content: { padding: Spacing.lg },
   notice: { color: Colors.primary, fontSize: 14, marginBottom: Spacing.md },
   label: { color: Colors.text, fontSize: 14, fontWeight: '600', marginBottom: Spacing.xs },

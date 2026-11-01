@@ -20,13 +20,12 @@ import { haversineKm } from '@/lib/geo';
 import PartyCard from '@/components/PartyCard';
 import { Colors, Spacing } from '@/constants/theme';
 
-type SortMode = 'soonest' | 'nearest' | 'rated' | 'going';
+type SortMode = 'soonest' | 'nearest' | 'going';
 type TimeFilter = 'all' | 'today' | 'weekend';
 
 const SORTS: { key: SortMode; label: string }[] = [
   { key: 'soonest', label: '🕒 Soonest' },
   { key: 'nearest', label: '📍 Near me' },
-  { key: 'rated', label: '★ Top rated' },
   { key: 'going', label: '🔥 Most going' },
 ];
 
@@ -140,14 +139,6 @@ export default function PartyListScreen() {
           if (da == null) return 1;
           if (db == null) return -1;
           return da - db;
-        }
-        case 'rated': {
-          const sa = stats[a.id];
-          const sb = stats[b.id];
-          const avA = sa?.average ?? -1;
-          const avB = sb?.average ?? -1;
-          if (avB !== avA) return avB - avA;
-          return (sb?.ratingCount ?? 0) - (sa?.ratingCount ?? 0);
         }
         case 'going': {
           return (stats[b.id]?.goingCount ?? 0) - (stats[a.id]?.goingCount ?? 0);
