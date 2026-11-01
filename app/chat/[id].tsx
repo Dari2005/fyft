@@ -6,6 +6,7 @@ import {
   Image,
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -148,18 +149,16 @@ export default function PartyChatScreen() {
     }
   };
 
-  const handleDelete = (commentId: string) => {
-    Alert.alert('Delete this message?', 'This action cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const result = await deleteComment(commentId);
-          if (result === 'error') Alert.alert('Error', 'Delete failed. Try again.');
-        },
-      },
-    ]);
+  // Delete confirmation is a custom themed modal (state below), not the
+  // plain system alert — long-pressing an own message opens it.
+  const [pendingDelete, setPendingDelete] = useState<PartyComment | null>(null);
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    const result = await deleteComment(id);
+    if (result === 'error') Alert.alert('Error', 'Delete failed. Try again.');
   };
 
   const renderMessage = ({ item }: { item: PartyComment }) => {
@@ -178,7 +177,7 @@ export default function PartyChatScreen() {
           ))}
         <Pressable
           style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}
-          onLongPress={mine ? () => handleDelete(item.id) : undefined}
+          onLongPress={mine ? () => setPendingDelete(item) : undefined}
           delayLongPress={400}
         >
           {!mine && (
@@ -280,6 +279,50 @@ export default function PartyChatScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={pendingDelete !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPendingDelete(null)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setPendingDelete(null)}
+        >
+          <Pressable style={styles.modalCard}>
+            <View style={styles.modalIconWrap}>
+              <Text style={styles.modalIcon}>🗑️</Text>
+            </View>
+            <Text style={styles.modalTitle}>Delete this message?</Text>
+            {!!pendingDelete?.body && (
+              <Text style={styles.modalPreview} numberOfLines={2}>
+                “{pendingDelete.body}”
+              </Text>
+            )}
+            {pendingDelete?.media_url && !pendingDelete.body && (
+              <Text style={styles.modalPreview}>
+                {pendingDelete.media_type === 'video' ? '🎬 Video' : '📷 Photo'}
+              </Text>
+            )}
+            <Text style={styles.modalText}>This action cannot be undone.</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancel]}
+                onPress={() => setPendingDelete(null)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalDelete]}
+                onPress={confirmDelete}
+              >
+                <Text style={styles.modalDeleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -397,4 +440,70 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: { opacity: 0.45 },
   sendText: { color: Colors.primaryText, fontSize: 17, fontWeight: '800' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 2, 12, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 24,
+    padding: Spacing.lg,
+    alignItems: 'center',
+  },
+  modalIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  modalIcon: { fontSize: 26 },
+  modalTitle: {
+    color: Colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  modalPreview: {
+    color: Colors.primaryBright,
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+  },
+  modalText: {
+    color: Colors.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    alignSelf: 'stretch',
+  },
+  modalButton: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalCancel: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  modalCancelText: { color: Colors.text, fontSize: 15, fontWeight: '700' },
+  modalDelete: { backgroundColor: Colors.danger },
+  modalDeleteText: { color: Colors.primaryText, fontSize: 15, fontWeight: '800' },
 });
