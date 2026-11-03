@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import Svg, { Line, Path } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
@@ -188,6 +189,38 @@ export default function PartyDetailScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Header: name first, navigation as a small square top-right. */}
+      <View style={styles.headerRow}>
+        <Text style={[styles.title, styles.titleFlex]}>{party.title}</Text>
+        {party.latitude != null && party.longitude != null && (
+          <TouchableOpacity
+            onPress={openNavigation}
+            style={styles.navSquare}
+            accessibilityLabel="Navigate to the party"
+          >
+            <Svg width={22} height={22} viewBox="0 0 24 24">
+              <Path
+                d="M22 2 15 22l-4-9-9-4z"
+                stroke="#ffffff"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              <Line
+                x1={22}
+                y1={2}
+                x2={11}
+                y2={13}
+                stroke="#ffffff"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </TouchableOpacity>
+        )}
+      </View>
       {party.party_type && (
         <View style={styles.venueRow}>
           <View style={styles.typeTag}>
@@ -195,7 +228,6 @@ export default function PartyDetailScreen() {
           </View>
         </View>
       )}
-      <Text style={styles.title}>{party.title}</Text>
       <Text style={styles.meta}>
         {new Date(party.starts_at).toLocaleString('en-US', {
           weekday: 'long',
@@ -210,12 +242,6 @@ export default function PartyDetailScreen() {
           <Text style={styles.meta}>📍</Text>
           <Text style={[styles.meta, styles.addressText]}>{party.address}</Text>
         </View>
-      )}
-      {party.latitude != null && party.longitude != null && (
-        <TouchableOpacity onPress={openNavigation} style={styles.navButton}>
-          <Text style={styles.navText}>🧭</Text>
-          <Text style={[styles.navText, styles.navLabel]}>Navigate to the party</Text>
-        </TouchableOpacity>
       )}
       {party.description && <Text style={styles.description}>{party.description}</Text>}
 
@@ -337,7 +363,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.lg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
-  venueRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
+  venueRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.sm },
   typeTag: {
     backgroundColor: Colors.primary,
     borderRadius: 9,
@@ -408,19 +434,26 @@ const styles = StyleSheet.create({
   deleteText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
   chatButton: { marginTop: Spacing.md },
   organizerRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  navButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: Spacing.md,
+  headerRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  titleFlex: { flex: 1 },
+  navSquare: {
+    width: 46,
+    height: 46,
+    borderRadius: 13,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginTop: Spacing.md,
+    marginTop: Spacing.xs,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  navText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
-  navLabel: { flexShrink: 1 },
   addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
   addressText: { flex: 1 },
   commentsSection: { marginTop: Spacing.lg },
