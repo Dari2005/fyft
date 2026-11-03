@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/AuthContext';
@@ -155,6 +155,15 @@ export default function PartyListScreen() {
   const onRefresh = useCallback(async () => {
     await Promise.all([refresh(), refreshStats()]);
   }, [refresh, refreshStats]);
+
+  // Silently refetch whenever the Parties tab gains focus, so a newly
+  // published party appears without restarting the app.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      refreshStats();
+    }, [refresh, refreshStats])
+  );
 
   return (
     <View style={styles.container}>

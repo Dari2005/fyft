@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
-import { router, useIsFocused } from 'expo-router';
+import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import * as Location from 'expo-location';
 import { useParties } from '@/hooks/useParties';
 import { Colors, Spacing } from '@/constants/theme';
@@ -29,8 +29,7 @@ const SKOPJE_REGION: Region = {
 
 /** Map screen: browse all published parties as pins. */
 export default function MapScreen() {
-  const { parties, loading, error } = useParties();
-  const [region, setRegion] = useState<Region | null>(null);
+  const { parties, loading, error, refresh } = useParties();
   const [showsUserLocation, setShowsUserLocation] = useState(false);
   // The native Google MapView must exist ONLY while this screen is focused:
   // when navigation detaches/reattaches the tab (or a stack screen covers
@@ -41,27 +40,50 @@ export default function MapScreen() {
   const [lastRegion, setLastRegion] = useState<Region | null>(null);
   // Party whose pin was tapped — shown as a preview card at the bottom.
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const mapRef = useRef<MapView | null>(null);
+  // Once the user drags the map we stop auto-centering on their location.
+  const userMovedRef = useRef(false);
 
+  // Refetch whenever the Map tab gains focus, so a party published a
+  // minute ago shows up without restarting the app.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
+
+  // The map renders IMMEDIATELY on the Skopje fallback — it must not wait
+  // for GPS (a cold position fix made the old "Locating you…" gate hang
+  // for ages). Location resolves in the background: last-known position
+  // first (instant), then a balanced-accuracy fix, animating the camera
+  // only if the user hasn't started exploring themselves.
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === 'granted') {
-          const pos = await Location.getCurrentPositionAsync({});
-          setShowsUserLocation(true);
-          setRegion({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            latitudeDelta: 0.1,
-            longitudeDelta: 0.1,
-          });
-        } else {
-          setRegion(SKOPJE_REGION);
-        }
+        if (cancelled || status !== 'granted') return;
+        setShowsUserLocation(true);
+        const centerOn = (latitude: number, longitude: number) => {
+          if (cancelled || userMovedRef.current) return;
+          mapRef.current?.animateToRegion(
+            { latitude, longitude, latitudeDelta: 0.1, longitudeDelta: 0.1 },
+            600
+          );
+        };
+        const last = await Location.getLastKnownPositionAsync({});
+        if (last) centerOn(last.coords.latitude, last.coords.longitude);
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        centerOn(pos.coords.latitude, pos.coords.longitude);
       } catch {
-        setRegion(SKOPJE_REGION);
+        // Location unavailable — the Skopje fallback is already on screen.
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const pinned = parties.filter(
@@ -69,25 +91,19 @@ export default function MapScreen() {
       p.latitude != null && p.longitude != null
   );
   const selected = pinned.find((p) => p.id === selectedId) ?? null;
-  const selectedCover = selected?.media.find((m) => m.type === 'image');
-
-  if (!region) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.hint}>Locating you…</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
       {isFocused ? (
         <MapView
+          ref={mapRef}
           style={styles.map}
-          initialRegion={lastRegion ?? region}
+          initialRegion={lastRegion ?? SKOPJE_REGION}
           showsUserLocation={showsUserLocation}
           onRegionChangeComplete={setLastRegion}
+          onPanDrag={() => {
+            userMovedRef.current = true;
+          }}
           onPress={() => setSelectedId(null)}
         >
           {pinned.map((p) => (
@@ -128,20 +144,14 @@ export default function MapScreen() {
           }
         >
           <View style={styles.previewRow}>
-            {selectedCover ? (
-              <Image source={{ uri: selectedCover.url }} style={styles.previewThumb} />
-            ) : (
-              <View style={[styles.previewThumb, styles.previewThumbEmpty]}>
-                <Text style={styles.previewThumbEmoji}>🎉</Text>
-              </View>
-            )}
             <View style={styles.previewInfo}>
               <Text style={styles.previewTitle} numberOfLines={1}>
                 {selected.title}
               </Text>
-              <Text style={styles.previewWhen} numberOfLines={1}>
-                🗓 {formatWhen(selected.starts_at)}
-              </Text>
+              <View style={styles.previewWhenRow}>
+                <Text style={styles.previewWhen}>🗓</Text>
+                <Text style={styles.previewWhen}>{formatWhen(selected.starts_at)}</Text>
+              </View>
               {selected.address && (
                 <Text style={styles.previewAddress} numberOfLines={1}>
                   {selected.address}
@@ -182,14 +192,6 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.background,
-    gap: Spacing.sm,
-  },
-  hint: { color: Colors.muted, fontSize: 14 },
   map: { width: '100%', height: '100%' },
   previewCard: {
     position: 'absolute',
@@ -208,12 +210,10 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  previewThumb: { width: 62, height: 62, borderRadius: 14, backgroundColor: Colors.background },
-  previewThumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  previewThumbEmoji: { fontSize: 28 },
   previewInfo: { flex: 1 },
   previewTitle: { color: Colors.text, fontSize: 18, fontWeight: '800' },
-  previewWhen: { color: Colors.primaryBright, fontSize: 14, fontWeight: '600', marginTop: 3 },
+  previewWhenRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  previewWhen: { color: Colors.primaryBright, fontSize: 14, fontWeight: '600' },
   previewAddress: { color: Colors.muted, fontSize: 13, marginTop: 2 },
   previewClose: {
     width: 28,

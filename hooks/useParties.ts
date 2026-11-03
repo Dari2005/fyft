@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { parsePartyMedia, type Party } from '@/lib/types';
 
@@ -14,9 +14,12 @@ export function useParties(): UsePartiesResult {
   const [parties, setParties] = useState<Party[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Once we have data, later refreshes (e.g. on tab focus) run silently in
+  // the background instead of flashing the loading spinner again.
+  const hasDataRef = useRef(false);
 
   const fetchParties = useCallback(async () => {
-    setLoading(true);
+    if (!hasDataRef.current) setLoading(true);
     setError(null);
     try {
       const { data, error: queryError } = await supabase
@@ -42,6 +45,7 @@ export function useParties(): UsePartiesResult {
         organizer_username: row.profiles?.username ?? undefined,
       }));
       setParties(mapped);
+      hasDataRef.current = true;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load parties.');
     } finally {
