@@ -205,10 +205,16 @@ export default function PartyDetailScreen() {
           minute: '2-digit',
         })}
       </Text>
-      {party.address && <Text style={styles.meta}>📍 {party.address}</Text>}
+      {party.address && (
+        <View style={styles.addressRow}>
+          <Text style={styles.meta}>📍</Text>
+          <Text style={[styles.meta, styles.addressText]}>{party.address}</Text>
+        </View>
+      )}
       {party.latitude != null && party.longitude != null && (
         <TouchableOpacity onPress={openNavigation} style={styles.navButton}>
-          <Text style={styles.navText}>🧭 Navigate to the party</Text>
+          <Text style={styles.navText}>🧭</Text>
+          <Text style={[styles.navText, styles.navLabel]}>Navigate to the party</Text>
         </TouchableOpacity>
       )}
       {party.description && <Text style={styles.description}>{party.description}</Text>}
@@ -263,7 +269,8 @@ export default function PartyDetailScreen() {
       <View style={styles.rsvpRow}>
         <View style={styles.rsvpButton}>
           <PrimaryButton
-            title={myStatus === 'going' ? '✅ Going' : 'Going'}
+            title="Going"
+            icon={myStatus === 'going' ? '✅' : undefined}
             variant={myStatus === 'going' ? 'primary' : 'outline'}
             onPress={() => handleRsvp('going')}
             loading={actionLoading || rsvpLoading}
@@ -271,7 +278,8 @@ export default function PartyDetailScreen() {
         </View>
         <View style={styles.rsvpButton}>
           <PrimaryButton
-            title={myStatus === 'interested' ? '⭐ Interested' : 'Interested'}
+            title="Interested"
+            icon={myStatus === 'interested' ? '⭐' : undefined}
             variant={myStatus === 'interested' ? 'primary' : 'outline'}
             onPress={() => handleRsvp('interested')}
             loading={actionLoading || rsvpLoading}
@@ -282,10 +290,11 @@ export default function PartyDetailScreen() {
 
       <View style={styles.chatButton}>
         <PrimaryButton
+          icon="💬"
           title={
             comments.length > 0
-              ? `💬 Join party chat (${comments.length})`
-              : '💬 Join party chat'
+              ? `Join party chat (${comments.length})`
+              : 'Join party chat'
           }
           onPress={() =>
             router.push({ pathname: '/chat/[id]', params: { id: party.id } })
@@ -294,14 +303,16 @@ export default function PartyDetailScreen() {
       </View>
 
       <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
-        <Text style={styles.reportText}>🚩 Report this party</Text>
+        <Text style={styles.reportText}>🚩</Text>
+        <Text style={styles.reportText}>Report this party</Text>
       </TouchableOpacity>
 
       {user?.id === party.organizer_id && (
         <View style={styles.organizerRow}>
           <View style={styles.rsvpButton}>
             <PrimaryButton
-              title="✏️ Edit party"
+              title="Edit party"
+              icon="✏️"
               variant="outline"
               onPress={() =>
                 router.push({ pathname: '/create', params: { edit: party.id } })
@@ -310,7 +321,8 @@ export default function PartyDetailScreen() {
           </View>
           <View style={styles.rsvpButton}>
             <PrimaryButton
-              title="🗑️ Delete party"
+              title="Delete party"
+              icon="🗑️"
               variant="outline"
               onPress={handleDeletePress}
             />
@@ -383,7 +395,14 @@ const styles = StyleSheet.create({
   rsvpRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
   rsvpButton: { flex: 1 },
   error: { color: Colors.danger, fontSize: 14, marginTop: Spacing.sm },
-  reportButton: { alignItems: 'center', marginTop: Spacing.lg, paddingVertical: Spacing.sm },
+  reportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
   reportText: { color: Colors.muted, fontSize: 14 },
   deleteButton: { alignItems: 'center', marginTop: Spacing.xs, paddingVertical: Spacing.sm },
   deleteText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
@@ -393,10 +412,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
+    paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     marginTop: Spacing.md,
   },
   navText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  navLabel: { flexShrink: 1 },
+  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
+  addressText: { flex: 1 },
   commentsSection: { marginTop: Spacing.lg },
   sectionTitle: { color: Colors.text, fontSize: 18, fontWeight: '700', marginBottom: Spacing.sm },
   commentCard: {

@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { Callout, Marker, type Region } from 'react-native-maps';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker, type Region } from 'react-native-maps';
 import { router, useIsFocused } from 'expo-router';
 import * as Location from 'expo-location';
 import { useParties } from '@/hooks/useParties';
 import { Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
+
+/** "Mon, Nov 2 · 11:00 PM" — when the party starts, for the pin preview card. */
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  return `${day} · ${time}`;
+}
 
 /** Fallback region: Skopje center — used until location resolves or when denied. */
 const SKOPJE_REGION: Region = {
@@ -27,6 +39,8 @@ export default function MapScreen() {
   // kept in lastRegion so the map reopens where the user left it.
   const isFocused = useIsFocused();
   const [lastRegion, setLastRegion] = useState<Region | null>(null);
+  // Party whose pin was tapped — shown as a preview card at the bottom.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -54,6 +68,8 @@ export default function MapScreen() {
     (p): p is Party & { latitude: number; longitude: number } =>
       p.latitude != null && p.longitude != null
   );
+  const selected = pinned.find((p) => p.id === selectedId) ?? null;
+  const selectedCover = selected?.media.find((m) => m.type === 'image');
 
   if (!region) {
     return (
@@ -72,33 +88,26 @@ export default function MapScreen() {
           initialRegion={lastRegion ?? region}
           showsUserLocation={showsUserLocation}
           onRegionChangeComplete={setLastRegion}
+          onPress={() => setSelectedId(null)}
         >
           {pinned.map((p) => (
             <Marker
               key={p.id}
               coordinate={{ latitude: p.latitude, longitude: p.longitude }}
               pinColor={Colors.primary}
-            >
-              <Callout
-                onPress={() =>
-                  router.push({ pathname: '/party/[id]', params: { id: p.id } })
-                }
-              >
-                <View style={styles.callout}>
-                  <Text style={styles.calloutTitle}>{p.title}</Text>
-                  <Text style={styles.calloutMeta}>
-                    {p.party_type ? `${p.party_type} · ` : ''}tap for details →
-                  </Text>
-                </View>
-              </Callout>
-            </Marker>
+              onPress={(e) => {
+                // Keep the map tap from immediately deselecting this pin.
+                e.stopPropagation();
+                setSelectedId(p.id);
+              }}
+            />
           ))}
         </MapView>
       ) : (
         <View style={styles.map} />
       )}
 
-      {error && (
+      {error && !selected && (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>Failed to load parties.</Text>
         </View>
@@ -109,17 +118,63 @@ export default function MapScreen() {
         </View>
       )}
 
+      {/* Pin preview: tapping a pin opens this card; tapping it (or the
+          button) goes to the full party details. */}
+      {selected && (
+        <Pressable
+          style={styles.previewCard}
+          onPress={() =>
+            router.push({ pathname: '/party/[id]', params: { id: selected.id } })
+          }
+        >
+          <View style={styles.previewRow}>
+            {selectedCover ? (
+              <Image source={{ uri: selectedCover.url }} style={styles.previewThumb} />
+            ) : (
+              <View style={[styles.previewThumb, styles.previewThumbEmpty]}>
+                <Text style={styles.previewThumbEmoji}>🎉</Text>
+              </View>
+            )}
+            <View style={styles.previewInfo}>
+              <Text style={styles.previewTitle} numberOfLines={1}>
+                {selected.title}
+              </Text>
+              <Text style={styles.previewWhen} numberOfLines={1}>
+                🗓 {formatWhen(selected.starts_at)}
+              </Text>
+              {selected.address && (
+                <Text style={styles.previewAddress} numberOfLines={1}>
+                  {selected.address}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={() => setSelectedId(null)}
+              style={styles.previewClose}
+              hitSlop={8}
+            >
+              <Text style={styles.previewCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.previewButton}>
+            <Text style={styles.previewButtonText}>Show more details →</Text>
+          </View>
+        </Pressable>
+      )}
+
       {/* Floating overlay: brand title + create shortcut. */}
       <View style={styles.overlay} pointerEvents="box-none">
         <View style={styles.topBar} pointerEvents="box-none">
           <Text style={styles.appTitle}>Fyft</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => router.push('/create')}
-          style={styles.fab}
-        >
-          <Text style={styles.fabText}>＋</Text>
-        </TouchableOpacity>
+        {!selected && (
+          <TouchableOpacity
+            onPress={() => router.push('/create')}
+            style={styles.fab}
+          >
+            <Text style={styles.fabText}>＋</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -136,9 +191,48 @@ const styles = StyleSheet.create({
   },
   hint: { color: Colors.muted, fontSize: 14 },
   map: { width: '100%', height: '100%' },
-  callout: { minWidth: 160, padding: Spacing.xs },
-  calloutTitle: { fontSize: 15, fontWeight: '700', color: '#111111' },
-  calloutMeta: { fontSize: 13, color: '#555555', marginTop: 2 },
+  previewCard: {
+    position: 'absolute',
+    left: Spacing.lg,
+    right: Spacing.lg,
+    bottom: Spacing.lg,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderRadius: 18,
+    padding: Spacing.md,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 10,
+  },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  previewThumb: { width: 62, height: 62, borderRadius: 14, backgroundColor: Colors.background },
+  previewThumbEmpty: { alignItems: 'center', justifyContent: 'center' },
+  previewThumbEmoji: { fontSize: 28 },
+  previewInfo: { flex: 1 },
+  previewTitle: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+  previewWhen: { color: Colors.primaryBright, fontSize: 14, fontWeight: '600', marginTop: 3 },
+  previewAddress: { color: Colors.muted, fontSize: 13, marginTop: 2 },
+  previewClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  previewCloseText: { color: Colors.muted, fontSize: 13, fontWeight: '700' },
+  previewButton: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  previewButtonText: { color: Colors.primaryText, fontSize: 15, fontWeight: '800' },
   banner: {
     position: 'absolute',
     bottom: Spacing.lg,

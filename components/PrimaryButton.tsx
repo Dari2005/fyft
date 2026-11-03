@@ -3,6 +3,9 @@ import { Colors, Spacing } from '@/constants/theme';
 
 interface PrimaryButtonProps {
   title: string;
+  /** Optional leading emoji/icon, rendered as its OWN Text node: an emoji
+   * inside the same Text as the label truncates the label's end on Android. */
+  icon?: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
@@ -11,6 +14,7 @@ interface PrimaryButtonProps {
 
 export default function PrimaryButton({
   title,
+  icon,
   onPress,
   loading = false,
   disabled = false,
@@ -33,14 +37,27 @@ export default function PrimaryButton({
       {loading ? (
         <ActivityIndicator color={variant === 'outline' ? Colors.primary : Colors.primaryText} />
       ) : (
-        <Text
-          style={[
-            styles.label,
-            variant === 'outline' ? styles.labelOutline : styles.labelPrimary,
-          ]}
-        >
-          {title}
-        </Text>
+        <>
+          {icon != null && (
+            <Text
+              style={[
+                styles.label,
+                variant === 'outline' ? styles.labelOutline : styles.labelPrimary,
+              ]}
+            >
+              {icon}
+            </Text>
+          )}
+          <Text
+            style={[
+              styles.label,
+              styles.labelText,
+              variant === 'outline' ? styles.labelOutline : styles.labelPrimary,
+            ]}
+          >
+            {title}
+          </Text>
+        </>
       )}
     </TouchableOpacity>
   );
@@ -51,8 +68,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 15,
     paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     marginVertical: Spacing.xs,
   },
   primary: { backgroundColor: Colors.primary },
@@ -60,6 +79,7 @@ const styles = StyleSheet.create({
   danger: { backgroundColor: Colors.danger },
   disabled: { opacity: 0.5 },
   label: { fontSize: 16, fontWeight: '800' },
+  labelText: { flexShrink: 1 },
   labelPrimary: { color: Colors.primaryText },
   labelOutline: { color: Colors.primaryBright },
 });
