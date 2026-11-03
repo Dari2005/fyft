@@ -82,7 +82,7 @@ export default function ProfileScreen() {
         <Text style={styles.bigEmoji}>👤</Text>
         <Text style={styles.title}>You are not signed in</Text>
         <Text style={styles.subtitle}>
-          Sign in to publish parties and see your profile.
+          Sign in to publish events and see your profile.
         </Text>
         <Link href="/auth" asChild>
           <PrimaryButton title="Sign In" onPress={() => {}} />
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>My Parties ({myParties.length})</Text>
+      <Text style={styles.sectionTitle}>My Events ({myParties.length})</Text>
       <FlatList
         data={myParties}
         keyExtractor={(p) => p.id}
@@ -130,7 +130,7 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={styles.empty}>
-            You haven&apos;t published any parties yet. Tap ＋ on the map for your first one!
+            You haven&apos;t published any events yet. Tap ＋ on the map for your first one!
           </Text>
         }
       />

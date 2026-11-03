@@ -67,7 +67,7 @@ export default function CreatePartyScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: editId ? 'Edit Party' : 'New Party' });
+    navigation.setOptions({ title: editId ? 'Edit Event' : 'New Event' });
   }, [editId, navigation]);
 
   /** Edit mode: load the party and prefill every field. */
@@ -80,12 +80,12 @@ export default function CreatePartyScreen() {
         .eq('id', editId)
         .single();
       if (qErr || !data) {
-        setError('Could not load this party.');
+        setError('Could not load this event.');
         setLoadingParty(false);
         return;
       }
       if (data.organizer_id !== user.id) {
-        setError('You can only edit your own parties.');
+        setError('You can only edit your own events.');
         setLoadingParty(false);
         return;
       }
@@ -109,7 +109,7 @@ export default function CreatePartyScreen() {
     if (!perm.granted) {
       Alert.alert(
         'Permission needed',
-        'Allow photo access so you can add pictures and videos to your party.'
+        'Allow photo access so you can add pictures and videos to your event.'
       );
       return;
     }
@@ -252,7 +252,7 @@ export default function CreatePartyScreen() {
         .eq('organizer_id', user.id)
         .gte('created_at', todayStart.toISOString());
       if ((count ?? 0) >= 3) {
-        setError("You've already published 3 parties today — the limit is 3 per day. Try again tomorrow.");
+        setError("You've already published 3 events today — the limit is 3 per day. Try again tomorrow.");
         return;
       }
 
@@ -329,15 +329,15 @@ export default function CreatePartyScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {!user && (
-          <Text style={styles.notice}>You must be signed in to publish a party.</Text>
+          <Text style={styles.notice}>You must be signed in to publish an event.</Text>
         )}
 
-        <TextField label="Title *" value={title} onChangeText={setTitle} placeholder="e.g. House party at Kisela Voda" maxLength={120} />
+        <TextField label="Title *" value={title} onChangeText={setTitle} placeholder="e.g. Concert at Gradski Park" maxLength={120} />
         <TextField
           label="Description"
           value={description}
           onChangeText={setDescription}
-          placeholder="Bring your own drinks, we start at 21:00…"
+          placeholder="Tell people what to expect…"
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -382,7 +382,7 @@ export default function CreatePartyScreen() {
         </ScrollView>
 
         <TextField
-          label="Party type"
+          label="Event type"
           value={partyType}
           onChangeText={setPartyType}
           placeholder="e.g. Birthday, Rave, BBQ, Techno night…"
@@ -461,7 +461,7 @@ export default function CreatePartyScreen() {
         {error && <Text style={styles.error}>{error}</Text>}
 
         <PrimaryButton
-          title={editId ? 'Save Changes' : 'Publish Party'}
+          title={editId ? 'Save Changes' : 'Publish Event'}
           onPress={submit}
           loading={saving}
         />

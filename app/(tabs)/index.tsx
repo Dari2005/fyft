@@ -125,12 +125,12 @@ export default function MapScreen() {
 
       {error && !selected && (
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>Failed to load parties.</Text>
+          <Text style={styles.bannerText}>Failed to load events.</Text>
         </View>
       )}
       {!loading && !error && pinned.length === 0 && (
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>No parties with a location on the map yet.</Text>
+          <Text style={styles.bannerText}>No events with a location on the map yet.</Text>
         </View>
       )}
 

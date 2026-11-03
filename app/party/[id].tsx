@@ -23,7 +23,7 @@ import PrimaryButton from '@/components/PrimaryButton';
 import { Colors, Spacing } from '@/constants/theme';
 import { parsePartyMedia, type Party } from '@/lib/types';
 
-const REPORT_REASONS = ['spam', 'fake party', 'inappropriate content', 'other'];
+const REPORT_REASONS = ['spam', 'fake event', 'inappropriate content', 'other'];
 
 const GALLERY_WIDTH = Dimensions.get('window').width - Spacing.md * 2;
 
@@ -111,7 +111,7 @@ export default function PartyDetailScreen() {
 
   const submitReport = async (reason: string) => {
     if (!user) {
-      Alert.alert('Sign In', 'You must be signed in to report a party.', [
+      Alert.alert('Sign In', 'You must be signed in to report an event.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign In', onPress: () => router.push('/auth') },
       ]);
@@ -121,14 +121,14 @@ export default function PartyDetailScreen() {
     if (result === 'ok') {
       Alert.alert('Thank you!', 'We received your report and will review it.');
     } else if (result === 'already-reported') {
-      Alert.alert('Already reported', 'You already reported this party.');
+      Alert.alert('Already reported', 'You already reported this event.');
     } else {
       Alert.alert('Error', 'Report failed. Try again.');
     }
   };
 
   const handleReportPress = () => {
-    Alert.alert('Report this party', 'Why are you reporting this party?', [
+    Alert.alert('Report this event', 'Why are you reporting this event?', [
       ...REPORT_REASONS.map((reason) => ({
         text: reason[0].toUpperCase() + reason.slice(1),
         onPress: () => submitReport(reason),
@@ -146,7 +146,7 @@ export default function PartyDetailScreen() {
   };
 
   const handleDeletePress = () => {
-    Alert.alert('Delete this party?', 'This action cannot be undone.', [
+    Alert.alert('Delete this event?', 'This action cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -174,7 +174,7 @@ export default function PartyDetailScreen() {
   if (error || !party) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error ?? 'Party not found.'}</Text>
+        <Text style={styles.error}>{error ?? 'Event not found.'}</Text>
       </View>
     );
   }
@@ -196,7 +196,7 @@ export default function PartyDetailScreen() {
           <TouchableOpacity
             onPress={openNavigation}
             style={styles.navSquare}
-            accessibilityLabel="Navigate to the party"
+            accessibilityLabel="Navigate to the event"
           >
             <Svg width={22} height={22} viewBox="0 0 24 24">
               <Path
@@ -319,8 +319,8 @@ export default function PartyDetailScreen() {
           icon="💬"
           title={
             comments.length > 0
-              ? `Join party chat (${comments.length})`
-              : 'Join party chat'
+              ? `Join event chat (${comments.length})`
+              : 'Join event chat'
           }
           onPress={() =>
             router.push({ pathname: '/chat/[id]', params: { id: party.id } })
@@ -330,14 +330,14 @@ export default function PartyDetailScreen() {
 
       <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
         <Text style={styles.reportText}>🚩</Text>
-        <Text style={styles.reportText}>Report this party</Text>
+        <Text style={styles.reportText}>Report this event</Text>
       </TouchableOpacity>
 
       {user?.id === party.organizer_id && (
         <View style={styles.organizerRow}>
           <View style={styles.rsvpButton}>
             <PrimaryButton
-              title="Edit party"
+              title="Edit event"
               icon="✏️"
               variant="outline"
               onPress={() =>
@@ -347,7 +347,7 @@ export default function PartyDetailScreen() {
           </View>
           <View style={styles.rsvpButton}>
             <PrimaryButton
-              title="Delete party"
+              title="Delete event"
               icon="🗑️"
               variant="outline"
               onPress={handleDeletePress}

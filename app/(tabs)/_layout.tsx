@@ -122,9 +122,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="list"
         options={{
-          title: 'Parties in Skopje',
+          title: 'Events in Skopje',
           headerShown: false,
-          tabBarLabel: 'Parties',
+          tabBarLabel: 'Events',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               focused={focused}

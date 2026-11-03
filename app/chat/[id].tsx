@@ -221,7 +221,7 @@ export default function PartyChatScreen() {
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No messages yet 💬</Text>
           <Text style={styles.emptyText}>
-            Be the first to say something about this party!
+            Be the first to say something about this event!
           </Text>
         </View>
       ) : (

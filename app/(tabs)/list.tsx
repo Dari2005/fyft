@@ -79,7 +79,7 @@ export default function PartyListScreen() {
       if (!perm.granted) {
         Alert.alert(
           'Location needed',
-          'Allow location access to sort parties by distance from you.'
+          'Allow location access to sort events by distance from you.'
         );
         return false;
       }
@@ -169,7 +169,7 @@ export default function PartyListScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}>
         <Text style={styles.brand}>Fyft</Text>
-        <Text style={styles.heading}>Parties in Skopje</Text>
+        <Text style={styles.heading}>Events in Skopje</Text>
       </View>
 
       <View style={styles.searchWrap}>
@@ -177,7 +177,7 @@ export default function PartyListScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search a party or address…"
+          placeholder="Search an event or address…"
           placeholderTextColor={Colors.muted}
           style={styles.searchInput}
           autoCorrect={false}
@@ -252,10 +252,10 @@ export default function PartyListScreen() {
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>
                 {error
-                  ? "Couldn't load the parties"
+                  ? "Couldn't load the events"
                   : isFiltering
-                    ? 'No parties match your filters'
-                    : 'No parties published yet'}
+                    ? 'No events match your filters'
+                    : 'No events published yet'}
               </Text>
               <Text style={styles.emptyText}>
                 {error
@@ -272,7 +272,7 @@ export default function PartyListScreen() {
       <Link href={user ? '/create' : '/auth'} asChild>
         <TouchableOpacity style={styles.fab} activeOpacity={0.85}>
           <Text style={styles.fabText}>
-            {user ? '＋ New Party' : '＋ Sign in to publish'}
+            {user ? '＋ New Event' : '＋ Sign in to publish'}
           </Text>
         </TouchableOpacity>
       </Link>
