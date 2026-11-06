@@ -27,7 +27,7 @@ do not rename).
   `notifications` (local reminders + push registration), `tonight` (05:00 day
   boundary), `geo`, `media`.
 - `supabase/`: `schema.sql` + `migration_*.sql` (run in SQL Editor).
-- `.github/workflows/ci.yml`: `tsc --noEmit` + `expo lint` on push/PR.
+- `.github/workflows/ci.yml`: `tsc --noEmit` + `expo lint` on push/PR (file prepared locally; first push needs a git token with `workflow` scope — the current OAuth token is rejected for workflow files).
 
 ## Standing decisions — do NOT silently revert
 
