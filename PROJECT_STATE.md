@@ -1,87 +1,121 @@
-# Fyft — Project State (read this first, whoever works on the app)
+# Fyft — Project State
 
-Single source of truth for any AI/developer picking up Fyft. If you change
-something significant, update this file in the same commit.
+> Read this first, before doing any work. Update it at the end of every session
+> if anything below changed. Keep it short and factual. **Never put secrets
+> here** (this repo is public).
 
-## What it is
+_Last updated: 2026-11-06 (merged from both AIs' notes — GitHub `main` is canonical)_
 
-Fyft — an app for ALL events in Skopje (concerts, parties, sports, meetups,
-birthdays…), not just parties. Anyone can publish an event; users browse a
-full-screen map + list, RSVP with live capacity, and chat per event.
-Brand name stays **Fyft** (decided by Dari, 2026-11-03 — do not rename).
+## What this is
 
-## Stack
+**Fyft** — a mobile app (Android first, iOS later) for discovering ALL events in
+Skopje (concerts, parties, sports, meetups…), not just parties: map, event list,
+RSVPs with live capacity, per-event chat, follow people/organizers, "friends
+going", reminders and push notifications.
+Stack: React Native (Expo SDK 57, expo-router, TypeScript) + Supabase
+(Postgres, Auth, RLS, Realtime, Storage). Push via Expo Push Service + FCM.
+Goal of the repo: a portfolio project (public GitHub), so code quality and an
+honest README matter. Brand name stays **Fyft** (Dari decided 2026-11-03 —
+do not rename).
 
-- React Native (Expo SDK 57) + TypeScript, expo-router
-- Supabase (Postgres + Auth + RLS + Realtime on `rsvps` and `comments`)
-- Google Maps via react-native-maps; EAS development builds
-- GitHub: https://github.com/Dari2005/fyft (public, `main`)
+## Structure (short)
 
-## Standing decisions — DO NOT silently revert these
+- `app/` screens: `(tabs)/` = Events (list + filters), Tonight, Map (landing),
+  Profile; `party/[id]`, `chat/[id]`, `user/[id]`, `people`, `notifications`,
+  `create`, `auth`.
+- `lib/`: `supabase`, `AuthContext`, `SocialContext` (follows + friendsGoing),
+  `notifications` (local reminders + push registration), `tonight` (05:00 day
+  boundary), `geo`, `media`.
+- `supabase/`: `schema.sql` + `migration_*.sql` (run in SQL Editor).
+- `.github/workflows/ci.yml`: `tsc --noEmit` + `expo lint` on push/PR.
 
-1. **No ratings. At all.** No party ratings, no organizer ratings
-   (Dari, 2026-11-01). The `party_ratings` table exists but is unused;
-   dead `rating*` styles in `app/party/[id].tsx` are leftovers, not a feature.
-2. **Event type is free-text.** Organizers type it themselves
-   (`parties.party_type`). No preset genre/category lists, ever.
-3. **No venue choice** (House/Club) in the form. Removed 2026-10-22.
-4. **Secrets stay local, never committed:** `.env`, `google-maps-key.local`,
-   `google-services.json` (all gitignored). Maps key reaches cloud builds
-   via the `GOOGLE_MAPS_API_KEY` env var on the expo.dev account
-   **darijan10** (there is also a `darijans-team` account — wrong one).
-   Google Cloud billing account must stay OPEN or the map dies.
-5. **Design:** "Bold Violet 2" — dark + violet (`constants/theme.ts`,
-   primary `#9333ea`). Tab icons are inline SVG (react-native-svg);
-   icon fonts (@expo/vector-icons) never rendered in his builds — don't
-   reintroduce them.
-6. **Emoji + text must be separate Text nodes** on Android buttons/labels:
-   an emoji inside the same `Text` as a bold label truncates the label's
-   end (bit us on filter chips and the Navigate button). `PrimaryButton`
-   has an `icon` prop for this.
+## Standing decisions — do NOT silently revert
+
+1. **No ratings. At all.** No event ratings, no organizer ratings
+   (Dari, 2026-11-01). The `party_ratings` table is unused leftover, as are
+   the dead `rating*` styles in `app/party/[id].tsx`.
+2. **Event type is free-text** (`parties.party_type`). No preset genre or
+   category lists, ever. **No venue choice** (House/Club) in the form either.
+3. **Organizer bar on the event detail** (avatar + @username + Follow): v2
+   brought it back after Dari's 2026-11-01 "no organizer name at all" call.
+   His re-decision is PENDING — don't treat either way as settled.
+4. **Design:** "Bold Violet 2" — dark + violet (`constants/theme.ts`,
+   primary `#9333ea`). Tab icons are inline SVG; icon fonts never rendered
+   in his builds — don't reintroduce them.
+5. **Secrets stay OUT of git:** `.env`, `google-maps-key.local`,
+   `google-services.json`, Firebase `*adminsdk*.json` (all gitignored;
+   google-services.json is local-only by Dari's convention, like the Maps
+   key). Maps key reaches cloud builds via the `GOOGLE_MAPS_API_KEY` env
+   var on expo.dev account **darijan10** (not `darijans-team`). Google
+   Cloud billing must stay OPEN or the map dies.
+6. One `follows` table for friends and organizers. Notification prefs live
+   in their own private table (they hold a saved location), not `profiles`.
+7. Internal names stay (`parties` table, `/party/[id]` route, `party_type`
+   column) although the UI says "events". No migration for wording.
 
 ## Fragile fixes — do not undo
 
-- **MapView renders only while the Map tab is focused** (`useIsFocused` in
-  `app/(tabs)/index.tsx`). A live MapView inside a detached screen crashes
-  Android with "child already has a parent".
-- **Realtime channel names carry a unique random suffix** per effect run
-  (`hooks/useRsvps.ts`, `hooks/useComments.ts`). Reusing a subscribed
-  channel name throws "cannot add postgres_changes callbacks after
-  subscribe()" when the effect re-runs (auth resolving changes userId).
-- **Map opens instantly on Skopje**; GPS centering happens in the
-  background (last-known → Balanced fix, skipped after the user drags).
-  Never gate the map behind a location await.
-- Parties refetch silently on Map/Events tab focus (`useFocusEffect`);
-  `useParties` must not flash the spinner once it has data.
+- **MapView renders only while the Map tab is focused** (`useIsFocused`,
+  `app/(tabs)/index.tsx`). A live MapView in a detached screen crashes
+  Android ("child already has a parent").
+- **Realtime channel names have a unique random suffix** per effect run
+  (`hooks/useRsvps.ts`, `hooks/useComments.ts`) — reusing a subscribed
+  channel name throws when the effect re-runs.
+- **Map opens instantly on Skopje**; GPS centering runs in the background
+  (last-known → Balanced, skipped after user drag). Never gate the map
+  behind a location await.
+- Parties refetch silently on Map/Events tab focus; `useParties` must not
+  flash the spinner once it has data.
+- **Emoji + text = separate Text nodes** in Android buttons/labels (an
+  emoji inside the label's `Text` truncates its end). `PrimaryButton`
+  has an `icon` prop for this.
 
-## Current state (2026-11-06)
+## Setup status
 
-- v2 social release merged (commit `54c1b03`): follows (People screen,
-  public profiles, FollowButton), friends-going on cards/detail,
-  Tonight tab (05:00 night cutoff, Live now), notifications.
-- The **organizer bar (avatar + @username + Follow) is back on the event
-  detail** in v2. This conflicts with Dari's 2026-11-01 "no organizer name
-  at all" call; his re-decision is PENDING — don't treat either way as
-  settled until he answers.
-- `expo-notifications` is a native dependency → v2 needs a fresh EAS
-  build; Metro alone won't run it.
-- `supabase/migration_social_notifications.sql` must be run in the
-  Supabase SQL editor for follows/push to work — run status UNCONFIRMED.
-- Push design: Expo Push Service; tokens in `push_tokens`; a pg_net
-  trigger on `parties` insert notifies followers + opted-in nearby users.
-  Android push needs `google-services.json` in the project root at build
-  time (local-only file, see secrets above).
+- Supabase: `schema.sql` and all migrations applied, including
+  `migration_social_notifications.sql`. Realtime on `rsvps`, `comments`.
+- Push: Firebase project created; `google-services.json` in project root
+  (local only); FCM V1 service-account key uploaded to EAS; EAS
+  `projectId` set in `app.json`. Push is sent by a Postgres trigger
+  (`notify_new_party` → `pg_net` → Expo API); no extra server.
+- Android development build WITH `expo-notifications` is installed on the
+  test phone.
+- Git: GitHub `main` is the single source of truth (v2 merged 2026-11-06).
+  The old local `master` folder on Dari's PC is retired — work from a
+  fresh clone of GitHub from now on.
 
-## Workflow rules
+## Not verified yet
 
-- Label every change **JS-only** (runs via Metro, no build) or **native**
-  (needs an EAS build). Dari hates 20-minute builds for JS changes —
-  batch native changes.
-- Internal names stay as they are (`parties` table, `/party/[id]` route,
-  `party_type` column) even though the UI says "events". No migration for
-  wording.
-- New Supabase tables need explicit GRANTs + RLS in the same migration
-  (Supabase requires this for tables created after 2026-10-30).
-- Verify with `npx tsc --noEmit` and `npx expo lint` before calling
-  something done. Never claim a change works on Dari's phone until he
-  confirms it there.
+- Two-account test: follow → publish → push arrives; "friends going" shows.
+  If push fails: `select status_code, content from net._http_response
+  order by created desc limit 5;`
+- Tonight/Tomorrow/Friends/Following filter chips exist in the PC working
+  copy — confirm they reach GitHub and test on a real device.
+- Google Maps key restriction (package + SHA-1, Maps SDK only) + budget
+  alert — confirm done.
+
+## Known limitations / roadmap
+
+1. **House-party safety** (top priority before public launch): exact address
+   is public. Plan: approximate area until organizer approves, 18+ option,
+   verification.
+2. Past events are not pruned from the Events list (filters hide them).
+3. Capacity is only visual; the DB does not block RSVPs over capacity.
+4. `usePartyStats` loads all "going" rows client-side — move to a view/RPC.
+5. Moderation is manual (reports table); auto-hide after N reports planned.
+6. Get 5–10 real organizers publishing regularly (the app is useless empty).
+7. Songkick auto-import of Skopje concerts is the planned content seed
+   (needs Dari's free Songkick API key, kept server-side).
+
+## Working rules
+
+- Read `AGENTS.md` + this file before working. Check versioned Expo docs
+  before touching Expo/RN APIs (SDK 57).
+- Run `npx tsc --noEmit` and `npx expo lint` before declaring done. Never
+  claim a change works on Dari's phone until he confirms it there.
+- Label every change **JS-only** (Metro, no build) or **native** (needs
+  `eas build --profile development --platform android`, ~20 min). Batch
+  native changes; Dari hates a build per tweak.
+- Add packages with `npx expo install <pkg>`. New Supabase tables need
+  explicit GRANTs + RLS in the same migration.
+- Commit per feature with clear messages; update this file when state changes.
