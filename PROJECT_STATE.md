@@ -81,8 +81,12 @@ do not rename).
 - Android development build WITH `expo-notifications` is installed on the
   test phone.
 - Git: GitHub `main` is the single source of truth (v2 merged 2026-11-06).
-  The old local `master` folder on Dari's PC is retired — work from a
-  fresh clone of GitHub from now on.
+  **Workflow (Dari, 2026-11-06):** the Claude working on Dari's PC cannot
+  use GitHub at all. It delivers, at the end of each session, a full
+  project zip + an updated version of this file via Dari; the other Muse
+  (this repo's manager) reviews the changes, merges them, commits and
+  pushes. The old local `master` folder on Dari's PC is retired — nobody
+  works from it anymore.
 
 ## Not verified yet
 
