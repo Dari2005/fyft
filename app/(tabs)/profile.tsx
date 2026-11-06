@@ -12,6 +12,7 @@ import {
 import { Link } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/lib/AuthContext';
+import { useSocial } from '@/lib/SocialContext';
 import { useParties } from '@/hooks/useParties';
 import { supabase } from '@/lib/supabase';
 import { uploadPartyMedia } from '@/lib/media';
@@ -23,6 +24,7 @@ import { Colors, Spacing } from '@/constants/theme';
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { parties } = useParties();
+  const { following } = useSocial();
   const [username, setUsername] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -117,6 +119,21 @@ export default function ProfileScreen() {
         </Text>
         <Text style={styles.name}>{displayName}</Text>
         <Text style={styles.email}>{user.email}</Text>
+        <Text style={styles.followingCount}>
+          <Text style={styles.followingNum}>{following.length}</Text> following
+        </Text>
+        <View style={styles.actionsRow}>
+          <Link href="/people" asChild>
+            <Pressable style={styles.actionButton}>
+              <Text style={styles.actionText}>👥 Find people</Text>
+            </Pressable>
+          </Link>
+          <Link href="/notifications" asChild>
+            <Pressable style={styles.actionButton}>
+              <Text style={styles.actionText}>🔔 Notifications</Text>
+            </Pressable>
+          </Link>
+        </View>
         <View style={styles.signOut}>
           <PrimaryButton title="Sign Out" variant="outline" onPress={signOut} />
         </View>
@@ -197,6 +214,18 @@ const styles = StyleSheet.create({
   changePhoto: { color: Colors.muted, fontSize: 13, marginBottom: Spacing.xs },
   name: { color: Colors.text, fontSize: 22, fontWeight: '800' },
   email: { color: Colors.muted, fontSize: 14 },
+  followingCount: { color: Colors.muted, fontSize: 14, marginTop: 2 },
+  followingNum: { color: Colors.text, fontWeight: '800' },
+  actionsRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
+  actionButton: {
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+  },
+  actionText: { color: Colors.text, fontSize: 14, fontWeight: '700' },
   signOut: { width: 140, marginTop: Spacing.md },
   sectionTitle: {
     color: Colors.text,

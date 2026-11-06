@@ -14,6 +14,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/AuthContext';
+import { useSocial } from '@/lib/SocialContext';
 import { useParties } from '@/hooks/useParties';
 import { usePartyStats } from '@/hooks/usePartyStats';
 import { haversineKm } from '@/lib/geo';
@@ -63,6 +64,7 @@ export default function PartyListScreen() {
   const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
   const { stats, refresh: refreshStats } = usePartyStats();
+  const { friendsGoing, refresh: refreshSocial } = useSocial();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortMode>('soonest');
@@ -153,8 +155,8 @@ export default function PartyListScreen() {
   const isFiltering = query.trim() !== '' || timeFilter !== 'all';
 
   const onRefresh = useCallback(async () => {
-    await Promise.all([refresh(), refreshStats()]);
-  }, [refresh, refreshStats]);
+    await Promise.all([refresh(), refreshStats(), refreshSocial()]);
+  }, [refresh, refreshStats, refreshSocial]);
 
   // Silently refetch whenever the Parties tab gains focus, so a newly
   // published party appears without restarting the app.
@@ -162,7 +164,8 @@ export default function PartyListScreen() {
     useCallback(() => {
       refresh();
       refreshStats();
-    }, [refresh, refreshStats])
+      refreshSocial();
+    }, [refresh, refreshStats, refreshSocial])
   );
 
   return (
@@ -238,6 +241,7 @@ export default function PartyListScreen() {
           <PartyCard
             party={item}
             stats={stats[item.id]}
+            friendsGoing={friendsGoing[item.id]}
             distanceKm={
               sort === 'nearest' || coords
                 ? distanceOf(item.latitude, item.longitude)

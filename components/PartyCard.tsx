@@ -2,7 +2,8 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Colors, Spacing } from '@/constants/theme';
 import { formatDistance } from '@/lib/geo';
-import type { Party, PartyStats } from '@/lib/types';
+import { isLiveNow } from '@/lib/tonight';
+import type { Party, PartyStats, ProfileLite } from '@/lib/types';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -19,11 +20,28 @@ interface PartyCardProps {
   stats?: PartyStats;
   /** Distance from the user in km, when location is known. */
   distanceKm?: number | null;
+  /** People the viewer follows who are going — shown as a "friends" line. */
+  friendsGoing?: ProfileLite[];
 }
 
-export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) {
+/** "@ana, @marko +2 going" */
+function friendsLabel(friends: ProfileLite[]): string {
+  const names = friends.slice(0, 2).map((f) => `@${f.username ?? 'user'}`);
+  const extra = friends.length - names.length;
+  return `👥 ${names.join(', ')}${extra > 0 ? ` +${extra}` : ''} going`;
+}
+
+export default function PartyCard({
+  party,
+  stats,
+  distanceKm,
+  friendsGoing,
+}: PartyCardProps) {
   const cover = party.media.find((m) => m.type === 'image');
   const badges: string[] = [];
+  if (isLiveNow(party.starts_at)) {
+    badges.push('🔴 Live now');
+  }
   if (distanceKm != null) {
     badges.push(`📍 ${formatDistance(distanceKm)}`);
   }
@@ -64,6 +82,11 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
             {party.capacity != null && (
               <Text style={styles.organizer} numberOfLines={1}>
                 {`up to ${party.capacity} guests`}
+              </Text>
+            )}
+            {friendsGoing && friendsGoing.length > 0 && (
+              <Text style={styles.friends} numberOfLines={1}>
+                {friendsLabel(friendsGoing)}
               </Text>
             )}
             {badges.length > 0 && (
@@ -134,4 +157,5 @@ const styles = StyleSheet.create({
   meta: { color: Colors.muted, fontSize: 14, marginTop: 3 },
   organizer: { color: Colors.muted, fontSize: 13, marginTop: 2 },
   badges: { color: '#fbbf24', fontSize: 13, fontWeight: '600', marginTop: 2 },
+  friends: { color: Colors.primaryBright, fontSize: 13, fontWeight: '700', marginTop: 3 },
 });

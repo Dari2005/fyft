@@ -55,6 +55,13 @@
         {
           "locationWhenInUsePermission": "Allow Fyft to use your location to sort parties near you and show distances."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#9333ea",
+          "defaultChannel": "default"
+        }
       ]
     ],
     "experiments": {

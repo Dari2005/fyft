@@ -85,6 +85,37 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   avatar initial, username/email, "Мои журки" (own published parties) and
   sign out. Still to do: app icon, splash, EAS build for TestFlight/Play.
 
+- **M6 — Social + notifications** ✅
+  - **Tonight tab**: only today (until 05:00) and tomorrow, live events included
+    for 4 h after they start; filters *Friends going* / *From people I follow*.
+  - **Follow people & organizers** (`follows` table): follow button on event
+    pages and user profiles (`app/user/[id].tsx`), search/manage in
+    `app/people.tsx`.
+  - **Friends going**: everyone you follow who RSVP'd "going" shows up on cards
+    (`👥 @ana, @marko +2 going`) and on the event page.
+  - **Notifications** (settings in Profile → Notifications):
+    local reminder 1 h before events you're going/interested in; push when
+    someone you follow publishes; push for new events within N km of you.
+
+## Notifications setup
+
+1. Run `supabase/migration_social_notifications.sql` once in the SQL Editor
+   (creates `follows`, `push_tokens`, `notification_prefs` and the
+   `notify_new_party` trigger that sends pushes through the Expo push API via
+   `pg_net`).
+2. `npm install` (adds `expo-notifications`) and run `eas init` so the project
+   gets an EAS `projectId` (needed to issue push tokens).
+3. **Android pushes** need FCM credentials: create a Firebase project, add the
+   Android app `com.dari2005.fyft`, then follow
+   https://docs.expo.dev/push-notifications/fcm-credentials/ (upload the FCM
+   V1 service-account key with `eas credentials`). **iOS** needs an Apple
+   Developer account; EAS sets up the push key for you.
+4. Rebuild the development build (`eas build --profile development`) — the
+   notifications plugin changes the native project. Push does not work in Expo
+   Go on Android or on simulators/emulators without Google Play.
+
+Local reminders (1 h before) work without steps 1 and 3.
+
 **Phase 2 (out of scope):** real ticket purchasing, payments, refunds — needs a
 legal entity and a payment provider.
 

@@ -11,21 +11,33 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import Svg, { Line, Path } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
+import { useSocial } from '@/lib/SocialContext';
+import { onRsvpChanged } from '@/lib/notifications';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
 import { useComments } from '@/hooks/useComments';
 import { reportParty } from '@/lib/reports';
 import PrimaryButton from '@/components/PrimaryButton';
+import Avatar from '@/components/Avatar';
+import FollowButton from '@/components/FollowButton';
 import { Colors, Spacing } from '@/constants/theme';
 import { parsePartyMedia, type Party } from '@/lib/types';
 
 const REPORT_REASONS = ['spam', 'fake event', 'inappropriate content', 'other'];
 
 const GALLERY_WIDTH = Dimensions.get('window').width - Spacing.md * 2;
+
+/** "@ana is going" / "@ana and @marko are going" / "@ana, @marko and 3 more are going" */
+function friendsSentence(friends: { username: string | null }[]): string {
+  const names = friends.map((f) => `@${f.username ?? 'user'}`);
+  if (names.length === 1) return `${names[0]} is going`;
+  if (names.length === 2) return `${names[0]} and ${names[1]} are going`;
+  return `${names[0]}, ${names[1]} and ${names.length - 2} more you follow are going`;
+}
 
 /** One video in the party gallery, with native playback controls. */
 function GalleryVideo({ url }: { url: string }) {
@@ -47,6 +59,8 @@ export default function PartyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const [party, setParty] = useState<Party | null>(null);
+  const [organizerAvatar, setOrganizerAvatar] = useState<string | null>(null);
+  const { friendsGoing } = useSocial();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +85,7 @@ export default function PartyDetailScreen() {
       try {
         const { data, error: qErr } = await supabase
           .from('parties')
-          .select('*, profiles!parties_organizer_id_fkey(username)')
+          .select('*, profiles!parties_organizer_id_fkey(username, avatar_url)')
           .eq('id', id)
           .single();
         if (qErr) throw qErr;
@@ -90,6 +104,7 @@ export default function PartyDetailScreen() {
           created_at: data.created_at,
           organizer_username: data.profiles?.username ?? undefined,
         });
+        setOrganizerAvatar(data.profiles?.avatar_url ?? null);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load.');
       } finally {
@@ -100,7 +115,13 @@ export default function PartyDetailScreen() {
   }, [id]);
 
   const handleRsvp = async (status: RsvpStatus) => {
+    const adding = myStatus !== status;
     const result = await toggleRsvp(status);
+    if (result === 'ok' && user) {
+      // Ask for notification permission on the first RSVP, and (re)schedule
+      // the "starts in 1 hour" reminder — or cancel it when the RSVP is removed.
+      onRsvpChanged(user.id, adding);
+    }
     if (result === 'logged-out') {
       Alert.alert('Sign In', 'You must be signed in to RSVP.', [
         { text: 'Cancel', style: 'cancel' },
@@ -228,6 +249,31 @@ export default function PartyDetailScreen() {
           </View>
         </View>
       )}
+      {party.organizer_username && (
+        <View style={styles.organizerBar}>
+          <Link href={{ pathname: '/user/[id]', params: { id: party.organizer_id } }} asChild>
+            <TouchableOpacity style={styles.organizerInfo} activeOpacity={0.7}>
+              <Avatar
+                profile={{ username: party.organizer_username, avatar_url: organizerAvatar }}
+                size={30}
+              />
+              <Text style={styles.organizerName} numberOfLines={1}>
+                @{party.organizer_username}
+              </Text>
+            </TouchableOpacity>
+          </Link>
+          {user?.id !== party.organizer_id && (
+            <FollowButton
+              compact
+              profile={{
+                id: party.organizer_id,
+                username: party.organizer_username,
+                avatar_url: organizerAvatar,
+              }}
+            />
+          )}
+        </View>
+      )}
       <Text style={styles.meta}>
         {new Date(party.starts_at).toLocaleString('en-US', {
           weekday: 'long',
@@ -291,6 +337,23 @@ export default function PartyDetailScreen() {
           <Text style={styles.interested}>⭐ {interestedCount} interested</Text>
         )}
       </View>
+
+      {(friendsGoing[party.id]?.length ?? 0) > 0 && (
+        <View style={styles.friendsBox}>
+          <View style={styles.friendsAvatars}>
+            {friendsGoing[party.id].slice(0, 6).map((f, i) => (
+              <Link key={f.id} href={{ pathname: '/user/[id]', params: { id: f.id } }} asChild>
+                <TouchableOpacity style={[styles.friendAvatar, i > 0 && styles.friendAvatarOverlap]}>
+                  <Avatar profile={f} size={34} />
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
+          <Text style={styles.friendsText} numberOfLines={2}>
+            {friendsSentence(friendsGoing[party.id])}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.rsvpRow}>
         <View style={styles.rsvpButton}>
@@ -434,6 +497,30 @@ const styles = StyleSheet.create({
   deleteText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
   chatButton: { marginTop: Spacing.md },
   organizerRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+  organizerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  organizerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  organizerName: { color: Colors.primaryBright, fontSize: 15, fontWeight: '700', flexShrink: 1 },
+  friendsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 12,
+    padding: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  friendsAvatars: { flexDirection: 'row' },
+  friendAvatar: { borderWidth: 2, borderColor: Colors.surface, borderRadius: 19 },
+  friendAvatarOverlap: { marginLeft: -10 },
+  friendsText: { flex: 1, color: Colors.text, fontSize: 14, fontWeight: '600' },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { AuthError, Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { unregisterPush } from './notifications';
 
 export type AuthResult = { error: AuthError | null };
 
@@ -60,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // Must run while still signed in (RLS only lets you delete your own token).
+    await unregisterPush();
     await supabase.auth.signOut();
   }, []);
 

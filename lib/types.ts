@@ -69,3 +69,19 @@ export interface Report {
   reason: string;
   created_at: string;
 }
+
+/** Minimal public profile, used for follow lists and "friends going". */
+export interface ProfileLite {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
+}
+
+/** Row of notification_prefs (private to its owner). */
+export interface NotificationPrefs {
+  following_enabled: boolean;
+  nearby_enabled: boolean;
+  nearby_lat: number | null;
+  nearby_lng: number | null;
+  nearby_radius_km: number;
+}
