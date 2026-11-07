@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-06 (merged from both AIs' notes — GitHub `main` is canonical)_
+_Last updated: 2026-11-07 (Maps key restriction confirmed)_
 
 ## What this is
 
@@ -48,6 +48,12 @@ do not rename).
    key). Maps key reaches cloud builds via the `GOOGLE_MAPS_API_KEY` env
    var on expo.dev account **darijan10** (not `darijans-team`). Google
    Cloud billing must stay OPEN or the map dies.
+   The Maps key (Google Cloud project `fyft-512123`) is restricted
+   (2026-11-07): Android apps only (`com.dari2005.fyft` + the EAS
+   development keystore SHA-1) and Maps SDK for Android only. When the
+   app goes to Google Play, add the Play App Signing SHA-1 too. iOS will
+   need a separate key restricted to the iOS bundle ID. Firebase lives in
+   a different Google project (`fyft-9d540`).
 6. One `follows` table for friends and organizers. Notification prefs live
    in their own private table (they hold a saved location), not `profiles`.
 7. Internal names stay (`parties` table, `/party/[id]` route, `party_type`
@@ -95,8 +101,7 @@ do not rename).
   order by created desc limit 5;`
 - Tonight/Tomorrow/Friends/Following filter chips exist in the PC working
   copy — confirm they reach GitHub and test on a real device.
-- Google Maps key restriction (package + SHA-1, Maps SDK only) + budget
-  alert — confirm done.
+- Google Cloud budget alert — not set up yet.
 
 ## Known limitations / roadmap
 
