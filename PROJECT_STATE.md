@@ -110,6 +110,10 @@ do not rename).
    required** when creating an event ("How many people can come?", plain
    number, no preset chips — Dari rejected presets). Per-event chat
    removed (`app/chat`, `hooks/useComments` deleted; `comments` table left).
+   **Event card = "B"**: big photo on the left (calendar icon when there is
+   no photo), date + title + place + crowd meter on the right, no
+   description. Videos stay in the app (create + event detail) but are
+   NEVER shown on the Events card (Dari, 2026-11-08).
 
 ## Fragile fixes — do not undo
 
