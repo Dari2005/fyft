@@ -193,6 +193,16 @@ do not rename).
   signed-in user (the old friends feature needed that). Tighten RLS so
   users read only their own RSVPs and expose counts via a view/RPC (also
   fixes roadmap 4). Needs a migration — not done.
+- **OPEN DECISION — evening-only? (Dari thinking, answer expected
+  2026-11-09).** Option A: Fyft = going out in the EVENING only (parties,
+  clubs, gigs, concerts, bar nights); soft: default start 21:00, warning
+  (not a block) for starts before 17:00; drop the "Daytime/Tonight" split
+  and end-time ideas. Option B: all events incl. daytime — then add an
+  optional `ends_at` column (exact LIVE, multi-day), split "Today" into
+  Daytime / Tonight, add "Happening now". Claude recommended A for launch
+  (the empty-party problem is a night problem; easier to fill the app).
+  Either way: hide events that are already over (roadmap 2). Do NOT build
+  A or B until Dari decides.
 - **Open question (Dari, 2026-11-08):** at launch Dari will publish most
   events himself, so they would all show "Hosted by @darijan". Proposed:
   an optional "Host / venue name" on the event (new `parties.host_name`
