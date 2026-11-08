@@ -15,7 +15,7 @@ import {
 import EventFilterBar from '@/components/EventFilterBar';
 import Logo from '@/components/Logo';
 import Icon from '@/components/Icon';
-import { DARK_MAP_STYLE } from '@/lib/mapStyle';
+import { mapStyleFor } from '@/lib/mapStyle';
 import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { Party } from '@/lib/types';
@@ -125,9 +125,11 @@ export default function MapScreen() {
     <View style={styles.container}>
       {isFocused ? (
         <MapView
+          // Remount on theme change so the new map style always applies.
+          key={Colors.scheme}
           ref={mapRef}
           style={styles.map}
-          customMapStyle={Colors.scheme === 'dark' ? DARK_MAP_STYLE : []}
+          customMapStyle={mapStyleFor(Colors.scheme)}
           initialRegion={lastRegion ?? SKOPJE_REGION}
           showsUserLocation={showsUserLocation}
           onRegionChangeComplete={setLastRegion}

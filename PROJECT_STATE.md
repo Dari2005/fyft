@@ -158,8 +158,9 @@ do not rename).
   on screen. Share uses RN `Share` (text only, no web link yet). Not yet
   seen on Dari's phone.
 - **Light theme + Appearance picker (2026-11-08, JS-only)** — not yet seen
-  on Dari's phone. Check both themes on every screen; light map = plain
-  Google style, dark = `lib/mapStyle.ts`. The "Tonight" chip now reads
+  on Dari's phone. Check both themes on every screen; light map =
+  `LIGHT_MAP_STYLE`, dark = `DARK_MAP_STYLE` (`lib/mapStyle.ts`, MapView
+  remounts via `key={scheme}` so the switch always applies). "Tonight" chip reads
   "Today" in the daytime (same 05:00 rule as the section headers).
 - **Push may be broken: no EAS `projectId` in `app.json`** (found
   2026-11-08 — Metro warns "No EAS projectId — run eas init"). The Setup
