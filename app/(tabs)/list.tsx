@@ -28,6 +28,7 @@ import PartyCard from '@/components/PartyCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import Icon, { type IconName } from '@/components/Icon';
 import EventFilterBar, { FilterChip } from '@/components/EventFilterBar';
+import Logo from '@/components/Logo';
 import { Accent, Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
 
@@ -157,7 +158,7 @@ export default function PartyListScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}>
-        <Text style={styles.brand}>Fyft</Text>
+        <Logo height={20} />
         <Text style={styles.heading}>Events in Skopje</Text>
       </View>
 
@@ -259,7 +260,6 @@ export default function PartyListScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs },
-  brand: { color: Colors.muted, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   heading: { color: Colors.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.4, marginTop: 2 },
   filterBar: { marginTop: Spacing.md },
   list: { padding: Spacing.md, paddingBottom: 96 },

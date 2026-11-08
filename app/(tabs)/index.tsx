@@ -13,6 +13,7 @@ import {
   type EventFilters,
 } from '@/lib/eventFilters';
 import EventFilterBar from '@/components/EventFilterBar';
+import Logo from '@/components/Logo';
 import Icon from '@/components/Icon';
 import { DARK_MAP_STYLE } from '@/lib/mapStyle';
 import { Accent, Colors, Spacing } from '@/constants/theme';
@@ -209,7 +210,9 @@ export default function MapScreen() {
       {/* Floating overlay: brand title, search + filters, create shortcut. */}
       <View style={styles.overlay} pointerEvents="box-none">
         <View style={[styles.topBar, { paddingTop: insets.top + Spacing.xs }]} pointerEvents="box-none">
-          <Text style={styles.appTitle}>Fyft</Text>
+          <View style={styles.appTitle}>
+            <Logo height={20} />
+          </View>
           <EventFilterBar
             filters={filters}
             onChange={setFilters}
@@ -299,16 +302,7 @@ const styles = StyleSheet.create({
   },
   topBar: {},
   filterBar: { marginTop: Spacing.xs },
-  appTitle: {
-    paddingHorizontal: Spacing.md,
-    color: Colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
+  appTitle: { paddingHorizontal: Spacing.md, alignSelf: 'flex-start' },
   fab: {
     position: 'absolute',
     right: Spacing.lg,
