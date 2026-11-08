@@ -52,8 +52,8 @@ export function FilterChip({ label, icon, active, onPress, floating }: ChipProps
 interface Props {
   filters: EventFilters;
   onChange: (next: EventFilters) => void;
-  /** Extra chips shown first (e.g. the Events list's sort options). */
-  leadingChips?: ReactNode;
+  /** Extra chips shown last, after the filters (e.g. the Events list's sort options). */
+  trailingChips?: ReactNode;
   /** Translucent glass style for drawing over the map. */
   floating?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -63,7 +63,7 @@ interface Props {
 export default function EventFilterBar({
   filters,
   onChange,
-  leadingChips,
+  trailingChips,
   floating,
   style,
 }: Props) {
@@ -96,8 +96,6 @@ export default function EventFilterBar({
         style={styles.chipScroll}
         contentContainerStyle={styles.chipRow}
       >
-        {leadingChips}
-        {leadingChips ? <View style={styles.chipDivider} /> : null}
         {TIMES.map((t) => (
           <FilterChip
             key={t.key}
@@ -119,6 +117,8 @@ export default function EventFilterBar({
             floating={floating}
           />
         ))}
+        {trailingChips ? <View style={styles.chipDivider} /> : null}
+        {trailingChips}
       </ScrollView>
     </View>
   );

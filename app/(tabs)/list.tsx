@@ -165,7 +165,7 @@ export default function PartyListScreen() {
         filters={filters}
         onChange={setFilters}
         style={styles.filterBar}
-        leadingChips={SORTS.map((s) => (
+        trailingChips={SORTS.map((s) => (
           <FilterChip
             key={s.key}
             icon={s.icon}
@@ -248,7 +248,7 @@ export default function PartyListScreen() {
 
       <Link href={user ? '/create' : '/auth'} asChild>
         <TouchableOpacity style={styles.fab} activeOpacity={0.85}>
-          <Icon name="plus" size={18} color={Colors.primaryBright} strokeWidth={2.4} />
+          <Icon name="plus" size={16} color={Colors.primaryBright} strokeWidth={2.4} />
           <Text style={styles.fabText}>{user ? 'New event' : 'Sign in to publish'}</Text>
         </TouchableOpacity>
       </Link>
@@ -259,8 +259,8 @@ export default function PartyListScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs },
-  brand: { color: Colors.muted, fontSize: 14, fontWeight: '700', letterSpacing: 1 },
-  heading: { color: Colors.text, fontSize: 28, fontWeight: '700', marginTop: 2 },
+  brand: { color: Colors.muted, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+  heading: { color: Colors.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.4, marginTop: 2 },
   filterBar: { marginTop: Spacing.md },
   list: { padding: Spacing.md, paddingBottom: 96 },
   sectionTitle: {
@@ -280,15 +280,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderRadius: 999,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 13,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
   },
-  fabText: { color: Colors.primaryText, fontSize: 15, fontWeight: '700' },
+  fabText: { color: Colors.primaryText, fontSize: 14, fontWeight: '700' },
   empty: { alignItems: 'center', marginTop: Spacing.xl },
   emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
   emptyText: { color: Colors.muted, fontSize: 14, marginTop: Spacing.xs, textAlign: 'center' },
