@@ -18,7 +18,6 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
-import { useSocial } from '@/lib/SocialContext';
 import { onRsvpChanged } from '@/lib/notifications';
 import { isLiveNow } from '@/lib/tonight';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
@@ -48,14 +47,6 @@ function formatWhen(iso: string): string {
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${hh}:${mm}`;
 }
 
-/** "Ana is going" / "Ana and Marko are going" / "Ana, Marko and 3 more you follow are going" */
-function friendsSentence(friends: { username: string | null }[]): string {
-  const names = friends.map((f) => f.username ?? 'user');
-  if (names.length === 1) return `${names[0]} is going`;
-  if (names.length === 2) return `${names[0]} and ${names[1]} are going`;
-  return `${names[0]}, ${names[1]} and ${names.length - 2} more you follow are going`;
-}
-
 /** One video in the hero gallery, with native playback controls. */
 function GalleryVideo({ url }: { url: string }) {
   const styles = useThemedStyles(makeStyles);
@@ -79,7 +70,7 @@ function FloatButton({ icon, onPress, label }: { icon: IconName; onPress: () => 
 /**
  * Event detail ("Dark Glass", 2026-11-08): photo/video hero that fades into
  * the background, date line + title + type, one glass info block (place +
- * Directions, going/capacity, friends), host, description, and a dock with
+ * Directions, going/capacity), host, description, and a dock with
  * Going / Interested / Chat that stays on screen while scrolling.
  */
 export default function PartyDetailScreen() {
@@ -90,7 +81,6 @@ export default function PartyDetailScreen() {
   const insets = useSafeAreaInsets();
   const [party, setParty] = useState<Party | null>(null);
   const [organizerAvatar, setOrganizerAvatar] = useState<string | null>(null);
-  const { friendsGoing } = useSocial();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [slide, setSlide] = useState(0);
@@ -256,7 +246,6 @@ export default function PartyDetailScreen() {
   ]
     .filter(Boolean)
     .join(' · ');
-  const friends = friendsGoing[party.id] ?? [];
   const isOrganizer = user?.id === party.organizer_id;
   const busy = actionLoading || rsvpLoading;
 
@@ -335,7 +324,7 @@ export default function PartyDetailScreen() {
             </View>
           ) : null}
 
-          {/* Info block: place, going/capacity, friends. */}
+          {/* Info block: place, going/capacity. */}
           <View style={styles.infoBox}>
             {(party.address || hasLocation) && (
               <View style={styles.infoRow}>
@@ -373,22 +362,6 @@ export default function PartyDetailScreen() {
                 </View>
               )}
             </View>
-            {friends.length > 0 && (
-              <View style={[styles.infoRow, styles.infoRowDivider]}>
-                <View style={styles.friendsAvatars}>
-                  {friends.slice(0, 5).map((f, i) => (
-                    <Link key={f.id} href={{ pathname: '/user/[id]', params: { id: f.id } }} asChild>
-                      <TouchableOpacity style={[styles.friendAvatar, i > 0 && styles.friendAvatarOverlap]}>
-                        <Avatar profile={f} size={26} />
-                      </TouchableOpacity>
-                    </Link>
-                  ))}
-                </View>
-                <Text style={styles.infoText} numberOfLines={2}>
-                  {friendsSentence(friends)}
-                </Text>
-              </View>
-            )}
           </View>
 
           {party.organizer_username && (
@@ -604,9 +577,6 @@ const makeStyles = (Colors: Palette) =>
   progressTrack: { height: 4, borderRadius: 2, backgroundColor: Colors.surfaceHigh, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: Colors.primary },
   progressFillFull: { backgroundColor: Colors.danger },
-  friendsAvatars: { flexDirection: 'row' },
-  friendAvatar: { borderWidth: 1.5, borderColor: Colors.surface, borderRadius: 15 },
-  friendAvatarOverlap: { marginLeft: -8 },
 
   sectionTitle: { color: Colors.muted, fontSize: 13, fontWeight: '700', marginTop: Spacing.sm },
   hostBox: {

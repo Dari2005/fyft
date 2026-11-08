@@ -14,11 +14,16 @@ import { useAuth } from '@/lib/AuthContext';
 import { useSocial } from '@/lib/SocialContext';
 import Avatar from '@/components/Avatar';
 import FollowButton from '@/components/FollowButton';
+import Icon from '@/components/Icon';
 import { Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { ProfileLite } from '@/lib/types';
 
-/** Find people / organizers by username, and manage who you follow. */
+/**
+ * Organizers: search people who have published events, and manage which
+ * organizers you follow (their new events -> "Following" filter + push).
+ * Only accounts with at least one event show up — there are no friends.
+ */
 export default function PeopleScreen() {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
@@ -37,10 +42,15 @@ export default function PeopleScreen() {
       setSearching(true);
       const { data } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        // Inner join: only profiles that organize at least one event.
+        .select('id, username, avatar_url, parties!parties_organizer_id_fkey!inner(id)')
         .ilike('username', `%${q}%`)
         .limit(30);
-      setResults(((data ?? []) as ProfileLite[]).filter((p) => p.id !== user?.id));
+      setResults(
+        (data ?? [])
+          .map((p) => ({ id: p.id, username: p.username, avatar_url: p.avatar_url }) as ProfileLite)
+          .filter((p) => p.id !== user?.id)
+      );
       setSearching(false);
     }, 300);
     return () => clearTimeout(timer);
@@ -52,11 +62,11 @@ export default function PeopleScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Icon name="search" size={17} color={Colors.muted} />
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search by username…"
+          placeholder="Search organizers…"
           placeholderTextColor={Colors.muted}
           style={styles.searchInput}
           autoCapitalize="none"
@@ -91,8 +101,8 @@ export default function PeopleScreen() {
           searching ? null : (
             <Text style={styles.empty}>
               {showingSearch
-                ? 'Nobody found with that username.'
-                : 'You are not following anyone yet. Search for friends, clubs and organizers above — their plans will show up in the app.'}
+                ? 'No organizer found with that name.'
+                : 'You are not following any organizers yet. Follow clubs and organizers to see their new events under the Following filter.'}
             </Text>
           )
         }
@@ -110,12 +120,11 @@ const makeStyles = (Colors: Palette) =>
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 24,
+    borderRadius: 14,
     margin: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     gap: Spacing.sm,
   },
-  searchIcon: { fontSize: 16 },
   searchInput: { flex: 1, color: Colors.text, fontSize: 15, paddingVertical: 10 },
   sectionTitle: {
     color: Colors.text,

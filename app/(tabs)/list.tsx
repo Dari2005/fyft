@@ -58,7 +58,7 @@ export default function PartyListScreen() {
   const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
   const { stats, refresh: refreshStats } = usePartyStats();
-  const { friendsGoing, followingIds, refresh: refreshSocial } = useSocial();
+  const { followingIds, refresh: refreshSocial } = useSocial();
   const insets = useSafeAreaInsets();
   const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
   const [sort, setSort] = useState<SortMode>('soonest');
@@ -109,7 +109,7 @@ export default function PartyListScreen() {
 
   const sections = useMemo<Section[]>(() => {
     const now = new Date();
-    const matches = makeEventMatcher(filters, { now, friendsGoing, followingIds });
+    const matches = makeEventMatcher(filters, { now, followingIds });
     const list = parties.filter(matches).sort((a, b) => {
       switch (sort) {
         case 'nearest': {
@@ -138,7 +138,7 @@ export default function PartyListScreen() {
       else out.push({ key: g.key, title: g.title, data: [p] });
     }
     return out;
-  }, [parties, filters, friendsGoing, followingIds, sort, stats, distanceOf]);
+  }, [parties, filters, followingIds, sort, stats, distanceOf]);
 
   const isFiltering = hasFilters(filters);
   const needsLogin = !user && filters.people !== 'all';
@@ -203,7 +203,6 @@ export default function PartyListScreen() {
             <PartyCard
               party={item}
               stats={stats[item.id]}
-              friendsGoing={friendsGoing[item.id]}
               distanceKm={
                 sort === 'nearest' || coords
                   ? distanceOf(item.latitude, item.longitude)
@@ -239,7 +238,7 @@ export default function PartyListScreen() {
                   {error
                     ? 'Check that you ran supabase/schema.sql and set up .env'
                     : needsLogin
-                      ? 'Follow friends and organizers to see where they are going.'
+                      ? 'Follow organizers to see their events here.'
                       : isFiltering
                         ? 'Try different filters or a different search.'
                         : 'Be the first to publish one!'}

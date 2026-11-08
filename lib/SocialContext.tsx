@@ -12,11 +12,9 @@ import { useAuth } from './AuthContext';
 import type { ProfileLite } from './types';
 
 interface SocialContextValue {
-  /** People (friends and organizers) the signed-in user follows. */
+  /** Organizers the signed-in user follows (no friends layer, Dari 2026-11-08). */
   following: ProfileLite[];
   followingIds: Set<string>;
-  /** party id -> followed people who RSVP'd "going" (the "friends going" row). */
-  friendsGoing: Record<string, ProfileLite[]>;
   loading: boolean;
   isFollowing: (userId: string) => boolean;
   /** 'logged-out' when there is no user (caller sends them to sign in). */
@@ -28,21 +26,19 @@ interface SocialContextValue {
 const SocialContext = createContext<SocialContextValue | null>(null);
 
 /**
- * Holds who the user follows and which of those people are going to which
- * events. One shared copy, so the Tonight tab, the event list, the event page
- * and profile screens all agree and a follow button flips everywhere at once.
+ * Holds which organizers the user follows. One shared copy, so every Follow
+ * button and the "Following" filter flip at once. There is deliberately no
+ * "friends going" layer any more: nobody can see where anyone else is going.
  */
 export function SocialProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const [following, setFollowing] = useState<ProfileLite[]>([]);
-  const [friendsGoing, setFriendsGoing] = useState<Record<string, ProfileLite[]>>({});
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!userId) {
       setFollowing([]);
-      setFriendsGoing({});
       return;
     }
     try {
@@ -57,30 +53,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         return p ? [{ id: p.id, username: p.username, avatar_url: p.avatar_url }] : [];
       });
       setFollowing(list);
-
-      if (list.length === 0) {
-        setFriendsGoing({});
-        return;
-      }
-      const { data: rsvps, error: rErr } = await supabase
-        .from('rsvps')
-        .select('party_id, user_id')
-        .eq('status', 'going')
-        .in(
-          'user_id',
-          list.map((p) => p.id)
-        );
-      if (rErr) throw rErr;
-
-      const byId = new Map(list.map((p) => [p.id, p]));
-      const map: Record<string, ProfileLite[]> = {};
-      for (const r of rsvps ?? []) {
-        const person = byId.get(r.user_id);
-        if (person) (map[r.party_id] ??= []).push(person);
-      }
-      setFriendsGoing(map);
     } catch {
-      // Social info is a bonus layer — never block the screens if it fails.
+      // Follows are a bonus layer — never block the screens if it fails.
     }
   }, [userId]);
 
@@ -104,10 +78,9 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         setFollowing((prev) => prev.filter((p) => p.id !== profile.id));
         return 'error';
       }
-      refresh(); // pull in their upcoming "going" RSVPs
       return 'ok';
     },
-    [userId, refresh]
+    [userId]
   );
 
   const unfollow = useCallback<SocialContextValue['unfollow']>(
@@ -115,14 +88,6 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       if (!userId) return 'error';
       const before = following;
       setFollowing((prev) => prev.filter((p) => p.id !== targetId));
-      setFriendsGoing((prev) => {
-        const next: Record<string, ProfileLite[]> = {};
-        for (const [partyId, people] of Object.entries(prev)) {
-          const kept = people.filter((p) => p.id !== targetId);
-          if (kept.length) next[partyId] = kept;
-        }
-        return next;
-      });
       const { error } = await supabase
         .from('follows')
         .delete()
@@ -144,14 +109,13 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     () => ({
       following,
       followingIds,
-      friendsGoing,
       loading,
       isFollowing: (id: string) => followingIds.has(id),
       follow,
       unfollow,
       refresh,
     }),
-    [following, followingIds, friendsGoing, loading, follow, unfollow, refresh]
+    [following, followingIds, loading, follow, unfollow, refresh]
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;

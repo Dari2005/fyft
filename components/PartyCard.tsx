@@ -4,9 +4,8 @@ import { Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import { formatDistance } from '@/lib/geo';
 import { isLiveNow } from '@/lib/tonight';
-import Avatar from '@/components/Avatar';
 import Icon from '@/components/Icon';
-import type { Party, PartyStats, ProfileLite } from '@/lib/types';
+import type { Party, PartyStats } from '@/lib/types';
 
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -19,37 +18,27 @@ function formatWhen(iso: string): string {
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${hh}:${mm}`;
 }
 
-/** "Ana, Marko +22" — friends first, then everyone else going. */
-function goingLabel(friends: ProfileLite[], goingCount: number): string {
-  const names = friends.slice(0, 2).map((f) => f.username ?? 'user');
-  const rest = Math.max(goingCount, friends.length) - names.length;
-  return `${names.join(', ')}${rest > 0 ? ` +${rest}` : ''}`;
-}
-
 interface PartyCardProps {
   party: Party;
   stats?: PartyStats;
   /** Distance from the user in km, when location is known. */
   distanceKm?: number | null;
-  /** People the viewer follows who are going — shown as avatars. */
-  friendsGoing?: ProfileLite[];
 }
 
 /**
  * Event card ("design A", 2026-11-08): purple date line on top with a LIVE
- * badge, title, place, then a footer with friends' avatars / going count
- * and the free-text event type.
+ * badge, title, place, then a footer with the going count and
+ * the free-text event type (no names — nobody sees who is going).
  */
-export default function PartyCard({ party, stats, distanceKm, friendsGoing }: PartyCardProps) {
+export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
   const live = isLiveNow(party.starts_at);
-  const friends = friendsGoing ?? [];
   const goingCount = stats?.goingCount ?? 0;
   const place = [party.address, distanceKm != null ? formatDistance(distanceKm) : null]
     .filter(Boolean)
     .join(' · ');
-  const showFooter = friends.length > 0 || goingCount > 0 || !!party.party_type;
+  const showFooter = goingCount > 0 || !!party.party_type;
 
   return (
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
@@ -82,22 +71,7 @@ export default function PartyCard({ party, stats, distanceKm, friendsGoing }: Pa
         {showFooter && (
           <View style={styles.footer}>
             <View style={styles.going}>
-              {friends.length > 0 ? (
-                <>
-                  <View style={styles.avatars}>
-                    {friends.slice(0, 3).map((f, i) => (
-                      <View key={f.id} style={[styles.avatarRing, i > 0 && styles.avatarOverlap]}>
-                        <Avatar profile={f} size={20} />
-                      </View>
-                    ))}
-                  </View>
-                  <Text style={styles.goingText} numberOfLines={1}>
-                    {goingLabel(friends, goingCount)}
-                  </Text>
-                </>
-              ) : goingCount > 0 ? (
-                <Text style={styles.goingText}>{`${goingCount} going`}</Text>
-              ) : null}
+              {goingCount > 0 ? <Text style={styles.goingText}>{`${goingCount} going`}</Text> : null}
             </View>
             {party.party_type ? (
               <View style={styles.tag}>
@@ -144,9 +118,6 @@ const makeStyles = (Colors: Palette) =>
     borderTopColor: Colors.border,
   },
   going: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  avatars: { flexDirection: 'row' },
-  avatarRing: { borderWidth: 1.5, borderColor: Colors.surface, borderRadius: 12 },
-  avatarOverlap: { marginLeft: -7 },
   goingText: { flexShrink: 1, color: Colors.textSoft, fontSize: 13, fontWeight: '600' },
   tag: {
     borderWidth: 1,

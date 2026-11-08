@@ -88,17 +88,16 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
 - **M6 — Social + notifications** ✅
   - **Shared search + filters on Events and Map** (`components/EventFilterBar.tsx`,
     `lib/eventFilters.ts`): *Tonight* / *Tomorrow* (05:00 night boundary, live
-    events included for 4 h after they start), *This weekend*, *Friends going*,
-    *Following*. On the map only matching pins are drawn. (Tonight used to be
+    events included for 4 h after they start), *This weekend*,
+    *Following* (organizers you follow). On the map only matching pins are drawn. (Tonight used to be
     its own tab; it is now a filter chip.)
-  - **Follow people & organizers** (`follows` table): follow button on event
-    pages and user profiles (`app/user/[id].tsx`), search/manage in
-    `app/people.tsx`.
-  - **Friends going**: everyone you follow who RSVP'd "going" shows up on cards
-    (`👥 @ana, @marko +2 going`) and on the event page.
+  - **Follow organizers** (`follows` table): Follow button on event pages and
+    organizer pages (`app/user/[id].tsx`), search/manage in `app/people.tsx`.
+    There is deliberately no friends layer: nobody sees who is going where;
+    Profile shows your own plans privately.
   - **Notifications** (settings in Profile → Notifications):
     local reminder 1 h before events you're going/interested in; push when
-    someone you follow publishes; push for new events within N km of you.
+    an organizer you follow publishes; push for new events within N km of you.
 
 ## Notifications setup
 

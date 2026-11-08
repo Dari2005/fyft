@@ -23,7 +23,6 @@ const TIMES: { key: TimeFilter; label: string }[] = [
 ];
 
 const PEOPLE: { key: Exclude<PeopleFilter, 'all'>; icon: IconName; label: string }[] = [
-  { key: 'friends', icon: 'users', label: 'Friends going' },
   { key: 'following', icon: 'star', label: 'Following' },
 ];
 

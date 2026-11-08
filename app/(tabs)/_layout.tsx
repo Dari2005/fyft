@@ -158,6 +158,7 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          headerShown: false,
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon

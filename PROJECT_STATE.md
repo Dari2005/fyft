@@ -10,8 +10,8 @@ _Last updated: 2026-11-08 (light theme + Appearance; Dark Glass; new logo)_
 
 **Fyft** — a mobile app (Android first, iOS later) for discovering ALL events in
 Skopje (concerts, parties, sports, meetups…), not just parties: map, event list,
-RSVPs with live capacity, per-event chat, follow people/organizers, "friends
-going", reminders and push notifications.
+RSVPs with live capacity, per-event chat, follow ORGANIZERS (no friends —
+see decision 8), reminders and push notifications.
 Stack: React Native (Expo SDK 57, expo-router, TypeScript) + Supabase
 (Postgres, Auth, RLS, Realtime, Storage). Push via Expo Push Service + FCM.
 Goal of the repo: a portfolio project (public GitHub), so code quality and an
@@ -25,11 +25,11 @@ do not rename).
   `create`, `auth`.
 - Search + filters are shared by Events and Map: `components/EventFilterBar.tsx`
   (search bar + chips) and `lib/eventFilters.ts` (matching logic). Chips:
-  All / Tonight / Tomorrow / This weekend, then Friends going / Following
-  (toggle). Events adds sort chips (Soonest / Near me / Most going) in front.
+  All / Tonight(Today by day) / Tomorrow / This weekend, then Following
+  (= organizers I follow; toggle). Events adds sort chips (Soonest / Near me / Most going) in front.
   Search matches title, address and event type. Filter state is per screen
   (not shared between tabs).
-- `lib/`: `supabase`, `AuthContext`, `SocialContext` (follows + friendsGoing),
+- `lib/`: `supabase`, `AuthContext`, `SocialContext` (organizer follows only),
   `notifications` (local reminders + push registration), `tonight` (05:00 day
   boundary, used by the Tonight/Tomorrow chips), `eventFilters`, `geo`, `media`.
 - `supabase/`: `schema.sql` + `migration_*.sql` (run in SQL Editor).
@@ -61,11 +61,11 @@ do not rename).
    is a thin purple line**: soft `Colors.border` (#3a3168) on ordinary
    edges, bright `Colors.primary` (#8b6cf0) on active/primary ones.
    **Purple is never a fill** — primary buttons, active chips, active tab,
-   FAB use `Accent.outline` (dark glass + purple border). Dari rejected:
+   FAB use `outline(colors)` (surface + purple border). Dari rejected:
    neon glow, gradients, Uber black/white, a left date block on cards, and
    "too much purple" fills. Event card = "design A": purple date line on
    top (`SAT 14 NOV · 23:00`, 24h) + LIVE badge, title, place, footer with
-   friends' avatars + event-type tag. Icons are inline SVG
+   going count + event-type tag (no names). Icons are inline SVG
    (`components/Icon.tsx`, tab icons in `(tabs)/_layout.tsx`) — no emoji
    in chrome, and icon fonts never rendered in his builds, so don't
    reintroduce them. Google maps use `lib/mapStyle.ts` (dark).
@@ -85,10 +85,18 @@ do not rename).
    app goes to Google Play, add the Play App Signing SHA-1 too. iOS will
    need a separate key restricted to the iOS bundle ID. Firebase lives in
    a different Google project (`fyft-9d540`).
-6. One `follows` table for friends and organizers. Notification prefs live
+6. The `follows` table now holds ORGANIZER follows only (see 8). Notification prefs live
    in their own private table (they hold a saved location), not `profiles`.
 7. Internal names stay (`parties` table, `/party/[id]` route, `party_type`
    column) although the UI says "events". No migration for wording.
+
+8. **No friends layer** (Dari, 2026-11-08). Only organizers can be followed;
+   nobody can see who is going where. Removed: "friends going" (cards,
+   detail, filter chip), Find people, the "Going to" list and following
+   count on other profiles. Going counts are numbers only. Profile has
+   "My events" + "My plans" (my own going RSVPs, visible only to me).
+   `app/people.tsx` = "Organizers" (search only returns accounts with at
+   least one event). Do not bring friends back without asking Dari.
 
 ## Fragile fixes — do not undo
 
@@ -131,11 +139,11 @@ do not rename).
 
 ## Not verified yet
 
-- Two-account test: follow → publish → push arrives; "friends going" shows.
+- Two-account test: follow an ORGANIZER → they publish → push arrives.
   If push fails: `select status_code, content from net._http_response
   order by created desc limit 5;`
 - **Tonight tab removed → filter chips (2026-11-08, JS-only).** Tonight /
-  Tomorrow / Friends going / Following are now chips on Events AND Map; the
+  Tomorrow / Following are now chips on Events AND Map (friends removed later); the
   Map also got a floating search bar and draws only matching pins. tsc +
   lint pass and Metro bundled it for Android, but not yet confirmed on
   Dari's phone (check: chips over the map are readable, keyboard closes on
@@ -152,7 +160,7 @@ do not rename).
 - **Event detail redesign (2026-11-08, JS-only)**: photo/video hero that
   fades into the background (own back + Share buttons; stack header hidden
   for `party/[id]`), date line + LIVE, title, type tag, one info block
-  (address + Directions, going/capacity bar, friends), "Hosted by" block
+  (address + Directions, going/capacity bar), "Hosted by" block
   (organizer decision still pending, kept as before), About, owner
   Edit/Delete, Report. Going / Interested / Chat sit in a dock that stays
   on screen. Share uses RN `Share` (text only, no web link yet). Not yet
@@ -162,6 +170,15 @@ do not rename).
   `LIGHT_MAP_STYLE`, dark = `DARK_MAP_STYLE` (`lib/mapStyle.ts`, MapView
   remounts via `key={scheme}` so the switch always applies). "Tonight" chip reads
   "Today" in the daytime (same 05:00 rule as the section headers).
+- **Privacy gap (DB):** the app no longer SHOWS who is going, but `rsvps`
+  rows (with user ids) are probably still readable through the API by any
+  signed-in user (the old friends feature needed that). Tighten RLS so
+  users read only their own RSVPs and expose counts via a view/RPC (also
+  fixes roadmap 4). Needs a migration — not done.
+- **Open question (Dari, 2026-11-08):** at launch Dari will publish most
+  events himself, so they would all show "Hosted by @darijan". Proposed:
+  an optional "Host / venue name" on the event (new `parties.host_name`
+  column + form field), shown instead of the account. Not decided/built.
 - **Push may be broken: no EAS `projectId` in `app.json`** (found
   2026-11-08 — Metro warns "No EAS projectId — run eas init"). The Setup
   section below claims it is set; it is not in the repo. Needs
@@ -213,3 +230,4 @@ do not rename).
 - Add packages with `npx expo install <pkg>`. New Supabase tables need
   explicit GRANTs + RLS in the same migration.
 - Commit per feature with clear messages; update this file when state changes.
+

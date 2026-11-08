@@ -6,7 +6,8 @@ import type { Party } from '@/lib/types';
  * screens narrow events down the same way.
  */
 export type TimeFilter = 'all' | 'tonight' | 'tomorrow' | 'weekend';
-export type PeopleFilter = 'all' | 'friends' | 'following';
+/** 'following' = events by organizers the user follows. */
+export type PeopleFilter = 'all' | 'following';
 
 export interface EventFilters {
   query: string;
@@ -18,7 +19,6 @@ export const DEFAULT_FILTERS: EventFilters = { query: '', time: 'all', people: '
 
 export interface FilterContext {
   now: Date;
-  friendsGoing: Record<string, unknown[]>;
   followingIds: Set<string>;
 }
 
@@ -65,7 +65,6 @@ export function makeEventMatcher(
       return false;
     }
 
-    if (f.people === 'friends' && (ctx.friendsGoing[p.id]?.length ?? 0) === 0) return false;
     if (f.people === 'following' && !ctx.followingIds.has(p.organizer_id)) return false;
 
     const start = new Date(p.starts_at);

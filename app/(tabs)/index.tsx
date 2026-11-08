@@ -45,7 +45,7 @@ export default function MapScreen() {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
   const { parties, loading, error, refresh } = useParties();
-  const { friendsGoing, followingIds, refresh: refreshSocial } = useSocial();
+  const { followingIds, refresh: refreshSocial } = useSocial();
   const insets = useSafeAreaInsets();
   const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
   const [showsUserLocation, setShowsUserLocation] = useState(false);
@@ -115,9 +115,9 @@ export default function MapScreen() {
   );
   // Same search + filters as the Events tab; only matching pins are drawn.
   const pinned = useMemo(() => {
-    const matches = makeEventMatcher(filters, { now: new Date(), friendsGoing, followingIds });
+    const matches = makeEventMatcher(filters, { now: new Date(), followingIds });
     return located.filter(matches);
-  }, [located, filters, friendsGoing, followingIds]);
+  }, [located, filters, followingIds]);
   const selected = pinned.find((p) => p.id === selectedId) ?? null;
   const filtering = hasFilters(filters);
 

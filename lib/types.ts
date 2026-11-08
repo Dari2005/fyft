@@ -70,7 +70,7 @@ export interface Report {
   created_at: string;
 }
 
-/** Minimal public profile, used for follow lists and "friends going". */
+/** Minimal public profile (organizers, follow lists, avatars). */
 export interface ProfileLite {
   id: string;
   username: string | null;

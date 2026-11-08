@@ -240,8 +240,8 @@ export default function NotificationsScreen() {
         disabled={busy}
       />
       <SettingRow
-        title="People I follow"
-        description="Get a notification when someone you follow publishes a new event."
+        title="Organizers I follow"
+        description="Get a notification when an organizer you follow publishes a new event."
         value={prefs.following_enabled}
         onChange={toggleFollowing}
         disabled={busy}

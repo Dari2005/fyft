@@ -26,7 +26,7 @@ export default function FollowButton({ profile, compact = false }: FollowButtonP
     try {
       const result = active ? await unfollow(profile.id) : await follow(profile);
       if (result === 'logged-out') {
-        Alert.alert('Sign In', 'You must be signed in to follow people.', [
+        Alert.alert('Sign In', 'You must be signed in to follow organizers.', [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Sign In', onPress: () => router.push('/auth') },
         ]);

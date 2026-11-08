@@ -18,7 +18,9 @@ export type IconName =
   | 'check'
   | 'navigate'
   | 'edit'
-  | 'trash';
+  | 'trash'
+  | 'bell'
+  | 'sun';
 
 /**
  * Small stroke icons drawn as inline SVG (24x24 viewBox), used instead of
@@ -136,6 +138,18 @@ export default function Icon({
       {name === 'navigate' && <Path d="M21 3 14.5 21l-3.5-8-8-3.5z" {...p} />}
       {name === 'edit' && (
         <Path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z" {...p} />
+      )}
+      {name === 'bell' && (
+        <>
+          <Path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z" {...p} />
+          <Path d="M10 20.5a2 2 0 0 0 4 0" {...p} />
+        </>
+      )}
+      {name === 'sun' && (
+        <>
+          <Circle cx={12} cy={12} r={4} {...p} />
+          <Path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" {...p} />
+        </>
       )}
       {name === 'trash' && (
         <>
