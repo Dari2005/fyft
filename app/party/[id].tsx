@@ -6,63 +6,88 @@ import {
   Image,
   Linking,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { Link, router, useLocalSearchParams } from 'expo-router';
-import Svg, { Line, Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { useSocial } from '@/lib/SocialContext';
 import { onRsvpChanged } from '@/lib/notifications';
+import { isLiveNow } from '@/lib/tonight';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
 import { useComments } from '@/hooks/useComments';
 import { reportParty } from '@/lib/reports';
-import PrimaryButton from '@/components/PrimaryButton';
 import Avatar from '@/components/Avatar';
 import FollowButton from '@/components/FollowButton';
+import Icon, { type IconName } from '@/components/Icon';
 import { Accent, Colors, Spacing } from '@/constants/theme';
 import { parsePartyMedia, type Party } from '@/lib/types';
 
 const REPORT_REASONS = ['spam', 'fake event', 'inappropriate content', 'other'];
 
-const GALLERY_WIDTH = Dimensions.get('window').width - Spacing.md * 2;
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const HERO_HEIGHT = 300;
+const DOCK_HEIGHT = 68;
 
-/** "@ana is going" / "@ana and @marko are going" / "@ana, @marko and 3 more are going" */
+const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+/** "SAT 14 NOV · 23:00" — same format as the event card. */
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${hh}:${mm}`;
+}
+
+/** "Ana is going" / "Ana and Marko are going" / "Ana, Marko and 3 more you follow are going" */
 function friendsSentence(friends: { username: string | null }[]): string {
-  const names = friends.map((f) => `@${f.username ?? 'user'}`);
+  const names = friends.map((f) => f.username ?? 'user');
   if (names.length === 1) return `${names[0]} is going`;
   if (names.length === 2) return `${names[0]} and ${names[1]} are going`;
   return `${names[0]}, ${names[1]} and ${names.length - 2} more you follow are going`;
 }
 
-/** One video in the party gallery, with native playback controls. */
+/** One video in the hero gallery, with native playback controls. */
 function GalleryVideo({ url }: { url: string }) {
   const player = useVideoPlayer(url, (p) => {
     p.loop = false;
   });
+  return <VideoView player={player} style={styles.heroItem} nativeControls contentFit="cover" />;
+}
+
+/** Round glass button floating over the hero (back / share). */
+function FloatButton({ icon, onPress, label }: { icon: IconName; onPress: () => void; label: string }) {
   return (
-    <VideoView
-      player={player}
-      style={styles.galleryItem}
-      nativeControls
-      contentFit="cover"
-    />
+    <TouchableOpacity onPress={onPress} style={styles.floatButton} accessibilityLabel={label} hitSlop={6}>
+      <Icon name={icon} size={18} color={Colors.text} />
+    </TouchableOpacity>
   );
 }
 
-/** Party detail screen: info, RSVP with live capacity, report button. */
+/**
+ * Event detail ("Dark Glass", 2026-11-08): photo/video hero that fades into
+ * the background, date line + title + type, one glass info block (place +
+ * Directions, going/capacity, friends), host, description, and a dock with
+ * Going / Interested / Chat that stays on screen while scrolling.
+ */
 export default function PartyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [party, setParty] = useState<Party | null>(null);
   const [organizerAvatar, setOrganizerAvatar] = useState<string | null>(null);
   const { friendsGoing } = useSocial();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [slide, setSlide] = useState(0);
 
   const {
     goingCount,
@@ -74,8 +99,7 @@ export default function PartyDetailScreen() {
     toggleRsvp,
   } = useRsvps(id, user?.id ?? null);
 
-  // Comments live in the party chat screen now — here we only need the count
-  // for the "Join chat" button.
+  // Messages live in the chat screen; here we only need the count.
   const { comments } = useComments(id, user?.id ?? null);
 
   useEffect(() => {
@@ -161,9 +185,18 @@ export default function PartyDetailScreen() {
   const openNavigation = () => {
     if (party?.latitude == null || party?.longitude == null) return;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${party.latitude},${party.longitude}`;
-    Linking.openURL(url).catch(() =>
-      Alert.alert('Error', 'Could not open navigation.')
-    );
+    Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open navigation.'));
+  };
+
+  const handleShare = () => {
+    if (!party) return;
+    const lines = [party.title, formatWhen(party.starts_at), party.address, 'via Fyft'];
+    Share.share({ message: lines.filter(Boolean).join('\n') }).catch(() => {});
+  };
+
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
   };
 
   const handleDeletePress = () => {
@@ -194,456 +227,470 @@ export default function PartyDetailScreen() {
 
   if (error || !party) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.error}>{error ?? 'Event not found.'}</Text>
+        <TouchableOpacity onPress={goBack} style={styles.backLink}>
+          <Text style={styles.backLinkText}>Go back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
+  const hasMedia = party.media.length > 0;
+  const hasLocation = party.latitude != null && party.longitude != null;
+  const live = isLiveNow(party.starts_at);
   const isFull = party.capacity != null && goingCount >= party.capacity;
   const capacityPct =
     party.capacity != null && party.capacity > 0
       ? Math.min(100, (goingCount / party.capacity) * 100)
       : 0;
-  const capacityLabel =
-    party.capacity != null ? `${goingCount} / ${party.capacity} going` : `${goingCount} going`;
+  const goingLabel = [
+    party.capacity != null ? `${goingCount} / ${party.capacity} going` : `${goingCount} going`,
+    interestedCount > 0 ? `${interestedCount} interested` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const friends = friendsGoing[party.id] ?? [];
+  const isOrganizer = user?.id === party.organizer_id;
+  const busy = actionLoading || rsvpLoading;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header: name first, navigation as a small square top-right. */}
-      <View style={styles.headerRow}>
-        <Text style={[styles.title, styles.titleFlex]}>{party.title}</Text>
-        {party.latitude != null && party.longitude != null && (
-          <TouchableOpacity
-            onPress={openNavigation}
-            style={styles.navSquare}
-            accessibilityLabel="Navigate to the event"
-          >
-            <Svg width={22} height={22} viewBox="0 0 24 24">
-              <Path
-                d="M22 2 15 22l-4-9-9-4z"
-                stroke="#ffffff"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-              <Line
-                x1={22}
-                y1={2}
-                x2={11}
-                y2={13}
-                stroke="#ffffff"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: DOCK_HEIGHT + insets.bottom + Spacing.lg }}
+        showsVerticalScrollIndicator={false}
+      >
+        {hasMedia ? (
+          <View style={styles.hero}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) =>
+                setSlide(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))
+              }
+            >
+              {party.media.map((m, i) =>
+                m.type === 'image' ? (
+                  <Image
+                    key={`${m.url}-${i}`}
+                    source={{ uri: m.url }}
+                    style={styles.heroItem}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <GalleryVideo key={`${m.url}-${i}`} url={m.url} />
+                )
+              )}
+            </ScrollView>
+            {/* Fade the photo into the background. */}
+            <Svg style={styles.heroFade} width={SCREEN_WIDTH} height={110} pointerEvents="none">
+              <Defs>
+                <LinearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={Colors.background} stopOpacity="0" />
+                  <Stop offset="1" stopColor={Colors.background} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width={SCREEN_WIDTH} height={110} fill="url(#fade)" />
             </Svg>
-          </TouchableOpacity>
-        )}
-      </View>
-      {party.party_type && (
-        <View style={styles.venueRow}>
-          <View style={styles.typeTag}>
-            <Text style={styles.typeTagText}>{party.party_type}</Text>
+            {party.media.length > 1 && (
+              <View style={styles.dots} pointerEvents="none">
+                {party.media.map((m, i) => (
+                  <View key={`${m.url}-dot-${i}`} style={[styles.dot, i === slide && styles.dotActive]} />
+                ))}
+              </View>
+            )}
+            <View style={[styles.floatRow, { top: insets.top + Spacing.xs }]}>
+              <FloatButton icon="arrowLeft" onPress={goBack} label="Back" />
+              <FloatButton icon="share" onPress={handleShare} label="Share" />
+            </View>
           </View>
-        </View>
-      )}
-      {party.organizer_username && (
-        <View style={styles.organizerBar}>
-          <Link href={{ pathname: '/user/[id]', params: { id: party.organizer_id } }} asChild>
-            <TouchableOpacity style={styles.organizerInfo} activeOpacity={0.7}>
-              <Avatar
-                profile={{ username: party.organizer_username, avatar_url: organizerAvatar }}
-                size={30}
-              />
-              <Text style={styles.organizerName} numberOfLines={1}>
-                @{party.organizer_username}
-              </Text>
-            </TouchableOpacity>
-          </Link>
-          {user?.id !== party.organizer_id && (
-            <FollowButton
-              compact
-              profile={{
-                id: party.organizer_id,
-                username: party.organizer_username,
-                avatar_url: organizerAvatar,
-              }}
-            />
-          )}
-        </View>
-      )}
-      <Text style={styles.meta}>
-        {new Date(party.starts_at).toLocaleString('en-US', {
-          weekday: 'long',
-          day: '2-digit',
-          month: 'long',
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
-      </Text>
-      {party.address && (
-        <View style={styles.addressRow}>
-          <Text style={styles.meta}>📍</Text>
-          <Text style={[styles.meta, styles.addressText]}>{party.address}</Text>
-        </View>
-      )}
-      {party.description && <Text style={styles.description}>{party.description}</Text>}
+        ) : (
+          <View style={[styles.floatRowStatic, { paddingTop: insets.top + Spacing.xs }]}>
+            <FloatButton icon="arrowLeft" onPress={goBack} label="Back" />
+            <FloatButton icon="share" onPress={handleShare} label="Share" />
+          </View>
+        )}
 
-      {party.media.length > 0 && (
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          style={styles.gallery}
-        >
-          {party.media.map((m, i) =>
-            m.type === 'image' ? (
-              <Image
-                key={`${m.url}-${i}`}
-                source={{ uri: m.url }}
-                style={styles.galleryItem}
-                resizeMode="cover"
-              />
-            ) : (
-              <GalleryVideo key={`${m.url}-${i}`} url={m.url} />
-            )
-          )}
-        </ScrollView>
-      )}
+        <View style={[styles.body, hasMedia && styles.bodyOverHero]}>
+          <View style={styles.whenRow}>
+            <Text style={styles.when}>{formatWhen(party.starts_at)}</Text>
+            {live && (
+              <View style={styles.live}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.title}>{party.title}</Text>
+          {party.party_type ? (
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>{party.party_type}</Text>
+            </View>
+          ) : null}
 
-      <View style={styles.capacityBox}>
-        <View style={styles.capacityRow}>
-          <Text style={styles.capacityText}>✅ {capacityLabel}</Text>
-          {isFull && (
-            <View style={styles.fullBadge}>
-              <Text style={styles.fullBadgeText}>FULL</Text>
+          {/* Info block: place, going/capacity, friends. */}
+          <View style={styles.infoBox}>
+            {(party.address || hasLocation) && (
+              <View style={styles.infoRow}>
+                <Icon name="pin" size={17} color={Colors.muted} />
+                <Text style={styles.infoText} numberOfLines={2}>
+                  {party.address ?? 'Location on the map'}
+                </Text>
+                {hasLocation && (
+                  <TouchableOpacity onPress={openNavigation} style={styles.miniButton}>
+                    <Icon name="navigate" size={13} color={Colors.primaryBright} />
+                    <Text style={styles.miniButtonText}>Directions</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+            <View style={[styles.infoRow, styles.infoRowDivider, styles.infoRowColumn]}>
+              <View style={styles.infoInline}>
+                <Icon name="users" size={17} color={Colors.muted} />
+                <Text style={styles.infoText}>{goingLabel}</Text>
+                {isFull && (
+                  <View style={styles.fullBadge}>
+                    <Text style={styles.fullBadgeText}>FULL</Text>
+                  </View>
+                )}
+              </View>
+              {party.capacity != null && (
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${capacityPct}%` },
+                      isFull && styles.progressFillFull,
+                    ]}
+                  />
+                </View>
+              )}
+            </View>
+            {friends.length > 0 && (
+              <View style={[styles.infoRow, styles.infoRowDivider]}>
+                <View style={styles.friendsAvatars}>
+                  {friends.slice(0, 5).map((f, i) => (
+                    <Link key={f.id} href={{ pathname: '/user/[id]', params: { id: f.id } }} asChild>
+                      <TouchableOpacity style={[styles.friendAvatar, i > 0 && styles.friendAvatarOverlap]}>
+                        <Avatar profile={f} size={26} />
+                      </TouchableOpacity>
+                    </Link>
+                  ))}
+                </View>
+                <Text style={styles.infoText} numberOfLines={2}>
+                  {friendsSentence(friends)}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {party.organizer_username && (
+            <>
+              <Text style={styles.sectionTitle}>Hosted by</Text>
+              <View style={styles.hostBox}>
+                <Link href={{ pathname: '/user/[id]', params: { id: party.organizer_id } }} asChild>
+                  <TouchableOpacity style={styles.hostInfo} activeOpacity={0.7}>
+                    <Avatar
+                      profile={{ username: party.organizer_username, avatar_url: organizerAvatar }}
+                      size={34}
+                    />
+                    <Text style={styles.hostName} numberOfLines={1}>
+                      @{party.organizer_username}
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+                {!isOrganizer && (
+                  <FollowButton
+                    compact
+                    profile={{
+                      id: party.organizer_id,
+                      username: party.organizer_username,
+                      avatar_url: organizerAvatar,
+                    }}
+                  />
+                )}
+              </View>
+            </>
+          )}
+
+          {party.description ? (
+            <>
+              <Text style={styles.sectionTitle}>About</Text>
+              <Text style={styles.description}>{party.description}</Text>
+            </>
+          ) : null}
+
+          {rsvpError && <Text style={styles.error}>{rsvpError}</Text>}
+
+          {isOrganizer && (
+            <View style={styles.ownerRow}>
+              <TouchableOpacity
+                style={styles.ownerButton}
+                onPress={() => router.push({ pathname: '/create', params: { edit: party.id } })}
+              >
+                <Icon name="edit" size={16} color={Colors.text} />
+                <Text style={styles.ownerText}>Edit event</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.ownerButton} onPress={handleDeletePress}>
+                <Icon name="trash" size={16} color={Colors.danger} />
+                <Text style={[styles.ownerText, { color: Colors.danger }]}>Delete</Text>
+              </TouchableOpacity>
             </View>
           )}
+
+          <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
+            <Icon name="flag" size={14} color={Colors.muted} />
+            <Text style={styles.reportText}>Report this event</Text>
+          </TouchableOpacity>
         </View>
-        {party.capacity != null && (
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${capacityPct}%` },
-                isFull && styles.progressFillFull,
-              ]}
-            />
-          </View>
-        )}
-        {interestedCount > 0 && (
-          <Text style={styles.interested}>⭐ {interestedCount} interested</Text>
-        )}
+      </ScrollView>
+
+      {/* Dock: always on screen. Active RSVP = bright purple border + check. */}
+      <View style={[styles.dock, { paddingBottom: insets.bottom + Spacing.sm }]}>
+        {(['going', 'interested'] as const).map((status) => {
+          const active = myStatus === status;
+          return (
+            <TouchableOpacity
+              key={status}
+              style={[styles.dockButton, active && styles.dockButtonActive]}
+              onPress={() => handleRsvp(status)}
+              disabled={busy}
+              activeOpacity={0.8}
+            >
+              {busy ? (
+                <ActivityIndicator size="small" color={Colors.primaryBright} />
+              ) : (
+                <>
+                  {active && <Icon name="check" size={16} color={Colors.primaryBright} strokeWidth={2.4} />}
+                  <Text style={[styles.dockText, active && styles.dockTextActive]}>
+                    {status === 'going' ? 'Going' : 'Interested'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity
+          style={styles.dockChat}
+          onPress={() => router.push({ pathname: '/chat/[id]', params: { id: party.id } })}
+          accessibilityLabel="Open event chat"
+        >
+          <Icon name="chat" size={19} color={Colors.text} />
+          {comments.length > 0 && (
+            <View style={styles.chatBadge}>
+              <Text style={styles.chatBadgeText}>
+                {comments.length > 99 ? '99+' : comments.length}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
-
-      {(friendsGoing[party.id]?.length ?? 0) > 0 && (
-        <View style={styles.friendsBox}>
-          <View style={styles.friendsAvatars}>
-            {friendsGoing[party.id].slice(0, 6).map((f, i) => (
-              <Link key={f.id} href={{ pathname: '/user/[id]', params: { id: f.id } }} asChild>
-                <TouchableOpacity style={[styles.friendAvatar, i > 0 && styles.friendAvatarOverlap]}>
-                  <Avatar profile={f} size={34} />
-                </TouchableOpacity>
-              </Link>
-            ))}
-          </View>
-          <Text style={styles.friendsText} numberOfLines={2}>
-            {friendsSentence(friendsGoing[party.id])}
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.rsvpRow}>
-        <View style={styles.rsvpButton}>
-          <PrimaryButton
-            title="Going"
-            icon={myStatus === 'going' ? '✅' : undefined}
-            variant={myStatus === 'going' ? 'primary' : 'outline'}
-            onPress={() => handleRsvp('going')}
-            loading={actionLoading || rsvpLoading}
-          />
-        </View>
-        <View style={styles.rsvpButton}>
-          <PrimaryButton
-            title="Interested"
-            icon={myStatus === 'interested' ? '⭐' : undefined}
-            variant={myStatus === 'interested' ? 'primary' : 'outline'}
-            onPress={() => handleRsvp('interested')}
-            loading={actionLoading || rsvpLoading}
-          />
-        </View>
-      </View>
-      {rsvpError && <Text style={styles.error}>{rsvpError}</Text>}
-
-      <View style={styles.chatButton}>
-        <PrimaryButton
-          icon="💬"
-          title={
-            comments.length > 0
-              ? `Join event chat (${comments.length})`
-              : 'Join event chat'
-          }
-          onPress={() =>
-            router.push({ pathname: '/chat/[id]', params: { id: party.id } })
-          }
-        />
-      </View>
-
-      <TouchableOpacity onPress={handleReportPress} style={styles.reportButton}>
-        <Text style={styles.reportText}>🚩</Text>
-        <Text style={styles.reportText}>Report this event</Text>
-      </TouchableOpacity>
-
-      {user?.id === party.organizer_id && (
-        <View style={styles.organizerRow}>
-          <View style={styles.rsvpButton}>
-            <PrimaryButton
-              title="Edit event"
-              icon="✏️"
-              variant="outline"
-              onPress={() =>
-                router.push({ pathname: '/create', params: { edit: party.id } })
-              }
-            />
-          </View>
-          <View style={styles.rsvpButton}>
-            <PrimaryButton
-              title="Delete event"
-              icon="🗑️"
-              variant="outline"
-              onPress={handleDeletePress}
-            />
-          </View>
-        </View>
-      )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.lg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
-  venueRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.sm },
-  typeTag: {
-    ...Accent.outline,
-    borderRadius: 9,
-    paddingHorizontal: 9,
-    paddingVertical: 2,
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.background,
+    padding: Spacing.lg,
   },
-  typeTagText: {
-    color: Colors.primaryText,
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+  backLink: { marginTop: Spacing.md, ...Accent.outline, borderRadius: 999, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+  backLinkText: { color: Colors.text, fontWeight: '700' },
+
+  hero: { height: HERO_HEIGHT, backgroundColor: Colors.surface },
+  heroItem: { width: SCREEN_WIDTH, height: HERO_HEIGHT, backgroundColor: Colors.surface },
+  heroFade: { position: 'absolute', left: 0, bottom: 0 },
+  dots: {
+    position: 'absolute',
+    bottom: 24,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 5,
   },
-  title: { color: Colors.text, fontSize: 26, fontWeight: '800', marginTop: Spacing.xs },
-  meta: { color: Colors.muted, fontSize: 15, marginTop: Spacing.xs },
-  description: { color: Colors.text, fontSize: 16, marginTop: Spacing.md, lineHeight: 24 },
-  gallery: { marginTop: Spacing.md },
-  galleryItem: {
-    width: GALLERY_WIDTH,
-    height: 240,
-    borderRadius: 14,
-    backgroundColor: Colors.surface,
-    marginRight: Spacing.sm,
+  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.35)' },
+  dotActive: { width: 16, backgroundColor: Colors.primaryBright },
+  floatRow: {
+    position: 'absolute',
+    left: Spacing.md,
+    right: Spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  capacityBox: {
+  floatRowStatic: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  floatButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.glass,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  body: { paddingHorizontal: Spacing.md, gap: Spacing.sm },
+  bodyOverHero: { marginTop: -Spacing.md },
+  whenRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  when: { color: Colors.primaryBright, fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
+  live: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.success },
+  liveText: { color: Colors.success, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  title: { color: Colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.4, marginTop: -2 },
+  tag: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  tagText: { color: Colors.muted, fontSize: 12, fontWeight: '600' },
+
+  infoBox: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    padding: Spacing.md,
-    marginTop: Spacing.lg,
+    borderRadius: 16,
+    marginTop: Spacing.xs,
   },
-  capacityRow: {
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 12,
+  },
+  infoRowDivider: { borderTopWidth: 1, borderTopColor: Colors.border },
+  infoRowColumn: { flexDirection: 'column', alignItems: 'stretch', gap: 8 },
+  infoInline: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  infoText: { flex: 1, color: '#d0d0d8', fontSize: 14 },
+  miniButton: {
+    ...Accent.outline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  miniButtonText: { color: Colors.text, fontSize: 12, fontWeight: '700' },
+  fullBadge: {
+    borderWidth: 1,
+    borderColor: Colors.danger,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+  },
+  fullBadgeText: { color: Colors.danger, fontSize: 11, fontWeight: '800' },
+  progressTrack: { height: 4, borderRadius: 2, backgroundColor: Colors.surfaceHigh, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: Colors.primary },
+  progressFillFull: { backgroundColor: Colors.danger },
+  friendsAvatars: { flexDirection: 'row' },
+  friendAvatar: { borderWidth: 1.5, borderColor: Colors.surface, borderRadius: 15 },
+  friendAvatarOverlap: { marginLeft: -8 },
+
+  sectionTitle: { color: Colors.muted, fontSize: 13, fontWeight: '700', marginTop: Spacing.sm },
+  hostBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    padding: Spacing.sm,
   },
-  capacityText: { color: Colors.text, fontSize: 16, fontWeight: '600' },
-  fullBadge: {
-    backgroundColor: Colors.danger,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+  hostInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  hostName: { color: Colors.text, fontSize: 15, fontWeight: '700', flexShrink: 1 },
+  description: { color: '#c4c4cc', fontSize: 15, lineHeight: 23 },
+  error: { color: Colors.danger, fontSize: 14, textAlign: 'center' },
+
+  ownerRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
+  ownerButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 14,
+    paddingVertical: 12,
   },
-  fullBadgeText: { color: '#ffffff', fontSize: 13, fontWeight: '800' },
-  progressTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.border,
-    marginTop: Spacing.sm,
-    overflow: 'hidden',
-  },
-  progressFill: { height: '100%', backgroundColor: Colors.primary },
-  progressFillFull: { backgroundColor: Colors.danger },
-  interested: { color: Colors.muted, fontSize: 14, marginTop: Spacing.xs },
-  rsvpRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
-  rsvpButton: { flex: 1 },
-  error: { color: Colors.danger, fontSize: 14, marginTop: Spacing.sm },
+  ownerText: { color: Colors.text, fontSize: 14, fontWeight: '700' },
   reportButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     paddingVertical: Spacing.sm,
   },
-  reportText: { color: Colors.muted, fontSize: 14 },
-  deleteButton: { alignItems: 'center', marginTop: Spacing.xs, paddingVertical: Spacing.sm },
-  deleteText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
-  chatButton: { marginTop: Spacing.md },
-  organizerRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  organizerBar: {
+  reportText: { color: Colors.muted, fontSize: 13 },
+
+  dock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  organizerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  organizerName: { color: Colors.primaryBright, fontSize: 15, fontWeight: '700', flexShrink: 1 },
-  friendsBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    borderRadius: 12,
-    padding: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  friendsAvatars: { flexDirection: 'row' },
-  friendAvatar: { borderWidth: 2, borderColor: Colors.surface, borderRadius: 19 },
-  friendAvatarOverlap: { marginLeft: -10 },
-  friendsText: { flex: 1, color: Colors.text, fontSize: 14, fontWeight: '600' },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  titleFlex: { flex: 1 },
-  navSquare: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    ...Accent.outline,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xs,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
-  addressText: { flex: 1 },
-  commentsSection: { marginTop: Spacing.lg },
-  sectionTitle: { color: Colors.text, fontSize: 18, fontWeight: '700', marginBottom: Spacing.sm },
-  commentCard: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  commentAuthor: { color: Colors.primary, fontSize: 14, fontWeight: '700' },
-  commentAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  commentAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.border },
-  commentAvatarFallback: {
-    ...Accent.outline,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  commentAvatarText: { color: Colors.primaryText, fontSize: 12, fontWeight: '800' },
-  commentTime: { color: Colors.muted, fontSize: 12 },
-  commentBody: { color: Colors.text, fontSize: 15, lineHeight: 22 },
-  commentMedia: {
-    width: '100%',
-    height: 210,
-    borderRadius: 12,
-    backgroundColor: Colors.background,
-    marginTop: Spacing.xs,
-  },
-  commentDelete: { color: Colors.danger, fontSize: 13, marginTop: Spacing.xs },
-  ratingBox: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: Spacing.md,
-    marginTop: Spacing.md,
     gap: Spacing.xs,
-  },
-  ratingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ratingTitle: { color: Colors.text, fontSize: 16, fontWeight: '700' },
-  ratingSummary: { color: Colors.muted, fontSize: 14 },
-  ratingHint: { color: Colors.muted, fontSize: 13 },
-  ratingRemove: { color: Colors.danger, fontSize: 13, marginTop: 2 },
-  emptyComments: {
-    color: Colors.muted,
-    fontSize: 15,
-    textAlign: 'center',
-    paddingVertical: Spacing.md,
-  },
-  composer: { marginTop: Spacing.sm },
-  pendingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: Spacing.sm,
-  },
-  pendingThumb: { width: 44, height: 44, borderRadius: 8 },
-  pendingText: { color: Colors.text, fontSize: 14, flexShrink: 1 },
-  pendingRemove: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
-  composerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  attachButton: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
+    paddingTop: Spacing.sm,
+    backgroundColor: Colors.glass,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
-  attachText: { color: Colors.text, fontSize: 14, fontWeight: '600' },
-  sendButton: { flex: 1 },
-  composerInput: {
+  dockButton: {
+    flex: 1,
+    height: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: Colors.surface,
-    color: Colors.text,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
-    fontSize: 16,
-    minHeight: 48,
-    maxHeight: 120,
-    textAlignVertical: 'top',
+    borderRadius: 14,
   },
+  dockButtonActive: { ...Accent.outline },
+  dockText: { color: '#d0d0d8', fontSize: 15, fontWeight: '700' },
+  dockTextActive: { color: Colors.primaryText },
+  dockChat: {
+    width: 52,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 14,
+  },
+  chatBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    ...Accent.outline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatBadgeText: { color: Colors.primaryText, fontSize: 11, fontWeight: '800' },
 });

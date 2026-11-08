@@ -38,8 +38,8 @@ do not rename).
 ## Standing decisions — do NOT silently revert
 
 1. **No ratings. At all.** No event ratings, no organizer ratings
-   (Dari, 2026-11-01). The `party_ratings` table is unused leftover, as are
-   the dead `rating*` styles in `app/party/[id].tsx`.
+   (Dari, 2026-11-01). The `party_ratings` table is an unused leftover (the
+   dead `rating*` styles were removed with the 2026-11-08 detail redesign).
 2. **Event type is free-text** (`parties.party_type`). No preset genre or
    category lists, ever. **No venue choice** (House/Club) in the form either.
 3. **Organizer bar on the event detail** (avatar + @username + Follow): v2
@@ -133,6 +133,14 @@ do not rename).
   dark map style applies, purple borders visible but not loud, avatars on
   cards, the less-touched screens (party detail, chat, create, profile,
   notifications) only got the token swap — may need polish.
+- **Event detail redesign (2026-11-08, JS-only)**: photo/video hero that
+  fades into the background (own back + Share buttons; stack header hidden
+  for `party/[id]`), date line + LIVE, title, type tag, one info block
+  (address + Directions, going/capacity bar, friends), "Hosted by" block
+  (organizer decision still pending, kept as before), About, owner
+  Edit/Delete, Report. Going / Interested / Chat sit in a dock that stays
+  on screen. Share uses RN `Share` (text only, no web link yet). Not yet
+  seen on Dari's phone.
 - Haptics (RSVP / chip taps) proposed — `expo-haptics` is **native**;
   batch with the next dev build (together with `expo-dev-client`).
 - Google Cloud budget alert — not set up yet.

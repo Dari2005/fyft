@@ -74,7 +74,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="auth" options={{ title: 'Sign In', presentation: 'modal' }} />
           <Stack.Screen name="create" options={{ title: 'New Event' }} />
-          <Stack.Screen name="party/[id]" options={{ title: 'Event' }} />
+          <Stack.Screen name="party/[id]" options={{ title: 'Event', headerShown: false }} />
           <Stack.Screen name="chat/[id]" options={{ title: 'Event Chat' }} />
           <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
           <Stack.Screen name="people" options={{ title: 'Find people' }} />

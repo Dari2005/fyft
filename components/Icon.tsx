@@ -10,7 +10,15 @@ export type IconName =
   | 'flame'
   | 'close'
   | 'plus'
-  | 'arrowRight';
+  | 'arrowRight'
+  | 'arrowLeft'
+  | 'share'
+  | 'chat'
+  | 'flag'
+  | 'check'
+  | 'navigate'
+  | 'edit'
+  | 'trash';
 
 /**
  * Small stroke icons drawn as inline SVG (24x24 viewBox), used instead of
@@ -98,6 +106,41 @@ export default function Icon({
         <>
           <Line x1={5} y1={12} x2={19} y2={12} {...p} />
           <Path d="M13 6l6 6-6 6" {...p} />
+        </>
+      )}
+      {name === 'arrowLeft' && (
+        <>
+          <Line x1={19} y1={12} x2={5} y2={12} {...p} />
+          <Path d="M11 6l-6 6 6 6" {...p} />
+        </>
+      )}
+      {name === 'share' && (
+        <>
+          <Circle cx={18} cy={5.5} r={2.5} {...p} />
+          <Circle cx={6} cy={12} r={2.5} {...p} />
+          <Circle cx={18} cy={18.5} r={2.5} {...p} />
+          <Line x1={8.2} y1={10.8} x2={15.8} y2={6.7} {...p} />
+          <Line x1={8.2} y1={13.2} x2={15.8} y2={17.3} {...p} />
+        </>
+      )}
+      {name === 'chat' && (
+        <Path d="M5 18.5V6.5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9z" {...p} />
+      )}
+      {name === 'flag' && (
+        <>
+          <Line x1={6} y1={3.5} x2={6} y2={20.5} {...p} />
+          <Path d="M6 4.5h11l-2.5 4 2.5 4H6" {...p} />
+        </>
+      )}
+      {name === 'check' && <Path d="M5 12.5l4.5 4.5L19 7.5" {...p} />}
+      {name === 'navigate' && <Path d="M21 3 14.5 21l-3.5-8-8-3.5z" {...p} />}
+      {name === 'edit' && (
+        <Path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z" {...p} />
+      )}
+      {name === 'trash' && (
+        <>
+          <Line x1={4.5} y1={7} x2={19.5} y2={7} {...p} />
+          <Path d="M9 7V4.5h6V7M6.5 7l1 13h9l1-13" {...p} />
         </>
       )}
     </Svg>
