@@ -1,7 +1,7 @@
 import { View, type ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/lib/ThemeContext';
 
 /** Open on the map tab, not the first one in the bar. */
 export const unstable_settings = {
@@ -78,6 +78,7 @@ function TabIcon({
   color: ColorValue;
   name: TabIconName;
 }) {
+  const Colors = useColors();
   return (
     <View
       style={{
@@ -92,7 +93,7 @@ function TabIcon({
       <TabGlyph
         name={name}
         focused={focused}
-        color={focused ? '#ffffff' : String(color)}
+        color={focused ? Colors.text : String(color)}
       />
     </View>
   );
@@ -104,6 +105,7 @@ function TabIcon({
  * Events and Map tabs, not a tab of its own.
  */
 export default function TabsLayout() {
+  const Colors = useColors();
   return (
     <Tabs
       screenOptions={{

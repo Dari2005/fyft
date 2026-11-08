@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useSocial } from '@/lib/SocialContext';
-import { Accent, Colors, Spacing } from '@/constants/theme';
+import { outline, Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { ProfileLite } from '@/lib/types';
 
 interface FollowButtonProps {
@@ -13,6 +14,8 @@ interface FollowButtonProps {
 
 /** Follow / Following toggle. Sends signed-out users to the sign-in screen. */
 export default function FollowButton({ profile, compact = false }: FollowButtonProps) {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { isFollowing, follow, unfollow } = useSocial();
   const [busy, setBusy] = useState(false);
   const active = isFollowing(profile.id);
@@ -56,7 +59,8 @@ export default function FollowButton({ profile, compact = false }: FollowButtonP
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   base: {
     borderRadius: 14,
     paddingHorizontal: Spacing.md,
@@ -66,7 +70,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compact: { paddingVertical: 6, minWidth: 84 },
-  follow: { ...Accent.outline },
+  follow: { ...outline(Colors) },
   following: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.primary },
   text: { color: Colors.primaryText, fontSize: 14, fontWeight: '800' },
   textCompact: { fontSize: 13 },

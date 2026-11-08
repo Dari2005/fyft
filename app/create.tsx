@@ -23,7 +23,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { MAX_MEDIA_ITEMS, uploadPartyMedia } from '@/lib/media';
 import TextField from '@/components/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import { parsePartyMedia, type PartyMedia } from '@/lib/types';
 
 /** Default map region: Skopje center. */
@@ -40,6 +41,8 @@ const SKOPJE_REGION: Region = {
  * only): fields are prefilled and saving UPDATEs the row instead.
  */
 export default function CreatePartyScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
   const editId = typeof edit === 'string' && edit ? edit : null;
@@ -441,7 +444,7 @@ export default function CreatePartyScreen() {
         <MapView
           ref={mapRef}
           style={styles.miniMap}
-          customMapStyle={DARK_MAP_STYLE}
+          customMapStyle={Colors.scheme === 'dark' ? DARK_MAP_STYLE : []}
           initialRegion={SKOPJE_REGION}
           onPress={(e) => setPin(e.nativeEvent.coordinate)}
         >
@@ -472,7 +475,8 @@ export default function CreatePartyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: {
     flex: 1,

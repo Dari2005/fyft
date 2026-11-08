@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useThemedStyles } from '@/lib/ThemeContext';
 
 /** Placeholder card shown while events load (gently pulsing). */
 export default function SkeletonCard() {
+  const styles = useThemedStyles(makeStyles);
   const [opacity] = useState(() => new Animated.Value(0.5));
 
   useEffect(() => {
@@ -28,7 +30,8 @@ export default function SkeletonCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
     borderRadius: 16,

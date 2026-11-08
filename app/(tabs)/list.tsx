@@ -29,7 +29,8 @@ import SkeletonCard from '@/components/SkeletonCard';
 import Icon, { type IconName } from '@/components/Icon';
 import EventFilterBar, { FilterChip } from '@/components/EventFilterBar';
 import Logo from '@/components/Logo';
-import { Accent, Colors, Spacing } from '@/constants/theme';
+import { outline, Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { Party } from '@/lib/types';
 
 type SortMode = 'soonest' | 'nearest' | 'going';
@@ -52,6 +53,8 @@ interface Section {
  * "Sat 14 Nov"); the other sorts show one flat list.
  */
 export default function PartyListScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
   const { stats, refresh: refreshStats } = usePartyStats();
@@ -257,7 +260,8 @@ export default function PartyListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs },
   heading: { color: Colors.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.4, marginTop: 2 },
@@ -275,7 +279,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: Spacing.md,
     bottom: Spacing.lg,
-    ...Accent.outline,
+    ...outline(Colors),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

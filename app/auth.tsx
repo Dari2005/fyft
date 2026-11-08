@@ -12,10 +12,12 @@ import { router } from 'expo-router';
 import { useAuth } from '@/lib/AuthContext';
 import TextField from '@/components/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useThemedStyles } from '@/lib/ThemeContext';
 
 /** Sign-in / sign-up screen using Supabase email+password auth. */
 export default function AuthScreen() {
+  const styles = useThemedStyles(makeStyles);
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -141,7 +143,8 @@ function prettifyAuthError(message: string): string {
   return message;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.lg, paddingTop: Spacing.xl },
   heading: { color: Colors.text, fontSize: 24, fontWeight: '800', marginBottom: Spacing.lg },

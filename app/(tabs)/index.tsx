@@ -16,7 +16,8 @@ import EventFilterBar from '@/components/EventFilterBar';
 import Logo from '@/components/Logo';
 import Icon from '@/components/Icon';
 import { DARK_MAP_STYLE } from '@/lib/mapStyle';
-import { Accent, Colors, Spacing } from '@/constants/theme';
+import { outline, Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { Party } from '@/lib/types';
 
 /** "Mon, Nov 2 · 11:00 PM" — when the party starts, for the pin preview card. */
@@ -41,6 +42,8 @@ const SKOPJE_REGION: Region = {
 
 /** Map screen: browse all published parties as pins. */
 export default function MapScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { parties, loading, error, refresh } = useParties();
   const { friendsGoing, followingIds, refresh: refreshSocial } = useSocial();
   const insets = useSafeAreaInsets();
@@ -124,7 +127,7 @@ export default function MapScreen() {
         <MapView
           ref={mapRef}
           style={styles.map}
-          customMapStyle={DARK_MAP_STYLE}
+          customMapStyle={Colors.scheme === 'dark' ? DARK_MAP_STYLE : []}
           initialRegion={lastRegion ?? SKOPJE_REGION}
           showsUserLocation={showsUserLocation}
           onRegionChangeComplete={setLastRegion}
@@ -233,7 +236,8 @@ export default function MapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   map: { width: '100%', height: '100%' },
   previewCard: {
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
   previewCloseText: { color: Colors.muted, fontSize: 13, fontWeight: '700' },
   previewButton: {
     marginTop: Spacing.md,
-    ...Accent.outline,
+    ...outline(Colors),
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
@@ -310,7 +314,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 999,
-    ...Accent.outline,
+    ...outline(Colors),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: "#000000",

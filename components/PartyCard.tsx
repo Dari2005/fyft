@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import { formatDistance } from '@/lib/geo';
 import { isLiveNow } from '@/lib/tonight';
 import Avatar from '@/components/Avatar';
@@ -40,6 +41,8 @@ interface PartyCardProps {
  * and the free-text event type.
  */
 export default function PartyCard({ party, stats, distanceKm, friendsGoing }: PartyCardProps) {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const live = isLiveNow(party.starts_at);
   const friends = friendsGoing ?? [];
   const goingCount = stats?.goingCount ?? 0;
@@ -110,7 +113,8 @@ export default function PartyCard({ party, stats, distanceKm, friendsGoing }: Pa
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
@@ -143,7 +147,7 @@ const styles = StyleSheet.create({
   avatars: { flexDirection: 'row' },
   avatarRing: { borderWidth: 1.5, borderColor: Colors.surface, borderRadius: 12 },
   avatarOverlap: { marginLeft: -7 },
-  goingText: { flexShrink: 1, color: '#d0d0d8', fontSize: 13, fontWeight: '600' },
+  goingText: { flexShrink: 1, color: Colors.textSoft, fontSize: 13, fontWeight: '600' },
   tag: {
     borderWidth: 1,
     borderColor: Colors.border,

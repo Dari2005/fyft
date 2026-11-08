@@ -14,11 +14,14 @@ import { useAuth } from '@/lib/AuthContext';
 import { useSocial } from '@/lib/SocialContext';
 import Avatar from '@/components/Avatar';
 import FollowButton from '@/components/FollowButton';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { ProfileLite } from '@/lib/types';
 
 /** Find people / organizers by username, and manage who you follow. */
 export default function PeopleScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { following } = useSocial();
   const [query, setQuery] = useState('');
@@ -98,7 +101,8 @@ export default function PeopleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   searchWrap: {
     flexDirection: 'row',

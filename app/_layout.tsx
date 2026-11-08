@@ -10,7 +10,7 @@ import {
   refreshPushIfGranted,
   syncReminders,
 } from '@/lib/notifications';
-import { Colors } from '@/constants/theme';
+import { ThemeProvider, useColors } from '@/lib/ThemeContext';
 
 configureNotifications();
 
@@ -57,30 +57,42 @@ function NotificationsBridge() {
   return null;
 }
 
+/** Stack + status bar styled from the active theme (needs ThemeProvider above). */
+function ThemedStack() {
+  const Colors = useColors();
+  return (
+    <>
+      <StatusBar style={Colors.scheme === 'light' ? 'dark' : 'light'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: Colors.background },
+          headerTintColor: Colors.text,
+          headerTitleStyle: { fontWeight: '700' },
+          contentStyle: { backgroundColor: Colors.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ title: 'Sign In', presentation: 'modal' }} />
+        <Stack.Screen name="create" options={{ title: 'New Event' }} />
+        <Stack.Screen name="party/[id]" options={{ title: 'Event', headerShown: false }} />
+        <Stack.Screen name="chat/[id]" options={{ title: 'Event Chat' }} />
+        <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
+        <Stack.Screen name="people" options={{ title: 'Find people' }} />
+        <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+      </Stack>
+    </>
+  );
+}
+
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <SocialProvider>
-        <NotificationsBridge />
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: Colors.background },
-            headerTintColor: Colors.text,
-            headerTitleStyle: { fontWeight: '700' },
-            contentStyle: { backgroundColor: Colors.background },
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="auth" options={{ title: 'Sign In', presentation: 'modal' }} />
-          <Stack.Screen name="create" options={{ title: 'New Event' }} />
-          <Stack.Screen name="party/[id]" options={{ title: 'Event', headerShown: false }} />
-          <Stack.Screen name="chat/[id]" options={{ title: 'Event Chat' }} />
-          <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
-          <Stack.Screen name="people" options={{ title: 'Find people' }} />
-          <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
-        </Stack>
-      </SocialProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <SocialProvider>
+          <NotificationsBridge />
+          <ThemedStack />
+        </SocialProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

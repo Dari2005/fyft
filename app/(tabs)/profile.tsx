@@ -18,10 +18,14 @@ import { supabase } from '@/lib/supabase';
 import { uploadPartyMedia } from '@/lib/media';
 import PartyCard from '@/components/PartyCard';
 import PrimaryButton from '@/components/PrimaryButton';
-import { Accent, Colors, Spacing } from '@/constants/theme';
+import AppearancePicker from '@/components/AppearancePicker';
+import { outline, Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 
 /** Profile tab (right tab): user info, profile picture, my parties, sign out. */
 export default function ProfileScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user, signOut } = useAuth();
   const { parties } = useParties();
   const { following } = useSocial();
@@ -89,6 +93,7 @@ export default function ProfileScreen() {
         <Link href="/auth" asChild>
           <PrimaryButton title="Sign In" onPress={() => {}} />
         </Link>
+        <AppearancePicker />
       </View>
     );
   }
@@ -137,6 +142,7 @@ export default function ProfileScreen() {
         <View style={styles.signOut}>
           <PrimaryButton title="Sign Out" variant="outline" onPress={signOut} />
         </View>
+        <AppearancePicker />
       </View>
 
       <Text style={styles.sectionTitle}>My Events ({myParties.length})</Text>
@@ -155,7 +161,8 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: {
     flex: 1,
@@ -183,7 +190,7 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    ...Accent.outline,
+    ...outline(Colors),
     borderWidth: 2,
     borderColor: Colors.primaryBright,
     alignItems: 'center',
@@ -207,7 +214,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: Spacing.sm,
     borderRadius: 42,
-    backgroundColor: 'rgba(10, 6, 20, 0.55)',
+    backgroundColor: Colors.scrim,
     alignItems: 'center',
     justifyContent: 'center',
   },

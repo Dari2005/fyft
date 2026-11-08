@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 
 interface TextFieldProps extends TextInputProps {
   label: string;
@@ -7,6 +8,8 @@ interface TextFieldProps extends TextInputProps {
 }
 
 export default function TextField({ label, error, ...inputProps }: TextFieldProps) {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -20,7 +23,8 @@ export default function TextField({ label, error, ...inputProps }: TextFieldProp
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { marginBottom: Spacing.sm },
   label: { color: Colors.text, fontSize: 14, fontWeight: '600', marginBottom: Spacing.xs },
   input: {

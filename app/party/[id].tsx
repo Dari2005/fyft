@@ -27,7 +27,8 @@ import { reportParty } from '@/lib/reports';
 import Avatar from '@/components/Avatar';
 import FollowButton from '@/components/FollowButton';
 import Icon, { type IconName } from '@/components/Icon';
-import { Accent, Colors, Spacing } from '@/constants/theme';
+import { outline, Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import { parsePartyMedia, type Party } from '@/lib/types';
 
 const REPORT_REASONS = ['spam', 'fake event', 'inappropriate content', 'other'];
@@ -57,6 +58,7 @@ function friendsSentence(friends: { username: string | null }[]): string {
 
 /** One video in the hero gallery, with native playback controls. */
 function GalleryVideo({ url }: { url: string }) {
+  const styles = useThemedStyles(makeStyles);
   const player = useVideoPlayer(url, (p) => {
     p.loop = false;
   });
@@ -65,6 +67,8 @@ function GalleryVideo({ url }: { url: string }) {
 
 /** Round glass button floating over the hero (back / share). */
 function FloatButton({ icon, onPress, label }: { icon: IconName; onPress: () => void; label: string }) {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <TouchableOpacity onPress={onPress} style={styles.floatButton} accessibilityLabel={label} hitSlop={6}>
       <Icon name={icon} size={18} color={Colors.text} />
@@ -79,6 +83,8 @@ function FloatButton({ icon, onPress, label }: { icon: IconName; onPress: () => 
  * Going / Interested / Chat that stays on screen while scrolling.
  */
 export default function PartyDetailScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -490,7 +496,8 @@ export default function PartyDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: {
     flex: 1,
@@ -499,7 +506,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     padding: Spacing.lg,
   },
-  backLink: { marginTop: Spacing.md, ...Accent.outline, borderRadius: 999, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+  backLink: { marginTop: Spacing.md, ...outline(Colors), borderRadius: 999, paddingHorizontal: Spacing.md, paddingVertical: 8 },
   backLinkText: { color: Colors.text, fontWeight: '700' },
 
   hero: { height: HERO_HEIGHT, backgroundColor: Colors.surface },
@@ -514,7 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
   },
-  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.35)' },
+  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: Colors.dotInactive },
   dotActive: { width: 16, backgroundColor: Colors.primaryBright },
   floatRow: {
     position: 'absolute',
@@ -575,9 +582,9 @@ const styles = StyleSheet.create({
   infoRowDivider: { borderTopWidth: 1, borderTopColor: Colors.border },
   infoRowColumn: { flexDirection: 'column', alignItems: 'stretch', gap: 8 },
   infoInline: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  infoText: { flex: 1, color: '#d0d0d8', fontSize: 14 },
+  infoText: { flex: 1, color: Colors.textSoft, fontSize: 14 },
   miniButton: {
-    ...Accent.outline,
+    ...outline(Colors),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -615,7 +622,7 @@ const styles = StyleSheet.create({
   },
   hostInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   hostName: { color: Colors.text, fontSize: 15, fontWeight: '700', flexShrink: 1 },
-  description: { color: '#c4c4cc', fontSize: 15, lineHeight: 23 },
+  description: { color: Colors.textSoft, fontSize: 15, lineHeight: 23 },
   error: { color: Colors.danger, fontSize: 14, textAlign: 'center' },
 
   ownerRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
@@ -667,8 +674,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: 14,
   },
-  dockButtonActive: { ...Accent.outline },
-  dockText: { color: '#d0d0d8', fontSize: 15, fontWeight: '700' },
+  dockButtonActive: { ...outline(Colors) },
+  dockText: { color: Colors.textSoft, fontSize: 15, fontWeight: '700' },
   dockTextActive: { color: Colors.primaryText },
   dockChat: {
     width: 52,
@@ -688,7 +695,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     paddingHorizontal: 5,
-    ...Accent.outline,
+    ...outline(Colors),
     alignItems: 'center',
     justifyContent: 'center',
   },

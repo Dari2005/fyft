@@ -22,7 +22,8 @@ import {
   syncReminders,
 } from '@/lib/notifications';
 import PrimaryButton from '@/components/PrimaryButton';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { NotificationPrefs } from '@/lib/types';
 
 const RADIUS_OPTIONS = [2, 5, 10, 20];
@@ -37,6 +38,8 @@ const DEFAULT_PREFS: NotificationPrefs = {
 
 /** Notification settings: reminders, followed organizers, events near me. */
 export default function NotificationsScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [reminders, setReminders] = useState(true);
@@ -297,6 +300,8 @@ function SettingRow({
   onChange: (v: boolean) => void;
   disabled?: boolean;
 }) {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.row}>
       <View style={styles.rowText}>
@@ -314,7 +319,8 @@ function SettingRow({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.md, gap: Spacing.sm },
   center: {

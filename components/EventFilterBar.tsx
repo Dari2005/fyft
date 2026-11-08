@@ -9,8 +9,10 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import Icon, { type IconName } from '@/components/Icon';
+import { nightWindows } from '@/lib/tonight';
 import type { EventFilters, PeopleFilter, TimeFilter } from '@/lib/eventFilters';
 
 const TIMES: { key: TimeFilter; label: string }[] = [
@@ -35,6 +37,8 @@ interface ChipProps {
 
 /** One filter chip: neutral glass, thin bright-purple border when active. */
 export function FilterChip({ label, icon, active, onPress, floating }: ChipProps) {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const textColor = active ? Colors.primaryText : floating ? Colors.text : Colors.muted;
   return (
     <TouchableOpacity
@@ -67,6 +71,8 @@ export default function EventFilterBar({
   floating,
   style,
 }: Props) {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const set = (patch: Partial<EventFilters>) => onChange({ ...filters, ...patch });
 
   return (
@@ -99,7 +105,8 @@ export default function EventFilterBar({
         {TIMES.map((t) => (
           <FilterChip
             key={t.key}
-            label={t.label}
+            // "Tonight" in the evening, "Today" in the daytime (05:00 boundary).
+            label={t.key === 'tonight' ? nightWindows().tonightLabel : t.label}
             active={filters.time === t.key}
             onPress={() => set({ time: t.key })}
             floating={floating}
@@ -124,7 +131,8 @@ export default function EventFilterBar({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',

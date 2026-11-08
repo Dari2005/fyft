@@ -1,5 +1,5 @@
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/lib/ThemeContext';
 
 /**
  * The "fyft." wordmark (logo 1, 2026-11-08): lowercase letters drawn as
@@ -8,6 +8,7 @@ import { Colors } from '@/constants/theme';
  * everywhere. `height` sets the size; width follows the aspect ratio.
  */
 export default function Logo({ height = 22 }: { height?: number }) {
+  const Colors = useColors();
   const width = (height * 502) / 279;
   const s = {
     fill: 'none',

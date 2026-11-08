@@ -23,11 +23,13 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { useComments } from '@/hooks/useComments';
 import { uploadPartyMedia } from '@/lib/media';
-import { Accent, Colors, Spacing } from '@/constants/theme';
+import { outline, Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { PartyComment, PartyMedia } from '@/lib/types';
 
 /** One video inside a chat bubble, with native playback controls. */
 function ChatVideo({ url }: { url: string }) {
+  const styles = useThemedStyles(makeStyles);
   const player = useVideoPlayer(url, (p) => {
     p.loop = false;
   });
@@ -51,6 +53,8 @@ const formatTime = (iso: string) =>
  * from anyone appear instantly.
  */
 export default function PartyChatScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const navigation = useNavigation();
@@ -327,7 +331,8 @@ export default function PartyChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: Spacing.md, gap: Spacing.sm },
@@ -336,7 +341,7 @@ const styles = StyleSheet.create({
   rowOther: { justifyContent: 'flex-start' },
   avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.border },
   avatarFallback: {
-    ...Accent.outline,
+    ...outline(Colors),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -348,7 +353,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     gap: 2,
   },
-  bubbleMine: { ...Accent.outline, borderBottomRightRadius: 6 },
+  bubbleMine: { ...outline(Colors), borderBottomRightRadius: 6 },
   bubbleOther: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
@@ -366,7 +371,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   time: { color: Colors.muted, fontSize: 11, alignSelf: 'flex-end', marginTop: 2 },
-  timeMine: { color: 'rgba(255,255,255,0.75)' },
+  timeMine: { color: Colors.muted },
   empty: {
     flex: 1,
     alignItems: 'center',
@@ -434,7 +439,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    ...Accent.outline,
+    ...outline(Colors),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -442,7 +447,7 @@ const styles = StyleSheet.create({
   sendText: { color: Colors.primaryText, fontSize: 17, fontWeight: '800' },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(5, 2, 12, 0.72)',
+    backgroundColor: Colors.scrim,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
@@ -505,5 +510,5 @@ const styles = StyleSheet.create({
   },
   modalCancelText: { color: Colors.text, fontSize: 15, fontWeight: '700' },
   modalDelete: { backgroundColor: Colors.danger },
-  modalDeleteText: { color: Colors.primaryText, fontSize: 15, fontWeight: '800' },
+  modalDeleteText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
 });

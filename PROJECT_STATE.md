@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-08 ("Dark Glass" redesign; Tonight tab → filter)_
+_Last updated: 2026-11-08 (light theme + Appearance; Dark Glass; new logo)_
 
 ## What this is
 
@@ -45,7 +45,18 @@ do not rename).
 3. **Organizer bar on the event detail** (avatar + @username + Follow): v2
    brought it back after Dari's 2026-11-01 "no organizer name at all" call.
    His re-decision is PENDING — don't treat either way as settled.
-4. **Design: "Dark Glass"** (Dari, 2026-11-08; replaced "Bold Violet 2").
+4. **Design: "Dark Glass" + "Light"** (Dari, 2026-11-08; replaced "Bold Violet 2").
+   Two themes, chosen in Profile → Appearance: **Auto** (default, follows
+   the phone) / Light / Dark — saved on the device. NOT time/sunset based
+   (Dari asked; rejected as surprising). Light = cool gray background
+   `#e6e7eb`, WHITE cards, neutral gray borders, purple only on active
+   things (Dari rejected all-white and lilac borders). Dark is described
+   below. Theme code: palettes in `constants/theme.ts`, provider + hooks in
+   `lib/ThemeContext.tsx`; every screen builds styles with
+   `makeStyles = (Colors: Palette) => StyleSheet.create(...)` +
+   `useThemedStyles(makeStyles)` and reads `useColors()` for inline colors.
+   **Never import a palette / hardcode a theme color in a screen** — it
+   would not switch. Dark Glass details:
    Near-black background, neutral gray glass surfaces, and **every border
    is a thin purple line**: soft `Colors.border` (#3a3168) on ordinary
    edges, bright `Colors.primary` (#8b6cf0) on active/primary ones.
@@ -105,7 +116,8 @@ do not rename).
   `migration_social_notifications.sql`. Realtime on `rsvps`, `comments`.
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
-  `projectId` set in `app.json`. Push is sent by a Postgres trigger
+  `projectId` — CLAIMED set in `app.json`, but missing there as of
+  2026-11-08 (see "Not verified yet"). Push is sent by a Postgres trigger
   (`notify_new_party` → `pg_net` → Expo API); no extra server.
 - Android development build WITH `expo-notifications` is installed on the
   test phone.
@@ -145,6 +157,14 @@ do not rename).
   Edit/Delete, Report. Going / Interested / Chat sit in a dock that stays
   on screen. Share uses RN `Share` (text only, no web link yet). Not yet
   seen on Dari's phone.
+- **Light theme + Appearance picker (2026-11-08, JS-only)** — not yet seen
+  on Dari's phone. Check both themes on every screen; light map = plain
+  Google style, dark = `lib/mapStyle.ts`. The "Tonight" chip now reads
+  "Today" in the daytime (same 05:00 rule as the section headers).
+- **Push may be broken: no EAS `projectId` in `app.json`** (found
+  2026-11-08 — Metro warns "No EAS projectId — run eas init"). The Setup
+  section below claims it is set; it is not in the repo. Needs
+  `bunx`/`npx eas-cli init` on account darijan10, then a build.
 - **New logo (2026-11-08)**: in-app wordmark is JS-only (Events + Map
   headers). The home-screen icon, adaptive icon and splash are **native**
   — they only change after the next `eas build --profile development`

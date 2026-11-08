@@ -9,7 +9,8 @@ import { LIVE_WINDOW_MS } from '@/lib/tonight';
 import Avatar from '@/components/Avatar';
 import FollowButton from '@/components/FollowButton';
 import PartyCard from '@/components/PartyCard';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 
 function mapParty(row: Record<string, any>): Party {
   return {
@@ -34,6 +35,8 @@ function mapParty(row: Record<string, any>): Party {
  * they organize and the events they are going to.
  */
 export default function UserProfileScreen() {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { friendsGoing } = useSocial();
@@ -143,7 +146,8 @@ export default function UserProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.md, paddingBottom: Spacing.xl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },

@@ -1,5 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { Accent, Colors, Spacing } from '@/constants/theme';
+import { outline, Spacing, type Palette } from '@/constants/theme';
+import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 
 interface PrimaryButtonProps {
   title: string;
@@ -20,6 +21,8 @@ export default function PrimaryButton({
   disabled = false,
   variant = 'primary',
 }: PrimaryButtonProps) {
+  const Colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const isDisabled = disabled || loading;
   return (
     <TouchableOpacity
@@ -42,7 +45,11 @@ export default function PrimaryButton({
             <Text
               style={[
                 styles.label,
-                variant === 'outline' ? styles.labelOutline : styles.labelPrimary,
+                variant === 'outline'
+                  ? styles.labelOutline
+                  : variant === 'danger'
+                    ? styles.labelDanger
+                    : styles.labelPrimary,
               ]}
             >
               {icon}
@@ -52,7 +59,11 @@ export default function PrimaryButton({
             style={[
               styles.label,
               styles.labelText,
-              variant === 'outline' ? styles.labelOutline : styles.labelPrimary,
+              variant === 'outline'
+                ? styles.labelOutline
+                : variant === 'danger'
+                  ? styles.labelDanger
+                  : styles.labelPrimary,
             ]}
           >
             {title}
@@ -63,7 +74,8 @@ export default function PrimaryButton({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Colors: Palette) =>
+  StyleSheet.create({
   base: {
     borderRadius: 16,
     paddingVertical: 15,
@@ -74,7 +86,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginVertical: Spacing.xs,
   },
-  primary: { ...Accent.outline },
+  primary: { ...outline(Colors) },
   outline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.primary },
   danger: { backgroundColor: Colors.danger },
   disabled: { opacity: 0.5 },
@@ -82,4 +94,5 @@ const styles = StyleSheet.create({
   labelText: { flexShrink: 1 },
   labelPrimary: { color: Colors.primaryText },
   labelOutline: { color: Colors.primaryBright },
+    labelDanger: { color: '#ffffff' },
 });
