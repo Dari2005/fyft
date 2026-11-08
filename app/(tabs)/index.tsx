@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Keyboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useParties } from '@/hooks/useParties';
+import { usePartyStats } from '@/hooks/usePartyStats';
 import { useSocial } from '@/lib/SocialContext';
 import {
   DEFAULT_FILTERS,
@@ -15,22 +16,11 @@ import {
 import EventFilterBar from '@/components/EventFilterBar';
 import Logo from '@/components/Logo';
 import Icon from '@/components/Icon';
+import PartyCard from '@/components/PartyCard';
 import { mapStyleFor } from '@/lib/mapStyle';
 import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { Party } from '@/lib/types';
-
-/** "Mon, Nov 2 · 11:00 PM" — when the party starts, for the pin preview card. */
-function formatWhen(iso: string): string {
-  const d = new Date(iso);
-  const day = d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  return `${day} · ${time}`;
-}
 
 /** Fallback region: Skopje center — used until location resolves or when denied. */
 const SKOPJE_REGION: Region = {
@@ -46,6 +36,7 @@ export default function MapScreen() {
   const styles = useThemedStyles(makeStyles);
   const { parties, loading, error, refresh } = useParties();
   const { followingIds, refresh: refreshSocial } = useSocial();
+  const { stats, refresh: refreshStats } = usePartyStats();
   const insets = useSafeAreaInsets();
   const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
   const [showsUserLocation, setShowsUserLocation] = useState(false);
@@ -68,7 +59,8 @@ export default function MapScreen() {
     useCallback(() => {
       refresh();
       refreshSocial();
-    }, [refresh, refreshSocial])
+      refreshStats();
+    }, [refresh, refreshSocial, refreshStats])
   );
 
   // The map renders IMMEDIATELY on the Skopje fallback — it must not wait
@@ -173,43 +165,20 @@ export default function MapScreen() {
         </View>
       )}
 
-      {/* Pin preview: tapping a pin opens this card; tapping it (or the
-          button) goes to the full party details. */}
+      {/* Pin preview: the same card as the Events list (photo + crowd
+          meter); tapping it opens the event, ✕ closes the preview. */}
       {selected && (
-        <Pressable
-          style={styles.previewCard}
-          onPress={() =>
-            router.push({ pathname: '/party/[id]', params: { id: selected.id } })
-          }
-        >
-          <View style={styles.previewRow}>
-            <View style={styles.previewInfo}>
-              <Text style={styles.previewTitle} numberOfLines={1}>
-                {selected.title}
-              </Text>
-              <View style={styles.previewWhenRow}>
-                <Icon name="calendar" size={14} color={Colors.primaryBright} />
-                <Text style={styles.previewWhen}>{formatWhen(selected.starts_at)}</Text>
-              </View>
-              {selected.address && (
-                <Text style={styles.previewAddress} numberOfLines={1}>
-                  {selected.address}
-                </Text>
-              )}
-            </View>
-            <TouchableOpacity
-              onPress={() => setSelectedId(null)}
-              style={styles.previewClose}
-              hitSlop={8}
-            >
-              <Icon name="close" size={14} color={Colors.muted} />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.previewButton}>
-            <Text style={styles.previewButtonText}>Show details</Text>
-            <Icon name="arrowRight" size={16} color={Colors.primaryBright} />
-          </View>
-        </Pressable>
+        <View style={styles.previewWrap}>
+          <PartyCard party={selected} stats={stats[selected.id]} />
+          <TouchableOpacity
+            onPress={() => setSelectedId(null)}
+            style={styles.previewClose}
+            hitSlop={8}
+            accessibilityLabel="Close preview"
+          >
+            <Icon name="close" size={14} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Floating overlay: brand title, search + filters, create shortcut. */}
@@ -242,49 +211,30 @@ const makeStyles = (Colors: Palette) =>
   StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   map: { width: '100%', height: '100%' },
-  previewCard: {
+  previewWrap: {
     position: 'absolute',
-    left: Spacing.lg,
-    right: Spacing.lg,
-    bottom: Spacing.lg,
-    backgroundColor: Colors.glass,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 18,
-    padding: Spacing.md,
+    left: Spacing.md,
+    right: Spacing.md,
+    bottom: Spacing.sm,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.4,
     shadowRadius: 14,
     elevation: 10,
   },
-  previewRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  previewInfo: { flex: 1 },
-  previewTitle: { color: Colors.text, fontSize: 17, fontWeight: '700' },
-  previewWhenRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  previewWhen: { color: Colors.primaryBright, fontSize: 14, fontWeight: '600' },
-  previewAddress: { color: Colors.muted, fontSize: 13, marginTop: 2 },
   previewClose: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.background,
+    position: 'absolute',
+    top: -10,
+    right: -6,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'flex-start',
   },
-  previewCloseText: { color: Colors.muted, fontSize: 13, fontWeight: '700' },
-  previewButton: {
-    marginTop: Spacing.md,
-    ...outline(Colors),
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    borderRadius: 12,
-    paddingVertical: 11,
-    alignItems: 'center',
-  },
-  previewButtonText: { color: Colors.primaryText, fontSize: 15, fontWeight: '700' },
   banner: {
     position: 'absolute',
     bottom: Spacing.lg,

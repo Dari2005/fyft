@@ -113,7 +113,8 @@ do not rename).
    **Event card = "B"**: big photo on the left (calendar icon when there is
    no photo), date + title + place + crowd meter on the right, no
    description. Videos stay in the app (create + event detail) but are
-   NEVER shown on the Events card (Dari, 2026-11-08).
+   NEVER shown on the Events card (Dari, 2026-11-08). The map pin preview uses the
+   SAME `PartyCard` (+ a ✕ button), so both always look identical.
 
 ## Fragile fixes — do not undo
 
