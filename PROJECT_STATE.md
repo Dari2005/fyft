@@ -114,7 +114,7 @@ do not rename).
    no photo), date + title + place + crowd meter on the right, no
    description. Videos stay in the app (create + event detail) but are
    NEVER shown on the Events card (Dari, 2026-11-08). The map pin preview uses the
-   SAME `PartyCard` (+ a ✕ button), so both always look identical.
+   SAME `PartyCard` (+ ✕ and a "Show more details" button under it), so both always look identical.
 
 ## Fragile fixes — do not undo
 

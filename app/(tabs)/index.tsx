@@ -171,6 +171,14 @@ export default function MapScreen() {
         <View style={styles.previewWrap}>
           <PartyCard party={selected} stats={stats[selected.id]} />
           <TouchableOpacity
+            style={styles.previewButton}
+            onPress={() => router.push({ pathname: '/party/[id]', params: { id: selected.id } })}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.previewButtonText}>Show more details</Text>
+            <Icon name="arrowRight" size={16} color={Colors.primaryBright} />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => setSelectedId(null)}
             style={styles.previewClose}
             hitSlop={8}
@@ -222,6 +230,16 @@ const makeStyles = (Colors: Palette) =>
     shadowRadius: 14,
     elevation: 10,
   },
+  previewButton: {
+    ...outline(Colors),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 14,
+    paddingVertical: 12,
+  },
+  previewButtonText: { color: Colors.primaryText, fontSize: 15, fontWeight: '700' },
   previewClose: {
     position: 'absolute',
     top: -10,
