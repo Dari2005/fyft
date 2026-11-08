@@ -50,7 +50,9 @@ export default function PartyCard({ party, stats, distanceKm, friendsGoing }: Pa
 
   return (
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
-      <Pressable style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+      {/* Plain style object on purpose: <Link asChild> drops function-style
+          props (({ pressed }) => …), which left the card with no style. */}
+      <Pressable style={styles.card} android_ripple={{ color: 'rgba(139,108,240,0.12)' }}>
         <View style={styles.topRow}>
           <Text style={styles.when}>{formatWhen(party.starts_at)}</Text>
           {live && (
@@ -117,8 +119,8 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginBottom: Spacing.sm,
     gap: 6,
+    overflow: 'hidden',
   },
-  pressed: { borderColor: Colors.primary },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   when: { color: Colors.primaryBright, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   live: { flexDirection: 'row', alignItems: 'center', gap: 5 },

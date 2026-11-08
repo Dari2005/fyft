@@ -88,6 +88,9 @@ do not rename).
   behind a location await.
 - Parties refetch silently on Map/Events tab focus; `useParties` must not
   flash the spinner once it has data.
+- **`<Link asChild>` + `Pressable`: use a plain `style`, never a function
+  style** (`({ pressed }) => …`) — Link drops it and the child renders
+  unstyled (happened to PartyCard, 2026-11-08).
 - **Emoji + text = separate Text nodes** in Android buttons/labels (an
   emoji inside the label's `Text` truncates its end). `PrimaryButton`
   has an `icon` prop for this.
