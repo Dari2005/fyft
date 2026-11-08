@@ -1,5 +1,5 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { Accent, Colors } from '@/constants/theme';
 import type { ProfileLite } from '@/lib/types';
 
 /** Round profile picture with an initial as fallback. */
@@ -25,6 +25,6 @@ export default function Avatar({
 
 const styles = StyleSheet.create({
   image: { backgroundColor: Colors.border },
-  fallback: { backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center' },
+  fallback: { ...Accent.outline, alignItems: 'center', justifyContent: 'center' },
   initial: { color: Colors.primaryText, fontWeight: '800' },
 });

@@ -68,7 +68,7 @@ function TabGlyph({
   );
 }
 
-/** Tab icon with a violet pill behind it when the tab is active. */
+/** Tab icon inside a thin purple-outlined pill when the tab is active. */
 function TabIcon({
   focused,
   color,
@@ -81,10 +81,12 @@ function TabIcon({
   return (
     <View
       style={{
-        backgroundColor: focused ? Colors.primary : 'transparent',
+        backgroundColor: focused ? Colors.surfaceHigh : 'transparent',
+        borderWidth: 1,
+        borderColor: focused ? Colors.primary : 'transparent',
         borderRadius: 14,
         paddingHorizontal: 16,
-        paddingVertical: 3,
+        paddingVertical: 2,
       }}
     >
       <TabGlyph
@@ -109,15 +111,15 @@ export default function TabsLayout() {
         headerTintColor: Colors.text,
         headerTitleStyle: { fontWeight: '800' },
         tabBarStyle: {
-          backgroundColor: '#120a24',
+          backgroundColor: Colors.background,
           borderTopColor: Colors.border,
           height: 62,
           paddingBottom: 6,
           paddingTop: 4,
         },
-        tabBarActiveTintColor: Colors.primaryBright,
+        tabBarActiveTintColor: Colors.text,
         tabBarInactiveTintColor: Colors.muted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       <Tabs.Screen

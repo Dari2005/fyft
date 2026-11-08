@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
-  FlatList,
   Keyboard,
   RefreshControl,
+  SectionList,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,6 +17,7 @@ import { useSocial } from '@/lib/SocialContext';
 import { useParties } from '@/hooks/useParties';
 import { usePartyStats } from '@/hooks/usePartyStats';
 import { haversineKm } from '@/lib/geo';
+import { nightGroup } from '@/lib/tonight';
 import {
   DEFAULT_FILTERS,
   isFiltering as hasFilters,
@@ -24,18 +25,31 @@ import {
   type EventFilters,
 } from '@/lib/eventFilters';
 import PartyCard from '@/components/PartyCard';
+import SkeletonCard from '@/components/SkeletonCard';
+import Icon, { type IconName } from '@/components/Icon';
 import EventFilterBar, { FilterChip } from '@/components/EventFilterBar';
-import { Colors, Spacing } from '@/constants/theme';
+import { Accent, Colors, Spacing } from '@/constants/theme';
+import type { Party } from '@/lib/types';
 
 type SortMode = 'soonest' | 'nearest' | 'going';
 
-const SORTS: { key: SortMode; icon: string; label: string }[] = [
-  { key: 'soonest', icon: '🕒', label: 'Soonest' },
-  { key: 'nearest', icon: '📍', label: 'Near me' },
-  { key: 'going', icon: '🔥', label: 'Most going' },
+const SORTS: { key: SortMode; icon: IconName; label: string }[] = [
+  { key: 'soonest', icon: 'clock', label: 'Soonest' },
+  { key: 'nearest', icon: 'pin', label: 'Near me' },
+  { key: 'going', icon: 'flame', label: 'Most going' },
 ];
 
-/** Events tab: brand header, search, sort + filters (incl. Tonight), event list. */
+interface Section {
+  key: string;
+  title: string;
+  data: Party[];
+}
+
+/**
+ * Events tab: header, search, sort + filters (incl. Tonight), event list.
+ * Sorted by time, the list is grouped by night ("Tonight", "Tomorrow",
+ * "Sat 14 Nov"); the other sorts show one flat list.
+ */
 export default function PartyListScreen() {
   const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
@@ -89,13 +103,10 @@ export default function PartyListScreen() {
     [coords]
   );
 
-  const filtered = useMemo(() => {
-    const matches = makeEventMatcher(filters, {
-      now: new Date(),
-      friendsGoing,
-      followingIds,
-    });
-    return parties.filter(matches).sort((a, b) => {
+  const sections = useMemo<Section[]>(() => {
+    const now = new Date();
+    const matches = makeEventMatcher(filters, { now, friendsGoing, followingIds });
+    const list = parties.filter(matches).sort((a, b) => {
       switch (sort) {
         case 'nearest': {
           const da = distanceOf(a.latitude, a.longitude);
@@ -111,10 +122,23 @@ export default function PartyListScreen() {
           return a.starts_at.localeCompare(b.starts_at);
       }
     });
+
+    if (list.length === 0) return [];
+    if (sort !== 'soonest') return [{ key: 'all', title: '', data: list }];
+
+    const out: Section[] = [];
+    for (const p of list) {
+      const g = nightGroup(p.starts_at, now);
+      const last = out[out.length - 1];
+      if (last && last.key === g.key) last.data.push(p);
+      else out.push({ key: g.key, title: g.title, data: [p] });
+    }
+    return out;
   }, [parties, filters, friendsGoing, followingIds, sort, stats, distanceOf]);
 
   const isFiltering = hasFilters(filters);
   const needsLogin = !user && filters.people !== 'all';
+  const firstLoad = loading && parties.length === 0;
 
   const onRefresh = useCallback(async () => {
     await Promise.all([refresh(), refreshStats(), refreshSocial()]);
@@ -152,56 +176,80 @@ export default function PartyListScreen() {
         ))}
       />
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(p) => p.id}
-        renderItem={({ item }) => (
-          <PartyCard
-            party={item}
-            stats={stats[item.id]}
-            friendsGoing={friendsGoing[item.id]}
-            distanceKm={
-              sort === 'nearest' || coords
-                ? distanceOf(item.latitude, item.longitude)
-                : null
-            }
-          />
-        )}
-        contentContainerStyle={styles.list}
-        keyboardShouldPersistTaps="handled"
-        onScrollBeginDrag={Keyboard.dismiss}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
-        ListEmptyComponent={
-          loading ? null : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>
-                {error
-                  ? "Couldn't load the events"
-                  : needsLogin
-                    ? 'Sign in to see this'
-                    : isFiltering
-                      ? 'No events match your filters'
-                      : 'No events published yet'}
+      {firstLoad ? (
+        <View style={styles.list}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={(p) => p.id}
+          stickySectionHeadersEnabled={false}
+          renderSectionHeader={({ section }) =>
+            section.title ? (
+              <Text style={styles.sectionTitle}>
+                {section.title}
+                <Text style={styles.sectionCount}>{`  ·  ${section.data.length}`}</Text>
               </Text>
-              <Text style={styles.emptyText}>
-                {error
-                  ? 'Check that you ran supabase/schema.sql and set up .env'
-                  : needsLogin
-                    ? 'Follow friends and organizers to see where they are going.'
-                    : isFiltering
-                      ? 'Try different filters or a different search.'
-                      : 'Be the first to publish one!'}
-              </Text>
-            </View>
-          )
-        }
-      />
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <PartyCard
+              party={item}
+              stats={stats[item.id]}
+              friendsGoing={friendsGoing[item.id]}
+              distanceKm={
+                sort === 'nearest' || coords
+                  ? distanceOf(item.latitude, item.longitude)
+                  : null
+              }
+            />
+          )}
+          contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={Keyboard.dismiss}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={onRefresh}
+              tintColor={Colors.primary}
+              colors={[Colors.primary]}
+              progressBackgroundColor={Colors.surface}
+            />
+          }
+          ListEmptyComponent={
+            loading ? null : (
+              <View style={styles.empty}>
+                <Text style={styles.emptyTitle}>
+                  {error
+                    ? "Couldn't load the events"
+                    : needsLogin
+                      ? 'Sign in to see this'
+                      : isFiltering
+                        ? 'No events match your filters'
+                        : 'No events published yet'}
+                </Text>
+                <Text style={styles.emptyText}>
+                  {error
+                    ? 'Check that you ran supabase/schema.sql and set up .env'
+                    : needsLogin
+                      ? 'Follow friends and organizers to see where they are going.'
+                      : isFiltering
+                        ? 'Try different filters or a different search.'
+                        : 'Be the first to publish one!'}
+                </Text>
+              </View>
+            )
+          }
+        />
+      )}
 
       <Link href={user ? '/create' : '/auth'} asChild>
         <TouchableOpacity style={styles.fab} activeOpacity={0.85}>
-          <Text style={styles.fabText}>
-            {user ? '＋ New Event' : '＋ Sign in to publish'}
-          </Text>
+          <Icon name="plus" size={18} color={Colors.primaryBright} strokeWidth={2.4} />
+          <Text style={styles.fabText}>{user ? 'New event' : 'Sign in to publish'}</Text>
         </TouchableOpacity>
       </Link>
     </View>
@@ -211,25 +259,36 @@ export default function PartyListScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs },
-  brand: { color: Colors.primaryBright, fontSize: 20, fontWeight: '800' },
-  heading: { color: Colors.text, fontSize: 30, fontWeight: '800', marginTop: 2 },
+  brand: { color: Colors.muted, fontSize: 14, fontWeight: '700', letterSpacing: 1 },
+  heading: { color: Colors.text, fontSize: 28, fontWeight: '700', marginTop: 2 },
   filterBar: { marginTop: Spacing.md },
   list: { padding: Spacing.md, paddingBottom: 96 },
+  sectionTitle: {
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  sectionCount: { color: Colors.muted, fontWeight: '600' },
   fab: {
     position: 'absolute',
     left: Spacing.md,
     bottom: Spacing.lg,
-    backgroundColor: Colors.primary,
-    borderRadius: 26,
+    ...Accent.outline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: 14,
+    paddingVertical: 13,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
   },
-  fabText: { color: Colors.primaryText, fontSize: 15, fontWeight: '800' },
+  fabText: { color: Colors.primaryText, fontSize: 15, fontWeight: '700' },
   empty: { alignItems: 'center', marginTop: Spacing.xl },
   emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
   emptyText: { color: Colors.muted, fontSize: 14, marginTop: Spacing.xs, textAlign: 'center' },

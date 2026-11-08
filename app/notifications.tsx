@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: 6,
   },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipActive: { backgroundColor: Colors.surfaceHigh, borderColor: Colors.primary },
   chipText: { color: Colors.muted, fontSize: 13, fontWeight: '600' },
   chipTextActive: { color: Colors.primaryText },
   link: { color: Colors.primaryBright, fontSize: 14, fontWeight: '700' },

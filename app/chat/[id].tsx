@@ -23,7 +23,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { useComments } from '@/hooks/useComments';
 import { uploadPartyMedia } from '@/lib/media';
-import { Colors, Spacing } from '@/constants/theme';
+import { Accent, Colors, Spacing } from '@/constants/theme';
 import type { PartyComment, PartyMedia } from '@/lib/types';
 
 /** One video inside a chat bubble, with native playback controls. */
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   rowOther: { justifyContent: 'flex-start' },
   avatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.border },
   avatarFallback: {
-    backgroundColor: Colors.primary,
+    ...Accent.outline,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     gap: 2,
   },
-  bubbleMine: { backgroundColor: Colors.primary, borderBottomRightRadius: 6 },
+  bubbleMine: { ...Accent.outline, borderBottomRightRadius: 6 },
   bubbleOther: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primary,
+    ...Accent.outline,
     alignItems: 'center',
     justifyContent: 'center',
   },

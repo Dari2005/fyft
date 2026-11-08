@@ -1,18 +1,28 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Colors, Spacing } from '@/constants/theme';
 import { formatDistance } from '@/lib/geo';
 import { isLiveNow } from '@/lib/tonight';
+import Avatar from '@/components/Avatar';
+import Icon from '@/components/Icon';
 import type { Party, PartyStats, ProfileLite } from '@/lib/types';
 
-function formatDate(iso: string): string {
+const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+/** "SAT 14 NOV · 23:00" (24-hour clock, as used in Skopje). */
+function formatWhen(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString('en-US', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} · ${hh}:${mm}`;
+}
+
+/** "Ana, Marko +22" — friends first, then everyone else going. */
+function goingLabel(friends: ProfileLite[], goingCount: number): string {
+  const names = friends.slice(0, 2).map((f) => f.username ?? 'user');
+  const rest = Math.max(goingCount, friends.length) - names.length;
+  return `${names.join(', ')}${rest > 0 ? ` +${rest}` : ''}`;
 }
 
 interface PartyCardProps {
@@ -20,82 +30,79 @@ interface PartyCardProps {
   stats?: PartyStats;
   /** Distance from the user in km, when location is known. */
   distanceKm?: number | null;
-  /** People the viewer follows who are going — shown as a "friends" line. */
+  /** People the viewer follows who are going — shown as avatars. */
   friendsGoing?: ProfileLite[];
 }
 
-/** "@ana, @marko +2 going" */
-function friendsLabel(friends: ProfileLite[]): string {
-  const names = friends.slice(0, 2).map((f) => `@${f.username ?? 'user'}`);
-  const extra = friends.length - names.length;
-  return `👥 ${names.join(', ')}${extra > 0 ? ` +${extra}` : ''} going`;
-}
+/**
+ * Event card ("design A", 2026-11-08): purple date line on top with a LIVE
+ * badge, title, place, then a footer with friends' avatars / going count
+ * and the free-text event type.
+ */
+export default function PartyCard({ party, stats, distanceKm, friendsGoing }: PartyCardProps) {
+  const live = isLiveNow(party.starts_at);
+  const friends = friendsGoing ?? [];
+  const goingCount = stats?.goingCount ?? 0;
+  const place = [party.address, distanceKm != null ? formatDistance(distanceKm) : null]
+    .filter(Boolean)
+    .join(' · ');
+  const showFooter = friends.length > 0 || goingCount > 0 || !!party.party_type;
 
-export default function PartyCard({
-  party,
-  stats,
-  distanceKm,
-  friendsGoing,
-}: PartyCardProps) {
-  const cover = party.media.find((m) => m.type === 'image');
-  const badges: string[] = [];
-  if (isLiveNow(party.starts_at)) {
-    badges.push('🔴 Live now');
-  }
-  if (distanceKm != null) {
-    badges.push(`📍 ${formatDistance(distanceKm)}`);
-  }
-  if (stats && stats.goingCount > 0) {
-    badges.push(`✅ ${stats.goingCount} going`);
-  }
   return (
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
-      <Pressable style={styles.card}>
-        {party.party_type && (
-          <View style={styles.typeTag}>
-            <Text style={styles.typeTagText}>{party.party_type}</Text>
-          </View>
-        )}
-        <View style={styles.row}>
-          {cover ? (
-            <View style={styles.thumbWrap}>
-              <Image source={{ uri: cover.url }} style={styles.thumbImg} />
-              {party.media.length > 1 && (
-                <View style={styles.mediaCount}>
-                  <Text style={styles.mediaCountText}>{party.media.length}</Text>
-                </View>
-              )}
-            </View>
-          ) : (
-            <View style={styles.thumb}>
-              <Text style={styles.venue}>🎉</Text>
+      <Pressable style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+        <View style={styles.topRow}>
+          <Text style={styles.when}>{formatWhen(party.starts_at)}</Text>
+          {live && (
+            <View style={styles.live}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
             </View>
           )}
-          <View style={styles.info}>
-            <Text style={styles.title} numberOfLines={1}>
-              {party.title}
-            </Text>
-            <Text style={styles.meta} numberOfLines={1}>
-              {formatDate(party.starts_at)}
-              {party.address ? ` · ${party.address}` : ''}
-            </Text>
-            {party.capacity != null && (
-              <Text style={styles.organizer} numberOfLines={1}>
-                {`up to ${party.capacity} guests`}
-              </Text>
-            )}
-            {friendsGoing && friendsGoing.length > 0 && (
-              <Text style={styles.friends} numberOfLines={1}>
-                {friendsLabel(friendsGoing)}
-              </Text>
-            )}
-            {badges.length > 0 && (
-              <Text style={styles.badges} numberOfLines={1}>
-                {badges.join('  ·  ')}
-              </Text>
-            )}
-          </View>
         </View>
+
+        <Text style={styles.title} numberOfLines={2}>
+          {party.title}
+        </Text>
+
+        {place !== '' && (
+          <View style={styles.placeRow}>
+            <Icon name="pin" size={14} color={Colors.muted} />
+            <Text style={styles.place} numberOfLines={1}>
+              {place}
+            </Text>
+          </View>
+        )}
+
+        {showFooter && (
+          <View style={styles.footer}>
+            <View style={styles.going}>
+              {friends.length > 0 ? (
+                <>
+                  <View style={styles.avatars}>
+                    {friends.slice(0, 3).map((f, i) => (
+                      <View key={f.id} style={[styles.avatarRing, i > 0 && styles.avatarOverlap]}>
+                        <Avatar profile={f} size={20} />
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={styles.goingText} numberOfLines={1}>
+                    {goingLabel(friends, goingCount)}
+                  </Text>
+                </>
+              ) : goingCount > 0 ? (
+                <Text style={styles.goingText}>{`${goingCount} going`}</Text>
+              ) : null}
+            </View>
+            {party.party_type ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText} numberOfLines={1}>
+                  {party.party_type}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        )}
       </Pressable>
     </Link>
   );
@@ -104,58 +111,44 @@ export default function PartyCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-    position: 'relative',
+    gap: 6,
   },
-  typeTag: {
-    position: 'absolute',
-    top: -9,
-    right: Spacing.md,
-    backgroundColor: Colors.primary,
-    borderRadius: 9,
+  pressed: { borderColor: Colors.primary },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  when: { color: Colors.primaryBright, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+  live: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.success },
+  liveText: { color: Colors.success, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  title: { color: Colors.text, fontSize: 18, fontWeight: '700' },
+  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  place: { flex: 1, color: Colors.muted, fontSize: 13 },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+    marginTop: 4,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  going: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  avatars: { flexDirection: 'row' },
+  avatarRing: { borderWidth: 1.5, borderColor: Colors.surface, borderRadius: 12 },
+  avatarOverlap: { marginLeft: -7 },
+  goingText: { flexShrink: 1, color: '#d0d0d8', fontSize: 13, fontWeight: '600' },
+  tag: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 2,
+    maxWidth: 130,
   },
-  typeTagText: {
-    color: Colors.primaryText,
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  thumb: {
-    width: 58,
-    height: 58,
-    borderRadius: 14,
-    backgroundColor: 'rgba(147, 51, 234, 0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  thumbWrap: { position: 'relative', marginRight: Spacing.md },
-  thumbImg: { width: 58, height: 58, borderRadius: 14, backgroundColor: Colors.border },
-  mediaCount: {
-    position: 'absolute',
-    right: -6,
-    bottom: -6,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-  },
-  mediaCountText: { color: Colors.primaryText, fontSize: 11, fontWeight: '800' },
-  venue: { fontSize: 28 },
-  info: { flex: 1 },
-  title: { color: Colors.text, fontSize: 18, fontWeight: '800' },
-  meta: { color: Colors.muted, fontSize: 14, marginTop: 3 },
-  organizer: { color: Colors.muted, fontSize: 13, marginTop: 2 },
-  badges: { color: '#fbbf24', fontSize: 13, fontWeight: '600', marginTop: 2 },
-  friends: { color: Colors.primaryBright, fontSize: 13, fontWeight: '700', marginTop: 3 },
+  tagText: { color: Colors.muted, fontSize: 11, fontWeight: '600' },
 });

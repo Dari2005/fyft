@@ -17,6 +17,7 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import MapView, { Marker, type Region } from 'react-native-maps';
+import { DARK_MAP_STYLE } from '@/lib/mapStyle';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { MAX_MEDIA_ITEMS, uploadPartyMedia } from '@/lib/media';
@@ -440,6 +441,7 @@ export default function CreatePartyScreen() {
         <MapView
           ref={mapRef}
           style={styles.miniMap}
+          customMapStyle={DARK_MAP_STYLE}
           initialRegion={SKOPJE_REGION}
           onPress={(e) => setPin(e.nativeEvent.coordinate)}
         >

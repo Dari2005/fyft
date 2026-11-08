@@ -10,6 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Colors, Spacing } from '@/constants/theme';
+import Icon, { type IconName } from '@/components/Icon';
 import type { EventFilters, PeopleFilter, TimeFilter } from '@/lib/eventFilters';
 
 const TIMES: { key: TimeFilter; label: string }[] = [
@@ -19,35 +20,30 @@ const TIMES: { key: TimeFilter; label: string }[] = [
   { key: 'weekend', label: 'This weekend' },
 ];
 
-const PEOPLE: { key: Exclude<PeopleFilter, 'all'>; icon: string; label: string }[] = [
-  { key: 'friends', icon: '👥', label: 'Friends going' },
-  { key: 'following', icon: '⭐', label: 'Following' },
+const PEOPLE: { key: Exclude<PeopleFilter, 'all'>; icon: IconName; label: string }[] = [
+  { key: 'friends', icon: 'users', label: 'Friends going' },
+  { key: 'following', icon: 'star', label: 'Following' },
 ];
 
 interface ChipProps {
   label: string;
-  icon?: string;
+  icon?: IconName;
   active: boolean;
   onPress: () => void;
   floating?: boolean;
 }
 
-/**
- * One filter chip. The icon and the label are separate Text nodes on
- * purpose: with an emoji in the same string, Android truncated or dropped
- * the label once the active style kicked in.
- */
+/** One filter chip: neutral glass, thin bright-purple border when active. */
 export function FilterChip({ label, icon, active, onPress, floating }: ChipProps) {
+  const textColor = active ? Colors.primaryText : floating ? Colors.text : Colors.muted;
   return (
     <TouchableOpacity
       onPress={onPress}
       style={[styles.chip, floating && styles.chipFloating, active && styles.chipActive]}
     >
       <View style={styles.chipInner}>
-        {icon ? <Text style={styles.chipText}>{icon}</Text> : null}
-        <Text style={[styles.chipText, floating && styles.textFloating, active && styles.chipTextActive]}>
-          {label}
-        </Text>
+        {icon ? <Icon name={icon} size={14} color={active ? Colors.primaryBright : textColor} /> : null}
+        <Text style={[styles.chipText, { color: textColor }]}>{label}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -58,7 +54,7 @@ interface Props {
   onChange: (next: EventFilters) => void;
   /** Extra chips shown first (e.g. the Events list's sort options). */
   leadingChips?: ReactNode;
-  /** Opaque, shadowed style for drawing over the map. */
+  /** Translucent glass style for drawing over the map. */
   floating?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -76,7 +72,7 @@ export default function EventFilterBar({
   return (
     <View style={style}>
       <View style={[styles.searchWrap, floating && styles.searchFloating]}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Icon name="search" size={17} color={Colors.muted} />
         <TextInput
           value={filters.query}
           onChangeText={(query) => set({ query })}
@@ -88,7 +84,7 @@ export default function EventFilterBar({
         />
         {filters.query !== '' && (
           <TouchableOpacity onPress={() => set({ query: '' })} hitSlop={8}>
-            <Text style={styles.clearText}>✕</Text>
+            <Icon name="close" size={16} color={Colors.muted} />
           </TouchableOpacity>
         )}
       </View>
@@ -128,14 +124,6 @@ export default function EventFilterBar({
   );
 }
 
-const shadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 4,
-};
-
 const styles = StyleSheet.create({
   searchWrap: {
     flexDirection: 'row',
@@ -143,30 +131,26 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 24,
+    borderRadius: 14,
     marginHorizontal: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    gap: Spacing.xs,
   },
-  searchFloating: { ...shadow },
-  searchIcon: { fontSize: 16 },
+  searchFloating: { backgroundColor: Colors.glass },
   searchInput: { flex: 1, color: Colors.text, fontSize: 15, paddingVertical: 10 },
-  clearText: { color: Colors.muted, fontSize: 16, paddingHorizontal: 4 },
   chipScroll: { flexGrow: 0, marginTop: Spacing.sm },
   chipRow: { paddingHorizontal: Spacing.md, gap: Spacing.xs, alignItems: 'center' },
   chip: {
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
-    borderRadius: 16,
+    borderRadius: 999,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 6,
   },
-  chipFloating: { ...shadow, elevation: 3 },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  chipFloating: { backgroundColor: Colors.glass },
+  chipActive: { backgroundColor: Colors.surfaceHigh, borderColor: Colors.primary },
   chipInner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  chipText: { color: Colors.muted, fontSize: 13, fontWeight: '600' },
-  textFloating: { color: Colors.text },
-  chipTextActive: { color: Colors.primaryText },
+  chipText: { fontSize: 13, fontWeight: '600' },
   chipDivider: { width: 1, height: 20, backgroundColor: Colors.border, marginHorizontal: 2 },
 });

@@ -13,7 +13,9 @@ import {
   type EventFilters,
 } from '@/lib/eventFilters';
 import EventFilterBar from '@/components/EventFilterBar';
-import { Colors, Spacing } from '@/constants/theme';
+import Icon from '@/components/Icon';
+import { DARK_MAP_STYLE } from '@/lib/mapStyle';
+import { Accent, Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
 
 /** "Mon, Nov 2 · 11:00 PM" — when the party starts, for the pin preview card. */
@@ -121,6 +123,7 @@ export default function MapScreen() {
         <MapView
           ref={mapRef}
           style={styles.map}
+          customMapStyle={DARK_MAP_STYLE}
           initialRegion={lastRegion ?? SKOPJE_REGION}
           showsUserLocation={showsUserLocation}
           onRegionChangeComplete={setLastRegion}
@@ -179,7 +182,7 @@ export default function MapScreen() {
                 {selected.title}
               </Text>
               <View style={styles.previewWhenRow}>
-                <Text style={styles.previewWhen}>🗓</Text>
+                <Icon name="calendar" size={14} color={Colors.primaryBright} />
                 <Text style={styles.previewWhen}>{formatWhen(selected.starts_at)}</Text>
               </View>
               {selected.address && (
@@ -193,11 +196,12 @@ export default function MapScreen() {
               style={styles.previewClose}
               hitSlop={8}
             >
-              <Text style={styles.previewCloseText}>✕</Text>
+              <Icon name="close" size={14} color={Colors.muted} />
             </TouchableOpacity>
           </View>
           <View style={styles.previewButton}>
-            <Text style={styles.previewButtonText}>Show more details →</Text>
+            <Text style={styles.previewButtonText}>Show details</Text>
+            <Icon name="arrowRight" size={16} color={Colors.primaryBright} />
           </View>
         </Pressable>
       )}
@@ -218,7 +222,7 @@ export default function MapScreen() {
             onPress={() => router.push('/create')}
             style={styles.fab}
           >
-            <Text style={styles.fabText}>＋</Text>
+            <Icon name="plus" size={26} color={Colors.primaryBright} strokeWidth={2.2} />
           </TouchableOpacity>
         )}
       </View>
@@ -234,9 +238,9 @@ const styles = StyleSheet.create({
     left: Spacing.lg,
     right: Spacing.lg,
     bottom: Spacing.lg,
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.glass,
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: 18,
     padding: Spacing.md,
     shadowColor: '#000000',
@@ -247,7 +251,7 @@ const styles = StyleSheet.create({
   },
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   previewInfo: { flex: 1 },
-  previewTitle: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+  previewTitle: { color: Colors.text, fontSize: 17, fontWeight: '700' },
   previewWhenRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   previewWhen: { color: Colors.primaryBright, fontSize: 14, fontWeight: '600' },
   previewAddress: { color: Colors.muted, fontSize: 13, marginTop: 2 },
@@ -263,18 +267,21 @@ const styles = StyleSheet.create({
   previewCloseText: { color: Colors.muted, fontSize: 13, fontWeight: '700' },
   previewButton: {
     marginTop: Spacing.md,
-    backgroundColor: Colors.primary,
+    ...Accent.outline,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
     borderRadius: 12,
     paddingVertical: 11,
     alignItems: 'center',
   },
-  previewButtonText: { color: Colors.primaryText, fontSize: 15, fontWeight: '800' },
+  previewButtonText: { color: Colors.primaryText, fontSize: 15, fontWeight: '700' },
   banner: {
     position: 'absolute',
     bottom: Spacing.lg,
     left: Spacing.lg,
     right: Spacing.lg,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.glass,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
@@ -295,8 +302,9 @@ const styles = StyleSheet.create({
   appTitle: {
     paddingHorizontal: Spacing.md,
     color: Colors.text,
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
@@ -307,11 +315,11 @@ const styles = StyleSheet.create({
     bottom: Spacing.xl,
     width: 58,
     height: 58,
-    borderRadius: 16,
-    backgroundColor: Colors.primary,
+    borderRadius: 999,
+    ...Accent.outline,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.55,
     shadowRadius: 12,

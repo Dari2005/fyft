@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-08 (Tonight tab → filter; search + filters on Map)_
+_Last updated: 2026-11-08 ("Dark Glass" redesign; Tonight tab → filter)_
 
 ## What this is
 
@@ -45,9 +45,19 @@ do not rename).
 3. **Organizer bar on the event detail** (avatar + @username + Follow): v2
    brought it back after Dari's 2026-11-01 "no organizer name at all" call.
    His re-decision is PENDING — don't treat either way as settled.
-4. **Design:** "Bold Violet 2" — dark + violet (`constants/theme.ts`,
-   primary `#9333ea`). Tab icons are inline SVG; icon fonts never rendered
-   in his builds — don't reintroduce them.
+4. **Design: "Dark Glass"** (Dari, 2026-11-08; replaced "Bold Violet 2").
+   Near-black background, neutral gray glass surfaces, and **every border
+   is a thin purple line**: soft `Colors.border` (#3a3168) on ordinary
+   edges, bright `Colors.primary` (#8b6cf0) on active/primary ones.
+   **Purple is never a fill** — primary buttons, active chips, active tab,
+   FAB use `Accent.outline` (dark glass + purple border). Dari rejected:
+   neon glow, gradients, Uber black/white, a left date block on cards, and
+   "too much purple" fills. Event card = "design A": purple date line on
+   top (`SAT 14 NOV · 23:00`, 24h) + LIVE badge, title, place, footer with
+   friends' avatars + event-type tag. Icons are inline SVG
+   (`components/Icon.tsx`, tab icons in `(tabs)/_layout.tsx`) — no emoji
+   in chrome, and icon fonts never rendered in his builds, so don't
+   reintroduce them. Google maps use `lib/mapStyle.ts` (dark).
 5. **Secrets stay OUT of git:** `.env`, `google-maps-key.local`,
    `google-services.json`, Firebase `*adminsdk*.json` (all gitignored;
    google-services.json is local-only by Dari's convention, like the Maps
@@ -112,6 +122,16 @@ do not rename).
   Dari's phone (check: chips over the map are readable, keyboard closes on
   map tap, pin preview still opens). "Today" chip was replaced by "Tonight"
   (05:00 boundary).
+- **"Dark Glass" redesign (2026-11-08, JS-only)** — new palette + purple
+  outlines app-wide, new event card, Events list grouped by night
+  ("Tonight · 2", "Tomorrow", "Sat 14 Nov") when sorted by Soonest,
+  pulsing skeleton cards on first load, dark Google map (Map tab + create
+  mini-map). tsc + lint pass; NOT yet seen on Dari's phone. Check there:
+  dark map style applies, purple borders visible but not loud, avatars on
+  cards, the less-touched screens (party detail, chat, create, profile,
+  notifications) only got the token swap — may need polish.
+- Haptics (RSVP / chip taps) proposed — `expo-haptics` is **native**;
+  batch with the next dev build (together with `expo-dev-client`).
 - Google Cloud budget alert — not set up yet.
 - **`expo-dev-client` is NOT in `package.json`** (found 2026-11-08).
   `npx expo start --dev-client` still starts Metro but warns it can't

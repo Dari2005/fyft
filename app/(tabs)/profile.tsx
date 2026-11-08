@@ -18,7 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { uploadPartyMedia } from '@/lib/media';
 import PartyCard from '@/components/PartyCard';
 import PrimaryButton from '@/components/PrimaryButton';
-import { Colors, Spacing } from '@/constants/theme';
+import { Accent, Colors, Spacing } from '@/constants/theme';
 
 /** Profile tab (right tab): user info, profile picture, my parties, sign out. */
 export default function ProfileScreen() {
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: Colors.primary,
+    ...Accent.outline,
     borderWidth: 2,
     borderColor: Colors.primaryBright,
     alignItems: 'center',

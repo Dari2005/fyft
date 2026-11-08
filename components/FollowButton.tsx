@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useSocial } from '@/lib/SocialContext';
-import { Colors, Spacing } from '@/constants/theme';
+import { Accent, Colors, Spacing } from '@/constants/theme';
 import type { ProfileLite } from '@/lib/types';
 
 interface FollowButtonProps {
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compact: { paddingVertical: 6, minWidth: 84 },
-  follow: { backgroundColor: Colors.primary },
+  follow: { ...Accent.outline },
   following: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.primary },
   text: { color: Colors.primaryText, fontSize: 14, fontWeight: '800' },
   textCompact: { fontSize: 13 },

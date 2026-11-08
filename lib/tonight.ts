@@ -38,6 +38,35 @@ export function nightWindows(now: Date = new Date()): NightWindows {
   };
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** The "night" a moment belongs to: local midnight of (time − 05:00). */
+function nightStart(d: Date): Date {
+  const n = new Date(d.getTime() - NIGHT_CUTOFF_HOUR * 60 * 60 * 1000);
+  n.setHours(0, 0, 0, 0);
+  return n;
+}
+
+/**
+ * Section key + heading for grouping a list by night: "Tonight"/"Today",
+ * "Tomorrow", then "Sat 14 Nov". Uses the 05:00 boundary, so a 01:30 start
+ * on Saturday is grouped under Friday night.
+ */
+export function nightGroup(startsAtIso: string, now: Date = new Date()): { key: string; title: string } {
+  const night = nightStart(new Date(startsAtIso));
+  const today = nightStart(now);
+  const diff = Math.round((night.getTime() - today.getTime()) / DAY_MS);
+  const key = `${night.getFullYear()}-${night.getMonth()}-${night.getDate()}`;
+  if (diff === 0) return { key, title: nightWindows(now).tonightLabel };
+  if (diff === 1) return { key, title: 'Tomorrow' };
+  return {
+    key,
+    title: `${WEEKDAYS[night.getDay()]} ${night.getDate()} ${MONTHS[night.getMonth()]}`,
+  };
+}
+
 /** True while an event is in progress (started within the live window). */
 export function isLiveNow(startsAtIso: string, now: Date = new Date()): boolean {
   const start = new Date(startsAtIso).getTime();

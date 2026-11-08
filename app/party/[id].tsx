@@ -24,7 +24,7 @@ import { reportParty } from '@/lib/reports';
 import PrimaryButton from '@/components/PrimaryButton';
 import Avatar from '@/components/Avatar';
 import FollowButton from '@/components/FollowButton';
-import { Colors, Spacing } from '@/constants/theme';
+import { Accent, Colors, Spacing } from '@/constants/theme';
 import { parsePartyMedia, type Party } from '@/lib/types';
 
 const REPORT_REASONS = ['spam', 'fake event', 'inappropriate content', 'other'];
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
   venueRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.sm },
   typeTag: {
-    backgroundColor: Colors.primary,
+    ...Accent.outline,
     borderRadius: 9,
     paddingHorizontal: 9,
     paddingVertical: 2,
@@ -531,11 +531,11 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 13,
-    backgroundColor: Colors.primary,
+    ...Accent.outline,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.xs,
-    shadowColor: Colors.primary,
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   commentAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   commentAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.border },
   commentAvatarFallback: {
-    backgroundColor: Colors.primary,
+    ...Accent.outline,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,5 +1,5 @@
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+import { Accent, Colors, Spacing } from '@/constants/theme';
 
 interface PrimaryButtonProps {
   title: string;
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginVertical: Spacing.xs,
   },
-  primary: { backgroundColor: Colors.primary },
+  primary: { ...Accent.outline },
   outline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: Colors.primary },
   danger: { backgroundColor: Colors.danger },
   disabled: { opacity: 0.5 },
