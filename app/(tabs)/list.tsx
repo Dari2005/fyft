@@ -2,11 +2,10 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Keyboard,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -18,11 +17,17 @@ import { useSocial } from '@/lib/SocialContext';
 import { useParties } from '@/hooks/useParties';
 import { usePartyStats } from '@/hooks/usePartyStats';
 import { haversineKm } from '@/lib/geo';
+import {
+  DEFAULT_FILTERS,
+  isFiltering as hasFilters,
+  makeEventMatcher,
+  type EventFilters,
+} from '@/lib/eventFilters';
 import PartyCard from '@/components/PartyCard';
+import EventFilterBar, { FilterChip } from '@/components/EventFilterBar';
 import { Colors, Spacing } from '@/constants/theme';
 
 type SortMode = 'soonest' | 'nearest' | 'going';
-type TimeFilter = 'all' | 'today' | 'weekend';
 
 const SORTS: { key: SortMode; icon: string; label: string }[] = [
   { key: 'soonest', icon: '🕒', label: 'Soonest' },
@@ -30,45 +35,15 @@ const SORTS: { key: SortMode; icon: string; label: string }[] = [
   { key: 'going', icon: '🔥', label: 'Most going' },
 ];
 
-const TIMES: { key: TimeFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'today', label: 'Today' },
-  { key: 'weekend', label: 'This weekend' },
-];
-
-/** True when the date falls on the coming Saturday/Sunday (or this one). */
-function isWeekend(d: Date): boolean {
-  const day = d.getDay();
-  if (day === 6 || day === 0) return true;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const saturday = new Date(today);
-  saturday.setDate(today.getDate() + ((6 - today.getDay() + 7) % 7));
-  const sunday = new Date(saturday);
-  sunday.setDate(saturday.getDate() + 1);
-  const only = new Date(d);
-  only.setHours(0, 0, 0, 0);
-  return only.getTime() === saturday.getTime() || only.getTime() === sunday.getTime();
-}
-
-function sameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-/** Party list tab (left tab): brand header, search, filters/sort, party list. */
+/** Events tab: brand header, search, sort + filters (incl. Tonight), event list. */
 export default function PartyListScreen() {
   const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
   const { stats, refresh: refreshStats } = usePartyStats();
-  const { friendsGoing, refresh: refreshSocial } = useSocial();
+  const { friendsGoing, followingIds, refresh: refreshSocial } = useSocial();
   const insets = useSafeAreaInsets();
-  const [query, setQuery] = useState('');
+  const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
   const [sort, setSort] = useState<SortMode>('soonest');
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [locating, setLocating] = useState(false);
 
@@ -115,24 +90,12 @@ export default function PartyListScreen() {
   );
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const now = new Date();
-    let list = parties.filter((p) => {
-      if (
-        q &&
-        !(
-          p.title.toLowerCase().includes(q) ||
-          (p.address?.toLowerCase().includes(q) ?? false)
-        )
-      ) {
-        return false;
-      }
-      if (timeFilter === 'today') return sameDay(new Date(p.starts_at), now);
-      if (timeFilter === 'weekend') return isWeekend(new Date(p.starts_at));
-      return true;
+    const matches = makeEventMatcher(filters, {
+      now: new Date(),
+      friendsGoing,
+      followingIds,
     });
-
-    list = [...list].sort((a, b) => {
+    return parties.filter(matches).sort((a, b) => {
       switch (sort) {
         case 'nearest': {
           const da = distanceOf(a.latitude, a.longitude);
@@ -142,24 +105,23 @@ export default function PartyListScreen() {
           if (db == null) return -1;
           return da - db;
         }
-        case 'going': {
+        case 'going':
           return (stats[b.id]?.goingCount ?? 0) - (stats[a.id]?.goingCount ?? 0);
-        }
         default:
           return a.starts_at.localeCompare(b.starts_at);
       }
     });
-    return list;
-  }, [parties, query, timeFilter, sort, stats, distanceOf]);
+  }, [parties, filters, friendsGoing, followingIds, sort, stats, distanceOf]);
 
-  const isFiltering = query.trim() !== '' || timeFilter !== 'all';
+  const isFiltering = hasFilters(filters);
+  const needsLogin = !user && filters.people !== 'all';
 
   const onRefresh = useCallback(async () => {
     await Promise.all([refresh(), refreshStats(), refreshSocial()]);
   }, [refresh, refreshStats, refreshSocial]);
 
-  // Silently refetch whenever the Parties tab gains focus, so a newly
-  // published party appears without restarting the app.
+  // Silently refetch whenever the Events tab gains focus, so a newly
+  // published event appears without restarting the app.
   useFocusEffect(
     useCallback(() => {
       refresh();
@@ -175,64 +137,20 @@ export default function PartyListScreen() {
         <Text style={styles.heading}>Events in Skopje</Text>
       </View>
 
-      <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search an event or address…"
-          placeholderTextColor={Colors.muted}
-          style={styles.searchInput}
-          autoCorrect={false}
-          returnKeyType="search"
-        />
-        {query !== '' && (
-          <TouchableOpacity onPress={() => setQuery('')}>
-            <Text style={styles.clearText}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipScroll}
-        contentContainerStyle={styles.chipRow}
-      >
-        {SORTS.map((s) => (
-          <TouchableOpacity
+      <EventFilterBar
+        filters={filters}
+        onChange={setFilters}
+        style={styles.filterBar}
+        leadingChips={SORTS.map((s) => (
+          <FilterChip
             key={s.key}
+            icon={s.icon}
+            label={s.key === 'nearest' && locating ? 'Locating…' : s.label}
+            active={sort === s.key}
             onPress={() => handleSort(s.key)}
-            style={[styles.chip, sort === s.key && styles.chipActive]}
-          >
-            {/* Icon and label are separate Text nodes on purpose: with the
-                emoji inside the same string, the label stopped rendering
-                on Android once the chip's active style kicked in. */}
-            <View style={styles.chipInner}>
-              <Text style={styles.chipText}>{s.icon}</Text>
-              <Text
-                style={[styles.chipText, sort === s.key && styles.chipTextActive]}
-              >
-                {s.key === 'nearest' && locating ? 'Locating…' : s.label}
-              </Text>
-            </View>
-          </TouchableOpacity>
+          />
         ))}
-        <View style={styles.chipDivider} />
-        {TIMES.map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            onPress={() => setTimeFilter(t.key)}
-            style={[styles.chip, timeFilter === t.key && styles.chipActive]}
-          >
-            <Text
-              style={[styles.chipText, timeFilter === t.key && styles.chipTextActive]}
-            >
-              {t.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      />
 
       <FlatList
         data={filtered}
@@ -250,6 +168,8 @@ export default function PartyListScreen() {
           />
         )}
         contentContainerStyle={styles.list}
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={Keyboard.dismiss}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
         ListEmptyComponent={
           loading ? null : (
@@ -257,16 +177,20 @@ export default function PartyListScreen() {
               <Text style={styles.emptyTitle}>
                 {error
                   ? "Couldn't load the events"
-                  : isFiltering
-                    ? 'No events match your filters'
-                    : 'No events published yet'}
+                  : needsLogin
+                    ? 'Sign in to see this'
+                    : isFiltering
+                      ? 'No events match your filters'
+                      : 'No events published yet'}
               </Text>
               <Text style={styles.emptyText}>
                 {error
                   ? 'Check that you ran supabase/schema.sql and set up .env'
-                  : isFiltering
-                    ? 'Try different filters or a different search.'
-                    : 'Be the first to publish one!'}
+                  : needsLogin
+                    ? 'Follow friends and organizers to see where they are going.'
+                    : isFiltering
+                      ? 'Try different filters or a different search.'
+                      : 'Be the first to publish one!'}
               </Text>
             </View>
           )
@@ -289,50 +213,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs },
   brand: { color: Colors.primaryBright, fontSize: 20, fontWeight: '800' },
   heading: { color: Colors.text, fontSize: 30, fontWeight: '800', marginTop: 2 },
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 24,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
-  },
-  searchIcon: { fontSize: 16 },
-  searchInput: {
-    flex: 1,
-    color: Colors.text,
-    fontSize: 15,
-    paddingVertical: 10,
-  },
-  clearText: { color: Colors.muted, fontSize: 16, paddingHorizontal: 4 },
-  chipScroll: { flexGrow: 0, marginTop: Spacing.sm },
-  chipRow: {
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.xs,
-    alignItems: 'center',
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipInner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  chipText: { color: Colors.muted, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: Colors.primaryText },
-  chipDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: Colors.border,
-    marginHorizontal: 2,
-  },
+  filterBar: { marginTop: Spacing.md },
   list: { padding: Spacing.md, paddingBottom: 96 },
   fab: {
     position: 'absolute',

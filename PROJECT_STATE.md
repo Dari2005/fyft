@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-08 (fresh install + dev server check)_
+_Last updated: 2026-11-08 (Tonight tab → filter; search + filters on Map)_
 
 ## What this is
 
@@ -20,12 +20,18 @@ do not rename).
 
 ## Structure (short)
 
-- `app/` screens: `(tabs)/` = Events (list + filters), Tonight, Map (landing),
-  Profile; `party/[id]`, `chat/[id]`, `user/[id]`, `people`, `notifications`,
+- `app/` screens: `(tabs)/` = Events (list), Map (landing), Profile — 3 tabs;
+  `party/[id]`, `chat/[id]`, `user/[id]`, `people`, `notifications`,
   `create`, `auth`.
+- Search + filters are shared by Events and Map: `components/EventFilterBar.tsx`
+  (search bar + chips) and `lib/eventFilters.ts` (matching logic). Chips:
+  All / Tonight / Tomorrow / This weekend, then Friends going / Following
+  (toggle). Events adds sort chips (Soonest / Near me / Most going) in front.
+  Search matches title, address and event type. Filter state is per screen
+  (not shared between tabs).
 - `lib/`: `supabase`, `AuthContext`, `SocialContext` (follows + friendsGoing),
   `notifications` (local reminders + push registration), `tonight` (05:00 day
-  boundary), `geo`, `media`.
+  boundary, used by the Tonight/Tomorrow chips), `eventFilters`, `geo`, `media`.
 - `supabase/`: `schema.sql` + `migration_*.sql` (run in SQL Editor).
 - `.github/workflows/ci.yml`: `tsc --noEmit` + `expo lint` on push/PR (file prepared locally; first push needs a git token with `workflow` scope — the current OAuth token is rejected for workflow files).
 
@@ -99,8 +105,13 @@ do not rename).
 - Two-account test: follow → publish → push arrives; "friends going" shows.
   If push fails: `select status_code, content from net._http_response
   order by created desc limit 5;`
-- Tonight/Tomorrow/Friends/Following filter chips exist in the PC working
-  copy — confirm they reach GitHub and test on a real device.
+- **Tonight tab removed → filter chips (2026-11-08, JS-only).** Tonight /
+  Tomorrow / Friends going / Following are now chips on Events AND Map; the
+  Map also got a floating search bar and draws only matching pins. tsc +
+  lint pass and Metro bundled it for Android, but not yet confirmed on
+  Dari's phone (check: chips over the map are readable, keyboard closes on
+  map tap, pin preview still opens). "Today" chip was replaced by "Tonight"
+  (05:00 boundary).
 - Google Cloud budget alert — not set up yet.
 - **`expo-dev-client` is NOT in `package.json`** (found 2026-11-08).
   `npx expo start --dev-client` still starts Metro but warns it can't

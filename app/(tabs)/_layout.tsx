@@ -8,7 +8,7 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
-type TabIconName = 'list' | 'moon' | 'map' | 'person';
+type TabIconName = 'list' | 'map' | 'person';
 
 /**
  * Tab icons drawn as inline SVG (stroke style, 24x24 viewBox).
@@ -47,9 +47,6 @@ function TabGlyph({
           <Circle cx={4.5} cy={12} r={1.4} fill={color} />
           <Circle cx={4.5} cy={18} r={1.4} fill={color} />
         </>
-      )}
-      {name === 'moon' && (
-        <Path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" {...common} />
       )}
       {name === 'map' && (
         <>
@@ -101,7 +98,8 @@ function TabIcon({
 
 /**
  * Bottom tab bar (Instagram / YouTube Music style):
- * party list, tonight, map (landing), profile.
+ * event list, map (landing), profile. "Tonight" is a filter chip on the
+ * Events and Map tabs, not a tab of its own.
  */
 export default function TabsLayout() {
   return (
@@ -133,21 +131,6 @@ export default function TabsLayout() {
               focused={focused}
               color={color}
               name="list"
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="tonight"
-        options={{
-          title: 'Tonight',
-          headerShown: false,
-          tabBarLabel: 'Tonight',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              focused={focused}
-              color={color}
-              name="moon"
             />
           ),
         }}

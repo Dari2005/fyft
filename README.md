@@ -86,8 +86,11 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   sign out. Still to do: app icon, splash, EAS build for TestFlight/Play.
 
 - **M6 — Social + notifications** ✅
-  - **Tonight tab**: only today (until 05:00) and tomorrow, live events included
-    for 4 h after they start; filters *Friends going* / *From people I follow*.
+  - **Shared search + filters on Events and Map** (`components/EventFilterBar.tsx`,
+    `lib/eventFilters.ts`): *Tonight* / *Tomorrow* (05:00 night boundary, live
+    events included for 4 h after they start), *This weekend*, *Friends going*,
+    *Following*. On the map only matching pins are drawn. (Tonight used to be
+    its own tab; it is now a filter chip.)
   - **Follow people & organizers** (`follows` table): follow button on event
     pages and user profiles (`app/user/[id].tsx`), search/manage in
     `app/people.tsx`.

@@ -1,9 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Keyboard, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import * as Location from 'expo-location';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useParties } from '@/hooks/useParties';
+import { useSocial } from '@/lib/SocialContext';
+import {
+  DEFAULT_FILTERS,
+  isFiltering as hasFilters,
+  makeEventMatcher,
+  type EventFilters,
+} from '@/lib/eventFilters';
+import EventFilterBar from '@/components/EventFilterBar';
 import { Colors, Spacing } from '@/constants/theme';
 import type { Party } from '@/lib/types';
 
@@ -30,6 +39,9 @@ const SKOPJE_REGION: Region = {
 /** Map screen: browse all published parties as pins. */
 export default function MapScreen() {
   const { parties, loading, error, refresh } = useParties();
+  const { friendsGoing, followingIds, refresh: refreshSocial } = useSocial();
+  const insets = useSafeAreaInsets();
+  const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
   const [showsUserLocation, setShowsUserLocation] = useState(false);
   // The native Google MapView must exist ONLY while this screen is focused:
   // when navigation detaches/reattaches the tab (or a stack screen covers
@@ -49,7 +61,8 @@ export default function MapScreen() {
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh])
+      refreshSocial();
+    }, [refresh, refreshSocial])
   );
 
   // The map renders IMMEDIATELY on the Skopje fallback — it must not wait
@@ -86,11 +99,21 @@ export default function MapScreen() {
     };
   }, []);
 
-  const pinned = parties.filter(
-    (p): p is Party & { latitude: number; longitude: number } =>
-      p.latitude != null && p.longitude != null
+  const located = useMemo(
+    () =>
+      parties.filter(
+        (p): p is Party & { latitude: number; longitude: number } =>
+          p.latitude != null && p.longitude != null
+      ),
+    [parties]
   );
+  // Same search + filters as the Events tab; only matching pins are drawn.
+  const pinned = useMemo(() => {
+    const matches = makeEventMatcher(filters, { now: new Date(), friendsGoing, followingIds });
+    return located.filter(matches);
+  }, [located, filters, friendsGoing, followingIds]);
   const selected = pinned.find((p) => p.id === selectedId) ?? null;
+  const filtering = hasFilters(filters);
 
   return (
     <View style={styles.container}>
@@ -104,7 +127,10 @@ export default function MapScreen() {
           onPanDrag={() => {
             userMovedRef.current = true;
           }}
-          onPress={() => setSelectedId(null)}
+          onPress={() => {
+            Keyboard.dismiss();
+            setSelectedId(null);
+          }}
         >
           {pinned.map((p) => (
             <Marker
@@ -130,7 +156,11 @@ export default function MapScreen() {
       )}
       {!loading && !error && pinned.length === 0 && (
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>No events with a location on the map yet.</Text>
+          <Text style={styles.bannerText}>
+            {filtering && located.length > 0
+              ? 'No events match your filters.'
+              : 'No events with a location on the map yet.'}
+          </Text>
         </View>
       )}
 
@@ -172,10 +202,16 @@ export default function MapScreen() {
         </Pressable>
       )}
 
-      {/* Floating overlay: brand title + create shortcut. */}
+      {/* Floating overlay: brand title, search + filters, create shortcut. */}
       <View style={styles.overlay} pointerEvents="box-none">
-        <View style={styles.topBar} pointerEvents="box-none">
+        <View style={[styles.topBar, { paddingTop: insets.top + Spacing.xs }]} pointerEvents="box-none">
           <Text style={styles.appTitle}>Fyft</Text>
+          <EventFilterBar
+            filters={filters}
+            onChange={setFilters}
+            floating
+            style={styles.filterBar}
+          />
         </View>
         {!selected && (
           <TouchableOpacity
@@ -254,14 +290,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'space-between',
   },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.xl,
-  },
+  topBar: {},
+  filterBar: { marginTop: Spacing.xs },
   appTitle: {
+    paddingHorizontal: Spacing.md,
     color: Colors.text,
     fontSize: 22,
     fontWeight: '800',
