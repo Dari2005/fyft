@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-07 (Maps key restriction confirmed)_
+_Last updated: 2026-11-08 (fresh install + dev server check)_
 
 ## What this is
 
@@ -102,6 +102,20 @@ do not rename).
 - Tonight/Tomorrow/Friends/Following filter chips exist in the PC working
   copy — confirm they reach GitHub and test on a real device.
 - Google Cloud budget alert — not set up yet.
+- **`expo-dev-client` is NOT in `package.json`** (found 2026-11-08).
+  `npx expo start --dev-client` still starts Metro but warns it can't
+  determine the deep-link URI scheme. Check whether the phone's dev build
+  connects; if not, add it with `npx expo install expo-dev-client`
+  (**native** — batch it with the next dev build).
+- `npm install` (2026-11-08) reports 23 audit vulnerabilities (6 high) and
+  `expo` 57.0.29 → ~57.0.32 available (`npx expo install --check`). Not
+  addressed yet.
+
+## Local environment notes (Windows PC)
+
+- PowerShell execution policy blocks `npx.ps1`. Use `npx.cmd …` in
+  PowerShell (or run from cmd / Git Bash) instead of changing the policy.
+  Dev server: `npx.cmd expo start --dev-client` (Metro on :8081).
 
 ## Known limitations / roadmap
 
