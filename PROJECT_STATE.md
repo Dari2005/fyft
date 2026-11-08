@@ -4,14 +4,18 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-08 (light theme + Appearance; Dark Glass; new logo)_
+_Last updated: 2026-11-08 (crowd meter; no chat/interested; capacity required)_
 
 ## What this is
 
 **Fyft** — a mobile app (Android first, iOS later) for discovering ALL events in
 Skopje (concerts, parties, sports, meetups…), not just parties: map, event list,
-RSVPs with live capacity, per-event chat, follow ORGANIZERS (no friends —
-see decision 8), reminders and push notifications.
+a "Going" count with a crowd meter, follow ORGANIZERS (no friends — see
+decision 8), reminders and push notifications. No chat, no "interested".
+
+**North star (Dari, 2026-11-08): Fyft exists so people don't go to empty
+parties.** "How many are going" is the most important thing on every
+screen — judge every feature and design by that.
 Stack: React Native (Expo SDK 57, expo-router, TypeScript) + Supabase
 (Postgres, Auth, RLS, Realtime, Storage). Push via Expo Push Service + FCM.
 Goal of the repo: a portfolio project (public GitHub), so code quality and an
@@ -21,7 +25,7 @@ do not rename).
 ## Structure (short)
 
 - `app/` screens: `(tabs)/` = Events (list), Map (landing), Profile — 3 tabs;
-  `party/[id]`, `chat/[id]`, `user/[id]`, `people`, `notifications`,
+  `party/[id]`, `user/[id]`, `people`, `notifications`,
   `create`, `auth`.
 - Search + filters are shared by Events and Map: `components/EventFilterBar.tsx`
   (search bar + chips) and `lib/eventFilters.ts` (matching logic). Chips:
@@ -97,6 +101,15 @@ do not rename).
    "My events" + "My plans" (my own going RSVPs, visible only to me).
    `app/people.tsx` = "Organizers" (search only returns accounts with at
    least one event). Do not bring friends back without asking Dari.
+9. **Crowd meter, no chat, no "interested"** (Dari, 2026-11-08). Every
+   card + the event detail show "N / capacity going" + a label and bar:
+   Be the first / Quiet so far / Getting busy / Busy / Almost full / Full
+   (`lib/crowd.ts` — thresholds live there; with capacity it is relative
+   25/60/90 %, without it fixed 10 / 25 people). Only "Going" exists (the
+   button is "I'm going"; reminders only for going). **Capacity is
+   required** when creating an event ("How many people can come?", plain
+   number, no preset chips — Dari rejected presets). Per-event chat
+   removed (`app/chat`, `hooks/useComments` deleted; `comments` table left).
 
 ## Fragile fixes — do not undo
 
@@ -104,7 +117,7 @@ do not rename).
   `app/(tabs)/index.tsx`). A live MapView in a detached screen crashes
   Android ("child already has a parent").
 - **Realtime channel names have a unique random suffix** per effect run
-  (`hooks/useRsvps.ts`, `hooks/useComments.ts`) — reusing a subscribed
+  (`hooks/useRsvps.ts`) — reusing a subscribed
   channel name throws when the effect re-runs.
 - **Map opens instantly on Skopje**; GPS centering runs in the background
   (last-known → Balanced, skipped after user drag). Never gate the map
@@ -121,7 +134,7 @@ do not rename).
 ## Setup status
 
 - Supabase: `schema.sql` and all migrations applied, including
-  `migration_social_notifications.sql`. Realtime on `rsvps`, `comments`.
+  `migration_social_notifications.sql`. Realtime on `rsvps` (`comments` too, but the chat was removed).
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
   `projectId` — CLAIMED set in `app.json`, but missing there as of
@@ -155,14 +168,14 @@ do not rename).
   pulsing skeleton cards on first load, dark Google map (Map tab + create
   mini-map). tsc + lint pass; NOT yet seen on Dari's phone. Check there:
   dark map style applies, purple borders visible but not loud, avatars on
-  cards, the less-touched screens (party detail, chat, create, profile,
+  cards, the less-touched screens (party detail, create, profile,
   notifications) only got the token swap — may need polish.
 - **Event detail redesign (2026-11-08, JS-only)**: photo/video hero that
   fades into the background (own back + Share buttons; stack header hidden
   for `party/[id]`), date line + LIVE, title, type tag, one info block
   (address + Directions, going/capacity bar), "Hosted by" block
   (organizer decision still pending, kept as before), About, owner
-  Edit/Delete, Report. Going / Interested / Chat sit in a dock that stays
+  Edit/Delete, Report. an "I'm going" button sits in a dock that stays
   on screen. Share uses RN `Share` (text only, no web link yet). Not yet
   seen on Dari's phone.
 - **Light theme + Appearance picker (2026-11-08, JS-only)** — not yet seen
@@ -211,7 +224,9 @@ do not rename).
    is public. Plan: approximate area until organizer approves, 18+ option,
    verification.
 2. Past events are not pruned from the Events list (filters hide them).
-3. Capacity is only visual; the DB does not block RSVPs over capacity.
+3. Capacity is required in the create form but only visual: it drives the
+   crowd meter, and the DB does not block RSVPs over capacity (column is
+   still nullable for old events).
 4. `usePartyStats` loads all "going" rows client-side — move to a view/RPC.
 5. Moderation is manual (reports table); auto-hide after N reports planned.
 6. Get 5–10 real organizers publishing regularly (the app is useless empty).

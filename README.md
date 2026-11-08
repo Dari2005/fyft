@@ -1,7 +1,8 @@
 # Fyft 🎉
 
 A mobile app (iOS + Android) where anyone can publish parties — house or club — and
-people can browse them, RSVP, and comment. Built with **React Native (Expo)** +
+people can browse them and see how many are going (so nobody ends up at an
+empty party). Built with **React Native (Expo)** +
 **TypeScript**, backend on **Supabase** (Postgres + Auth + RLS).
 
 This is a Phase 1 MVP: everything except real ticket payments (payments are
@@ -15,9 +16,9 @@ app/                  # expo-router screens (file-based navigation)
   map.tsx             # map: party pins, user location
   auth.tsx            # sign in / sign up
   create.tsx          # publish a party (tap-to-set-pin map)
-  party/[id].tsx      # party detail (RSVP + live capacity ✅, comments ✅)
+  party/[id].tsx      # event detail (crowd meter + "I'm going")
 components/           # reusable UI (PartyCard, PrimaryButton, TextField)
-hooks/                # data hooks (useParties, useRsvps, useComments)
+hooks/                # data hooks (useParties, useRsvps, usePartyStats)
 lib/                  # supabase client, AuthContext, shared types
 constants/            # theme colors & spacing
 supabase/schema.sql   # full database schema + RLS policies (run once)
@@ -72,7 +73,7 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
   `rsvps`), report-party button with reason picker wired to the `reports`
   table. Note: enable `rsvps` in Dashboard → Database → Replication for the
   live updates to arrive from other users' devices.
-- **M4 — Comments** ✅ (this commit)
+- **M4 — Comments** ✅ (removed again on 2026-11-08 — no chat in Fyft)
   Comment list (newest first, author @usernames, mk-MK timestamps) + composer
   with validation on the party detail screen, realtime subscription on
   `comments`, own-comment delete with confirmation. Note: enable `comments`
@@ -96,7 +97,7 @@ supabase/schema.sql   # full database schema + RLS policies (run once)
     There is deliberately no friends layer: nobody sees who is going where;
     Profile shows your own plans privately.
   - **Notifications** (settings in Profile → Notifications):
-    local reminder 1 h before events you're going/interested in; push when
+    local reminder 1 h before events you're going to; push when
     an organizer you follow publishes; push for new events within N km of you.
 
 ## Notifications setup

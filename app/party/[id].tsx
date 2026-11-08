@@ -21,7 +21,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { onRsvpChanged } from '@/lib/notifications';
 import { isLiveNow } from '@/lib/tonight';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
-import { useComments } from '@/hooks/useComments';
+import { crowdColor, crowdFor } from '@/lib/crowd';
 import { reportParty } from '@/lib/reports';
 import Avatar from '@/components/Avatar';
 import FollowButton from '@/components/FollowButton';
@@ -70,8 +70,8 @@ function FloatButton({ icon, onPress, label }: { icon: IconName; onPress: () => 
 /**
  * Event detail ("Dark Glass", 2026-11-08): photo/video hero that fades into
  * the background, date line + title + type, one glass info block (place +
- * Directions, going/capacity), host, description, and a dock with
- * Going / Interested / Chat that stays on screen while scrolling.
+ * Directions), the crowd meter ("48 / 80 going · Busy"), host, description,
+ * and an "I'm going" dock that stays on screen. No chat, no "interested".
  */
 export default function PartyDetailScreen() {
   const Colors = useColors();
@@ -87,7 +87,6 @@ export default function PartyDetailScreen() {
 
   const {
     goingCount,
-    interestedCount,
     myStatus,
     loading: rsvpLoading,
     actionLoading,
@@ -95,8 +94,6 @@ export default function PartyDetailScreen() {
     toggleRsvp,
   } = useRsvps(id, user?.id ?? null);
 
-  // Messages live in the chat screen; here we only need the count.
-  const { comments } = useComments(id, user?.id ?? null);
 
   useEffect(() => {
     const load = async () => {
@@ -235,17 +232,9 @@ export default function PartyDetailScreen() {
   const hasMedia = party.media.length > 0;
   const hasLocation = party.latitude != null && party.longitude != null;
   const live = isLiveNow(party.starts_at);
-  const isFull = party.capacity != null && goingCount >= party.capacity;
-  const capacityPct =
-    party.capacity != null && party.capacity > 0
-      ? Math.min(100, (goingCount / party.capacity) * 100)
-      : 0;
-  const goingLabel = [
-    party.capacity != null ? `${goingCount} / ${party.capacity} going` : `${goingCount} going`,
-    interestedCount > 0 ? `${interestedCount} interested` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const crowd = crowdFor(goingCount, party.capacity);
+  const crowdTint = crowdColor(crowd.level, Colors);
+  const going = myStatus === 'going';
   const isOrganizer = user?.id === party.organizer_id;
   const busy = actionLoading || rsvpLoading;
 
@@ -324,7 +313,25 @@ export default function PartyDetailScreen() {
             </View>
           ) : null}
 
-          {/* Info block: place, going/capacity. */}
+          {/* Crowd meter — the main thing: will it be empty or busy? */}
+          <View style={styles.meterBox}>
+            <View style={styles.meterRow}>
+              <Text style={styles.meterBig}>
+                {goingCount}
+                <Text style={styles.meterOf}>
+                  {party.capacity != null ? ` / ${party.capacity} going` : ' going'}
+                </Text>
+              </Text>
+              <Text style={[styles.meterLabel, { color: crowdTint }]}>{crowd.label}</Text>
+            </View>
+            <View style={styles.meterTrack}>
+              <View
+                style={[styles.meterFill, { width: `${crowd.fill * 100}%`, backgroundColor: crowdTint }]}
+              />
+            </View>
+          </View>
+
+          {/* Info block: place + Directions. */}
           <View style={styles.infoBox}>
             {(party.address || hasLocation) && (
               <View style={styles.infoRow}>
@@ -340,28 +347,6 @@ export default function PartyDetailScreen() {
                 )}
               </View>
             )}
-            <View style={[styles.infoRow, styles.infoRowDivider, styles.infoRowColumn]}>
-              <View style={styles.infoInline}>
-                <Icon name="users" size={17} color={Colors.muted} />
-                <Text style={styles.infoText}>{goingLabel}</Text>
-                {isFull && (
-                  <View style={styles.fullBadge}>
-                    <Text style={styles.fullBadgeText}>FULL</Text>
-                  </View>
-                )}
-              </View>
-              {party.capacity != null && (
-                <View style={styles.progressTrack}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${capacityPct}%` },
-                      isFull && styles.progressFillFull,
-                    ]}
-                  />
-                </View>
-              )}
-            </View>
           </View>
 
           {party.organizer_username && (
@@ -425,43 +410,23 @@ export default function PartyDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Dock: always on screen. Active RSVP = bright purple border + check. */}
+      {/* Dock: always on screen. Tap again to cancel. Only "going" exists. */}
       <View style={[styles.dock, { paddingBottom: insets.bottom + Spacing.sm }]}>
-        {(['going', 'interested'] as const).map((status) => {
-          const active = myStatus === status;
-          return (
-            <TouchableOpacity
-              key={status}
-              style={[styles.dockButton, active && styles.dockButtonActive]}
-              onPress={() => handleRsvp(status)}
-              disabled={busy}
-              activeOpacity={0.8}
-            >
-              {busy ? (
-                <ActivityIndicator size="small" color={Colors.primaryBright} />
-              ) : (
-                <>
-                  {active && <Icon name="check" size={16} color={Colors.primaryBright} strokeWidth={2.4} />}
-                  <Text style={[styles.dockText, active && styles.dockTextActive]}>
-                    {status === 'going' ? 'Going' : 'Interested'}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          );
-        })}
         <TouchableOpacity
-          style={styles.dockChat}
-          onPress={() => router.push({ pathname: '/chat/[id]', params: { id: party.id } })}
-          accessibilityLabel="Open event chat"
+          style={[styles.dockButton, going && styles.dockButtonActive]}
+          onPress={() => handleRsvp('going')}
+          disabled={busy}
+          activeOpacity={0.8}
         >
-          <Icon name="chat" size={19} color={Colors.text} />
-          {comments.length > 0 && (
-            <View style={styles.chatBadge}>
-              <Text style={styles.chatBadgeText}>
-                {comments.length > 99 ? '99+' : comments.length}
+          {busy ? (
+            <ActivityIndicator size="small" color={Colors.primaryBright} />
+          ) : (
+            <>
+              {going && <Icon name="check" size={17} color={Colors.primaryBright} strokeWidth={2.4} />}
+              <Text style={[styles.dockText, going && styles.dockTextActive]}>
+                {going ? "You're going" : "I'm going"}
               </Text>
-            </View>
+            </>
           )}
         </TouchableOpacity>
       </View>
@@ -538,6 +503,21 @@ const makeStyles = (Colors: Palette) =>
   },
   tagText: { color: Colors.muted, fontSize: 12, fontWeight: '600' },
 
+  meterBox: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    padding: Spacing.md,
+    gap: 10,
+    marginTop: Spacing.xs,
+  },
+  meterRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  meterBig: { color: Colors.text, fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
+  meterOf: { color: Colors.muted, fontSize: 15, fontWeight: '600', letterSpacing: 0 },
+  meterLabel: { fontSize: 15, fontWeight: '800' },
+  meterTrack: { height: 8, borderRadius: 4, backgroundColor: Colors.surfaceHigh, overflow: 'hidden' },
+  meterFill: { height: '100%', borderRadius: 4 },
   infoBox: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
@@ -553,8 +533,6 @@ const makeStyles = (Colors: Palette) =>
     paddingVertical: 12,
   },
   infoRowDivider: { borderTopWidth: 1, borderTopColor: Colors.border },
-  infoRowColumn: { flexDirection: 'column', alignItems: 'stretch', gap: 8 },
-  infoInline: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   infoText: { flex: 1, color: Colors.textSoft, fontSize: 14 },
   miniButton: {
     ...outline(Colors),
@@ -566,17 +544,6 @@ const makeStyles = (Colors: Palette) =>
     paddingVertical: 5,
   },
   miniButtonText: { color: Colors.text, fontSize: 12, fontWeight: '700' },
-  fullBadge: {
-    borderWidth: 1,
-    borderColor: Colors.danger,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 1,
-  },
-  fullBadgeText: { color: Colors.danger, fontSize: 11, fontWeight: '800' },
-  progressTrack: { height: 4, borderRadius: 2, backgroundColor: Colors.surfaceHigh, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: Colors.primary },
-  progressFillFull: { backgroundColor: Colors.danger },
 
   sectionTitle: { color: Colors.muted, fontSize: 13, fontWeight: '700', marginTop: Spacing.sm },
   hostBox: {
@@ -647,27 +614,4 @@ const makeStyles = (Colors: Palette) =>
   dockButtonActive: { ...outline(Colors) },
   dockText: { color: Colors.textSoft, fontSize: 15, fontWeight: '700' },
   dockTextActive: { color: Colors.primaryText },
-  dockChat: {
-    width: 52,
-    height: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-  },
-  chatBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    paddingHorizontal: 5,
-    ...outline(Colors),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chatBadgeText: { color: Colors.primaryText, fontSize: 11, fontWeight: '800' },
 });

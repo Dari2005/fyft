@@ -212,9 +212,11 @@ export default function CreatePartyScreen() {
     }
     const date = startsAt;
 
-    const cap = capacity.trim() === '' ? null : parseInt(capacity.trim(), 10);
-    if (cap !== null && (isNaN(cap) || cap <= 0)) {
-      setError('Capacity must be a positive number (or leave it empty).');
+    // Capacity is required (Dari, 2026-11-08): it drives the crowd meter
+    // ("Quiet so far" → "Busy" → "Full"). It does not block RSVPs.
+    const cap = parseInt(capacity.trim(), 10);
+    if (isNaN(cap) || cap <= 0) {
+      setError('Enter how many people can come (a number above 0).');
       return;
     }
 
@@ -463,7 +465,16 @@ export default function CreatePartyScreen() {
           </TouchableOpacity>
         )}
 
-        <TextField label="Capacity (optional)" value={capacity} onChangeText={setCapacity} placeholder="50" keyboardType="number-pad" />
+        <TextField
+          label="How many people can come? *"
+          value={capacity}
+          onChangeText={setCapacity}
+          placeholder="e.g. 50"
+          keyboardType="number-pad"
+        />
+        <Text style={styles.hint}>
+          Shows how full the event is (Quiet so far → Busy → Full). It does not block sign-ups.
+        </Text>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
@@ -489,6 +500,7 @@ const makeStyles = (Colors: Palette) =>
   content: { padding: Spacing.lg },
   notice: { color: Colors.primary, fontSize: 14, marginBottom: Spacing.md },
   label: { color: Colors.text, fontSize: 14, fontWeight: '600', marginBottom: Spacing.xs },
+  hint: { color: Colors.muted, fontSize: 12, marginTop: -4, marginBottom: Spacing.sm },
   mediaStrip: { marginBottom: Spacing.md },
   mediaThumbWrap: { marginRight: Spacing.sm, position: 'relative' },
   mediaThumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: Colors.surface },

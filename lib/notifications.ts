@@ -8,7 +8,7 @@ import { supabase } from './supabase';
  * Two kinds of notifications live here:
  *
  *  1. LOCAL reminders ("Techno night starts in 1 hour") — scheduled on the
- *     device for every event the user marked Going / Interested. They need no
+ *     device for every event the user marked Going. They need no
  *     server and work offline. `syncReminders` rebuilds them from the
  *     database, so they stay correct if an organizer moves the start time.
  *
@@ -143,7 +143,7 @@ interface RsvpWithParty {
 
 /**
  * Rebuild the local reminders from the user's RSVPs: one notification an hour
- * before each upcoming event they marked Going or Interested. Safe to call as
+ * before each upcoming event they marked Going. Safe to call as
  * often as you like (app start, after an RSVP, after sign-in) — it cancels the
  * old reminders first, so nothing is ever duplicated or left stale.
  */
@@ -159,6 +159,7 @@ export async function syncReminders(userId: string | null): Promise<void> {
       .from('rsvps')
       .select('party_id, parties!inner(title, starts_at)')
       .eq('user_id', userId)
+      .eq('status', 'going')
       .gte('parties.starts_at', new Date().toISOString());
     if (error) throw error;
 
@@ -200,7 +201,7 @@ export async function syncReminders(userId: string | null): Promise<void> {
 }
 
 /**
- * Called after the user adds/removes an RSVP. On the first "Going/Interested"
+ * Called after the user adds/removes an RSVP. On the first "Going"
  * this is the natural moment to ask for notification permission (they just
  * said they care about an event); then the reminders are rebuilt.
  */

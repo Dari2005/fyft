@@ -35,6 +35,10 @@ export interface Palette {
   divider: string;
   danger: string;
   success: string;
+  /** Crowd meter: quiet (amber), getting busy (lime), almost full (orange). */
+  warning: string;
+  lime: string;
+  orange: string;
   /** Dim layer behind modals / over images. */
   scrim: string;
   /** Inactive slide dots over photos. */
@@ -58,6 +62,9 @@ export const darkColors: Palette = {
   divider: '#3a3168',
   danger: '#ef4444',
   success: '#22c55e',
+  warning: '#f5b83d',
+  lime: '#a3e635',
+  orange: '#fb923c',
   scrim: 'rgba(5, 5, 8, 0.72)',
   dotInactive: 'rgba(255, 255, 255, 0.35)',
 };
@@ -79,6 +86,9 @@ export const lightColors: Palette = {
   divider: '#e6e7eb',
   danger: '#dc2626',
   success: '#16a34a',
+  warning: '#b7791f',
+  lime: '#4d7c0f',
+  orange: '#c2410c',
   scrim: 'rgba(20, 21, 26, 0.45)',
   dotInactive: 'rgba(255, 255, 255, 0.6)',
 };

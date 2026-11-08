@@ -234,7 +234,7 @@ export default function NotificationsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <SettingRow
         title="Reminders"
-        description="A reminder 1 hour before every event you marked Going or Interested."
+        description="A reminder 1 hour before every event you marked Going."
         value={reminders}
         onChange={toggleReminders}
         disabled={busy}
