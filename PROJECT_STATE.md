@@ -225,6 +225,8 @@ do not rename).
   https://expo.dev/accounts/darijan10/projects/fyft/builds/cd7f22da-fda1-41d4-bd34-e242dca94951
   (includes new icon/splash, expo-dev-client, projectId; NOT haptics).
   After installing it: verify icon, splash, push (two-account test).
+  Second build 2026-11-09 (icon without frame):
+  https://expo.dev/accounts/darijan10/projects/fyft/builds/16b081b9-c284-4e94-9a98-20e2b31b837b
 - `npm install` (2026-11-08) reports 23 audit vulnerabilities (6 high) and
   `expo` 57.0.29 → ~57.0.32 available (`npx expo install --check`). Not
   addressed yet.
