@@ -218,7 +218,10 @@ do not rename).
   batch with the next dev build (together with `expo-dev-client`).
 - Google Cloud budget alert — not set up yet.
 - `expo-dev-client` added 2026-11-09 (`npx expo install`), part of the
-  2026-11-09 dev build.
+  2026-11-09 dev build. Build started 2026-11-09:
+  https://expo.dev/accounts/darijan10/projects/fyft/builds/cd7f22da-fda1-41d4-bd34-e242dca94951
+  (includes new icon/splash, expo-dev-client, projectId; NOT haptics).
+  After installing it: verify icon, splash, push (two-account test).
 - `npm install` (2026-11-08) reports 23 audit vulnerabilities (6 high) and
   `expo` 57.0.29 → ~57.0.32 available (`npx expo install --check`). Not
   addressed yet.
