@@ -142,8 +142,7 @@ do not rename).
   `migration_social_notifications.sql`. Realtime on `rsvps` (`comments` too, but the chat was removed).
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
-  `projectId` — CLAIMED set in `app.json`, but missing there as of
-  2026-11-08 (see "Not verified yet"). Push is sent by a Postgres trigger
+  `projectId` set in `app.json` (fixed 2026-11-09). Push is sent by a Postgres trigger
   (`notify_new_party` → `pg_net` → Expo API); no extra server.
 - Android development build WITH `expo-notifications` is installed on the
   test phone.
@@ -207,10 +206,10 @@ do not rename).
   events himself, so they would all show "Hosted by @darijan". Proposed:
   an optional "Host / venue name" on the event (new `parties.host_name`
   column + form field), shown instead of the account. Not decided/built.
-- **Push may be broken: no EAS `projectId` in `app.json`** (found
-  2026-11-08 — Metro warns "No EAS projectId — run eas init"). The Setup
-  section below claims it is set; it is not in the repo. Needs
-  `bunx`/`npx eas-cli init` on account darijan10, then a build.
+- **EAS `projectId` fixed (2026-11-09):** `eas init --account darijan10`
+  linked the EXISTING project `4ed63e10-2f8b-4bab-9bdc-258a4438c9c8`
+  (`app.json` → `extra.eas.projectId`, `owner: darijan10`). Push needs the
+  new dev build to be installed before it can be verified.
 - **New logo (2026-11-08)**: in-app wordmark is JS-only (Events + Map
   headers). The home-screen icon, adaptive icon and splash are **native**
   — they only change after the next `eas build --profile development`
@@ -218,11 +217,8 @@ do not rename).
 - Haptics (RSVP / chip taps) proposed — `expo-haptics` is **native**;
   batch with the next dev build (together with `expo-dev-client`).
 - Google Cloud budget alert — not set up yet.
-- **`expo-dev-client` is NOT in `package.json`** (found 2026-11-08).
-  `npx expo start --dev-client` still starts Metro but warns it can't
-  determine the deep-link URI scheme. Check whether the phone's dev build
-  connects; if not, add it with `npx expo install expo-dev-client`
-  (**native** — batch it with the next dev build).
+- `expo-dev-client` added 2026-11-09 (`npx expo install`), part of the
+  2026-11-09 dev build.
 - `npm install` (2026-11-08) reports 23 audit vulnerabilities (6 high) and
   `expo` 57.0.29 → ~57.0.32 available (`npx expo install --check`). Not
   addressed yet.

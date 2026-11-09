@@ -66,6 +66,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4ed63e10-2f8b-4bab-9bdc-258a4438c9c8"
+      }
+    },
+    "owner": "darijan10"
   }
 }
