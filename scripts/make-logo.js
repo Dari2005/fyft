@@ -43,23 +43,23 @@ function render(svg, size, file) {
 
 const S = 1024;
 
-// iOS / generic icon: dark square, thin purple inset frame, wordmark.
+// iOS / generic icon: dark square + wordmark. NO frame: Android/iOS masks
+// clip the edges, a frame showed up as stray purple lines (2026-11-09).
 render(
   `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">
     <rect width="${S}" height="${S}" fill="${BG}"/>
-    <rect x="76" y="76" width="${S - 152}" height="${S - 152}" rx="150" fill="none" stroke="${PURPLE}" stroke-width="16"/>
-    ${placedWordmark(512, 512, 600)}
+    ${placedWordmark(512, 512, 520)}
   </svg>`,
   S,
   'icon.png'
 );
 
-// Android adaptive foreground: transparent, content inside the ~66% safe zone
+// Android adaptive foreground: transparent, wordmark inside the safe circle
+// (~61% of the canvas; its diagonal must fit, so keep the width <= ~540)
 // (the launcher masks the outer area). Background color comes from app.json.
 render(
   `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">
-    <rect x="208" y="208" width="${S - 416}" height="${S - 416}" rx="120" fill="none" stroke="${PURPLE}" stroke-width="12"/>
-    ${placedWordmark(512, 512, 440)}
+    ${placedWordmark(512, 512, 420)}
   </svg>`,
   S,
   'android-icon-foreground.png'
