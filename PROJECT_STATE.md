@@ -258,6 +258,8 @@ do not rename).
   After installing it: verify icon, splash, push (two-account test).
   Second build 2026-11-09 (icon without frame):
   https://expo.dev/accounts/darijan10/projects/fyft/builds/16b081b9-c284-4e94-9a98-20e2b31b837b
+  Third build 2026-11-10 (magenta accent, new "fyft" icon/splash):
+  https://expo.dev/accounts/darijan10/projects/fyft/builds/873cb9dd-b7cc-4627-ae9a-507c76a22856
 - `npm install` (2026-11-08) reports 23 audit vulnerabilities (6 high) and
   `expo` 57.0.29 → ~57.0.32 available (`npx expo install --check`). Not
   addressed yet.
