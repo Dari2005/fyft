@@ -46,7 +46,7 @@ async function ensureAndroidChannel() {
     name: 'Events',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#8b6cf0',
+    lightColor: '#dc5ad8',
   });
 }
 

@@ -2,12 +2,12 @@
  * Fyft has two palettes with the same keys (Dari, 2026-11-08):
  *
  * - "Dark Glass": near-black background, gray glass surfaces, EVERY border a
- *   thin purple line (soft for ordinary edges, `primary` for active ones).
- * - "Light": cool gray background, white cards, neutral gray borders; purple
+ *   thin magenta line (soft for ordinary edges, `primary` for active ones).
+ * - "Light": cool gray background, white cards, neutral gray borders; magenta
  *   only on active / primary things.
  *
- * In both, purple is never a fill: primary buttons, active chips, active tab
- * and FABs use `outline(colors)` (surface + thin purple border).
+ * In both, magenta is never a fill: primary buttons, active chips, active tab
+ * and FABs use `outline(colors)` (surface + thin magenta border).
  * Screens read the active palette via `useColors()` / `useThemedStyles()`
  * from `lib/ThemeContext` — never import a palette directly in a screen.
  */
@@ -22,7 +22,7 @@ export interface Palette {
   /** Translucent panel for overlays drawn over the map / photos. */
   glass: string;
   primary: string;
-  /** Purple used for text/icons (date lines, small accents). */
+  /** Magenta used for text/icons (date lines, small accents). */
   primaryBright: string;
   /** Text on `outline()` elements. */
   primaryText: string;
@@ -52,14 +52,14 @@ export const darkColors: Palette = {
   surfaceHigh: '#1d1d25',
   outlineBg: '#1d1d25',
   glass: 'rgba(11, 11, 15, 0.86)',
-  primary: '#8b6cf0',
-  primaryBright: '#b4a0ff',
+  primary: '#dc5ad8',
+  primaryBright: '#f08ce9',
   primaryText: '#ffffff',
   text: '#f2f2f5',
   textSoft: '#d0d0d8',
   muted: '#8e8e9a',
-  border: '#3a3168',
-  divider: '#3a3168',
+  border: '#4a2748',
+  divider: '#4a2748',
   danger: '#ef4444',
   success: '#22c55e',
   warning: '#f5b83d',
@@ -76,8 +76,8 @@ export const lightColors: Palette = {
   surfaceHigh: '#f1f2f4',
   outlineBg: '#ffffff',
   glass: 'rgba(255, 255, 255, 0.94)',
-  primary: '#7c5ce6',
-  primaryBright: '#6d4fd8',
+  primary: '#b832b4',
+  primaryBright: '#a3279f',
   primaryText: '#1a1b20',
   text: '#1a1b20',
   textSoft: '#3a3c44',
@@ -101,7 +101,7 @@ export const Spacing = {
   xl: 32,
 };
 
-/** Primary/active look: surface with a thin purple border, no fill. */
+/** Primary/active look: surface with a thin magenta border, no fill. */
 export function outline(c: Palette) {
   return {
     backgroundColor: c.outlineBg,

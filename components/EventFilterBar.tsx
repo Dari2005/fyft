@@ -34,7 +34,7 @@ interface ChipProps {
   floating?: boolean;
 }
 
-/** One filter chip: neutral glass, thin bright-purple border when active. */
+/** One filter chip: neutral glass, thin bright-magenta border when active. */
 export function FilterChip({ label, icon, active, onPress, floating }: ChipProps) {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);

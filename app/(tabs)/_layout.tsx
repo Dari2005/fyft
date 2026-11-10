@@ -68,7 +68,7 @@ function TabGlyph({
   );
 }
 
-/** Tab icon inside a thin purple-outlined pill when the tab is active. */
+/** Tab icon inside a thin magenta-outlined pill when the tab is active. */
 function TabIcon({
   focused,
   color,
