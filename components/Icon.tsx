@@ -20,7 +20,10 @@ export type IconName =
   | 'edit'
   | 'trash'
   | 'bell'
-  | 'sun';
+  | 'sun'
+  | 'image'
+  | 'video'
+  | 'minus';
 
 /**
  * Small stroke icons drawn as inline SVG (24x24 viewBox), used instead of
@@ -151,6 +154,20 @@ export default function Icon({
           <Path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" {...p} />
         </>
       )}
+      {name === 'image' && (
+        <>
+          <Path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18V6A1.5 1.5 0 0 1 5 4.5z" {...p} />
+          <Circle cx={9} cy={9.5} r={1.8} {...p} />
+          <Path d="M3.5 16.5l5-4.5 4 3.5 3-2.5 5 4" {...p} />
+        </>
+      )}
+      {name === 'video' && (
+        <>
+          <Path d="M4.5 6.5h10a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 3 16V8a1.5 1.5 0 0 1 1.5-1.5z" {...p} />
+          <Path d="M16 10.5l5-3v9l-5-3" {...p} />
+        </>
+      )}
+      {name === 'minus' && <Line x1={5} y1={12} x2={19} y2={12} {...p} />}
       {name === 'trash' && (
         <>
           <Line x1={4.5} y1={7} x2={19.5} y2={7} {...p} />

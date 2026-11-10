@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -21,9 +22,9 @@ import { mapStyleFor } from '@/lib/mapStyle';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { MAX_MEDIA_ITEMS, uploadPartyMedia } from '@/lib/media';
-import TextField from '@/components/TextField';
+import Icon from '@/components/Icon';
 import PrimaryButton from '@/components/PrimaryButton';
-import { Spacing, type Palette } from '@/constants/theme';
+import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import { parsePartyMedia, type PartyMedia } from '@/lib/types';
 
@@ -328,6 +329,31 @@ export default function CreatePartyScreen() {
     );
   }
 
+  /** All media in display order: saved (edit mode) first, then newly picked. */
+  const allMedia: { key: string; uri: string; isVideo: boolean; remove: () => void }[] = [
+    ...existingMedia.map((m, i) => ({
+      key: `saved-${m.url}-${i}`,
+      uri: m.url,
+      isVideo: m.type === 'video',
+      remove: () => removeExistingMedia(i),
+    })),
+    ...mediaAssets.map((a, i) => ({
+      key: `new-${a.uri}-${i}`,
+      uri: a.uri,
+      isVideo: a.type === 'video',
+      remove: () => removeMedia(i),
+    })),
+  ];
+  const cover = allMedia[0];
+  const canAddMedia = allMedia.length < MAX_MEDIA_ITEMS;
+
+  /** Capacity stepper: +/- in steps of 5, the field stays typeable. */
+  const stepCapacity = (delta: number) => {
+    const current = parseInt(capacity, 10);
+    const base = isNaN(current) ? 0 : current;
+    setCapacity(String(Math.max(1, base + delta)));
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -338,148 +364,202 @@ export default function CreatePartyScreen() {
           <Text style={styles.notice}>You must be signed in to publish an event.</Text>
         )}
 
-        <TextField label="Title *" value={title} onChangeText={setTitle} placeholder="e.g. Concert at Gradski Park" maxLength={120} />
-        <TextField
-          label="Description"
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Tell people what to expect…"
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-        />
+        {/* Cover: the first photo is what people see on the event card. */}
+        {cover ? (
+          <View style={styles.cover}>
+            <Image source={{ uri: cover.uri }} style={styles.coverImage} />
+            {cover.isVideo && (
+              <View style={styles.videoBadge}>
+                <Icon name="video" size={14} color="#ffffff" />
+              </View>
+            )}
+            <View style={styles.coverTag}>
+              <Text style={styles.coverTagText}>Cover</Text>
+            </View>
+            <TouchableOpacity style={styles.mediaRemove} onPress={cover.remove} hitSlop={8}>
+              <Icon name="close" size={12} color="#ffffff" strokeWidth={2.6} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.coverEmpty} onPress={pickMedia} activeOpacity={0.8}>
+            <Icon name="image" size={28} color={Colors.primaryBright} />
+            <Text style={styles.coverEmptyTitle}>Add cover photo</Text>
+            <Text style={styles.coverEmptyHint}>Up to {MAX_MEDIA_ITEMS} photos or videos</Text>
+          </TouchableOpacity>
+        )}
+        {cover && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mediaStrip}>
+            {allMedia.slice(1).map((m) => (
+              <View key={m.key} style={styles.thumbWrap}>
+                <Image source={{ uri: m.uri }} style={styles.thumb} />
+                {m.isVideo && (
+                  <View style={styles.videoBadge}>
+                    <Icon name="video" size={12} color="#ffffff" />
+                  </View>
+                )}
+                <TouchableOpacity style={styles.mediaRemove} onPress={m.remove} hitSlop={8}>
+                  <Icon name="close" size={12} color="#ffffff" strokeWidth={2.6} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {canAddMedia && (
+              <TouchableOpacity style={styles.thumbAdd} onPress={pickMedia}>
+                <Icon name="plus" size={22} color={Colors.primaryBright} />
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        )}
 
-        <Text style={styles.label}>Photos & Videos</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.mediaStrip}
-        >
-          {existingMedia.map((m, i) => (
-            <View key={`saved-${m.url}-${i}`} style={styles.mediaThumbWrap}>
-              <Image source={{ uri: m.url }} style={styles.mediaThumb} />
-              {m.type === 'video' && <Text style={styles.videoBadge}>🎥</Text>}
-              <TouchableOpacity
-                style={styles.mediaRemove}
-                onPress={() => removeExistingMedia(i)}
-              >
-                <Text style={styles.mediaRemoveText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-          {mediaAssets.map((asset, i) => (
-            <View key={`${asset.uri}-${i}`} style={styles.mediaThumbWrap}>
-              <Image source={{ uri: asset.uri }} style={styles.mediaThumb} />
-              {asset.type === 'video' && <Text style={styles.videoBadge}>🎥</Text>}
-              <TouchableOpacity
-                style={styles.mediaRemove}
-                onPress={() => removeMedia(i)}
-              >
-                <Text style={styles.mediaRemoveText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-          {existingMedia.length + mediaAssets.length < MAX_MEDIA_ITEMS && (
-            <TouchableOpacity style={styles.mediaAdd} onPress={pickMedia}>
-              <Text style={styles.mediaAddText}>＋</Text>
-              <Text style={styles.mediaAddLabel}>Add</Text>
+        {/* Basics */}
+        <View style={styles.section}>
+          <TextInput
+            style={styles.titleInput}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Event name"
+            placeholderTextColor={Colors.muted}
+            maxLength={120}
+          />
+          <View style={styles.divider} />
+          <TextInput
+            style={styles.plainInput}
+            value={partyType}
+            onChangeText={setPartyType}
+            placeholder="Event type (optional)"
+            placeholderTextColor={Colors.muted}
+            maxLength={30}
+          />
+        </View>
+
+        {/* When */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>When</Text>
+          <View style={styles.dateRow}>
+            <TouchableOpacity style={[styles.field, styles.dateField]} onPress={() => setPickerMode('date')}>
+              <Icon name="calendar" size={16} color={Colors.primaryBright} />
+              <Text style={styles.fieldText}>
+                {startsAt.toLocaleDateString('en-GB', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                })}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.field} onPress={() => setPickerMode('time')}>
+              <Icon name="clock" size={16} color={Colors.primaryBright} />
+              <Text style={styles.fieldText}>
+                {startsAt.toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {pickerMode && (
+            <DateTimePicker
+              value={startsAt}
+              mode={pickerMode}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              minimumDate={editId ? undefined : new Date()}
+              onChange={onPickerChange}
+            />
+          )}
+          {Platform.OS === 'ios' && pickerMode && (
+            <TouchableOpacity onPress={() => setPickerMode(null)} style={styles.pickerDone}>
+              <Text style={styles.pickerDoneText}>Done</Text>
             </TouchableOpacity>
           )}
-        </ScrollView>
-
-        <TextField
-          label="Event type"
-          value={partyType}
-          onChangeText={setPartyType}
-          placeholder="e.g. Birthday, Rave, BBQ, Techno night…"
-          maxLength={30}
-        />
-
-        <Text style={styles.label}>Starts at *</Text>
-        <View style={styles.dateRow}>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setPickerMode('date')}>
-            <Text style={styles.dateButtonText}>
-              📅{' '}
-              {startsAt.toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.dateButton} onPress={() => setPickerMode('time')}>
-            <Text style={styles.dateButtonText}>
-              🕐{' '}
-              {startsAt.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
-          </TouchableOpacity>
         </View>
-        {pickerMode && (
-          <DateTimePicker
-            value={startsAt}
-            mode={pickerMode}
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            minimumDate={editId ? undefined : new Date()}
-            onChange={onPickerChange}
+
+        {/* Where */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Where</Text>
+          <View style={styles.field}>
+            <TextInput
+              style={styles.fieldInput}
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Search address"
+              placeholderTextColor={Colors.muted}
+              returnKeyType="search"
+              onSubmitEditing={searchAddress}
+            />
+            <TouchableOpacity onPress={searchAddress} disabled={searching} hitSlop={8}>
+              {searching ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <Icon name="search" size={18} color={Colors.primaryBright} />
+              )}
+            </TouchableOpacity>
+          </View>
+          <MapView
+            // Remount on theme change so the new map style always applies.
+            key={Colors.scheme}
+            ref={mapRef}
+            style={styles.miniMap}
+            customMapStyle={mapStyleFor(Colors.scheme)}
+            initialRegion={SKOPJE_REGION}
+            onPress={(e) => setPin(e.nativeEvent.coordinate)}
+          >
+            {pin && <Marker coordinate={pin} pinColor={Colors.primary} />}
+          </MapView>
+          <View style={styles.pinRow}>
+            <Icon name="pin" size={14} color={pin ? Colors.primaryBright : Colors.muted} />
+            <Text style={styles.pinText}>
+              {pin ? 'Pin on the map' : 'Search the address or tap the map to drop a pin.'}
+            </Text>
+            {pin && (
+              <TouchableOpacity onPress={() => setPin(null)} hitSlop={8}>
+                <Text style={styles.clearPinText}>Remove</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Capacity: required, drives the crowd meter. */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>How many people can come?</Text>
+          <View style={styles.stepper}>
+            <TouchableOpacity style={styles.stepButton} onPress={() => stepCapacity(-5)} accessibilityLabel="Fewer people">
+              <Icon name="minus" size={18} color={Colors.primaryBright} strokeWidth={2.4} />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.stepValue}
+              value={capacity}
+              onChangeText={(t) => setCapacity(t.replace(/[^0-9]/g, ''))}
+              placeholder="—"
+              placeholderTextColor={Colors.muted}
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+            <TouchableOpacity style={styles.stepButton} onPress={() => stepCapacity(5)} accessibilityLabel="More people">
+              <Icon name="plus" size={18} color={Colors.primaryBright} strokeWidth={2.4} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.hint}>
+            Shows how full the event is (Quiet so far → Busy → Full). It does not block sign-ups.
+          </Text>
+        </View>
+
+        {/* About */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>About</Text>
+          <TextInput
+            style={[styles.plainInput, styles.description]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Tell people what to expect…"
+            placeholderTextColor={Colors.muted}
+            multiline
+            textAlignVertical="top"
           />
-        )}
-        {Platform.OS === 'ios' && pickerMode && (
-          <TouchableOpacity onPress={() => setPickerMode(null)} style={styles.pickerDone}>
-            <Text style={styles.pickerDoneText}>Done</Text>
-          </TouchableOpacity>
-        )}
-
-        <TextField label="Address" value={address} onChangeText={setAddress} placeholder="e.g. Example St. 12, Skopje" />
-        <TouchableOpacity onPress={searchAddress} style={styles.searchButton} disabled={searching}>
-          {searching ? (
-            <ActivityIndicator size="small" color={Colors.primary} />
-          ) : (
-            <Text style={styles.searchButtonText}>🔍 Find the address on the map</Text>
-          )}
-        </TouchableOpacity>
-
-        <Text style={styles.label}>Location on map (optional)</Text>
-        <MapView
-          // Remount on theme change so the new map style always applies.
-          key={Colors.scheme}
-          ref={mapRef}
-          style={styles.miniMap}
-          customMapStyle={mapStyleFor(Colors.scheme)}
-          initialRegion={SKOPJE_REGION}
-          onPress={(e) => setPin(e.nativeEvent.coordinate)}
-        >
-          {pin && <Marker coordinate={pin} pinColor={Colors.primary} />}
-        </MapView>
-        <Text style={styles.pinText}>
-          {pin
-            ? `📍 ${pin.latitude.toFixed(4)}, ${pin.longitude.toFixed(4)}`
-            : 'Tap the map to drop a pin.'}
-        </Text>
-        {pin && (
-          <TouchableOpacity onPress={() => setPin(null)} style={styles.clearPin}>
-            <Text style={styles.clearPinText}>✕ Remove pin</Text>
-          </TouchableOpacity>
-        )}
-
-        <TextField
-          label="How many people can come? *"
-          value={capacity}
-          onChangeText={setCapacity}
-          placeholder="e.g. 50"
-          keyboardType="number-pad"
-        />
-        <Text style={styles.hint}>
-          Shows how full the event is (Quiet so far → Busy → Full). It does not block sign-ups.
-        </Text>
+        </View>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
         <PrimaryButton
-          title={editId ? 'Save Changes' : 'Publish Event'}
+          title={editId ? 'Save changes' : 'Publish event'}
           onPress={submit}
           loading={saving}
         />
@@ -497,14 +577,61 @@ const makeStyles = (Colors: Palette) =>
     justifyContent: 'center',
     backgroundColor: Colors.background,
   },
-  content: { padding: Spacing.lg },
-  notice: { color: Colors.primary, fontSize: 14, marginBottom: Spacing.md },
-  label: { color: Colors.text, fontSize: 14, fontWeight: '600', marginBottom: Spacing.xs },
-  hint: { color: Colors.muted, fontSize: 12, marginTop: -4, marginBottom: Spacing.sm },
-  mediaStrip: { marginBottom: Spacing.md },
-  mediaThumbWrap: { marginRight: Spacing.sm, position: 'relative' },
-  mediaThumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: Colors.surface },
-  videoBadge: { position: 'absolute', left: 6, bottom: 6, fontSize: 14 },
+  content: { padding: Spacing.md, paddingBottom: Spacing.xl, gap: Spacing.sm },
+  notice: { color: Colors.primaryBright, fontSize: 14 },
+
+  cover: { position: 'relative' },
+  coverImage: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 16,
+    backgroundColor: Colors.surfaceHigh,
+  },
+  coverTag: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    backgroundColor: Colors.glass,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  coverTagText: { color: Colors.text, fontSize: 12, fontWeight: '700' },
+  coverEmpty: {
+    aspectRatio: 16 / 9,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  coverEmptyTitle: { color: Colors.text, fontSize: 15, fontWeight: '700', marginTop: 4 },
+  coverEmptyHint: { color: Colors.muted, fontSize: 12 },
+  mediaStrip: { flexGrow: 0, paddingTop: 6 },
+  thumbWrap: { marginRight: Spacing.sm, position: 'relative' },
+  thumb: { width: 64, height: 64, borderRadius: 12, backgroundColor: Colors.surfaceHigh },
+  thumbAdd: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  videoBadge: {
+    position: 'absolute',
+    left: 6,
+    bottom: 6,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 6,
+    padding: 3,
+  },
   mediaRemove: {
     position: 'absolute',
     top: -6,
@@ -516,51 +643,74 @@ const makeStyles = (Colors: Palette) =>
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mediaRemoveText: { color: '#ffffff', fontSize: 12, fontWeight: '700' },
-  mediaAdd: {
-    width: 76,
-    height: 76,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.surface,
-  },
-  mediaAddText: { color: Colors.primaryBright, fontSize: 24, fontWeight: '700' },
-  mediaAddLabel: { color: Colors.muted, fontSize: 12, fontWeight: '600' },
-  miniMap: {
-    width: '100%',
-    height: 220,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  pinText: { color: Colors.muted, fontSize: 14, marginBottom: Spacing.xs },
-  clearPin: { alignSelf: 'flex-start', marginBottom: Spacing.md, paddingVertical: 4 },
-  clearPinText: { color: Colors.danger, fontSize: 14, fontWeight: '600' },
-  searchButton: {
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  searchButtonText: { color: Colors.primary, fontSize: 15, fontWeight: '700' },
-  dateRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
-  dateButton: {
-    flex: 1,
+
+  section: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    paddingVertical: 13,
-    paddingHorizontal: Spacing.md,
+    borderRadius: 16,
+    padding: Spacing.md,
   },
-  dateButtonText: { color: Colors.text, fontSize: 15, fontWeight: '600' },
-  pickerDone: { alignSelf: 'flex-end', marginBottom: Spacing.md, paddingVertical: 4 },
+  sectionLabel: {
+    color: Colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: Spacing.sm,
+  },
+  titleInput: { color: Colors.text, fontSize: 20, fontWeight: '700', paddingVertical: 4 },
+  plainInput: { color: Colors.text, fontSize: 15, paddingVertical: 4 },
+  description: { minHeight: 90 },
+  divider: { height: 1, backgroundColor: Colors.divider, marginVertical: Spacing.sm },
+
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.surfaceHigh,
+    borderRadius: 12,
+    paddingHorizontal: Spacing.md,
+    minHeight: 46,
+  },
+  fieldText: { color: Colors.text, fontSize: 15, fontWeight: '600' },
+  fieldInput: { flex: 1, color: Colors.text, fontSize: 15, paddingVertical: 10 },
+  dateRow: { flexDirection: 'row', gap: Spacing.sm },
+  dateField: { flex: 1 },
+  pickerDone: { alignSelf: 'flex-end', paddingVertical: 4 },
   pickerDoneText: { color: Colors.primaryBright, fontSize: 15, fontWeight: '700' },
-  error: { color: Colors.danger, fontSize: 14, marginBottom: Spacing.sm },
+
+  miniMap: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: Spacing.sm,
+  },
+  pinRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm },
+  pinText: { flex: 1, color: Colors.muted, fontSize: 13 },
+  clearPinText: { color: Colors.danger, fontSize: 13, fontWeight: '700' },
+
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  stepButton: {
+    ...outline(Colors),
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepValue: {
+    flex: 1,
+    textAlign: 'center',
+    color: Colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    backgroundColor: Colors.surfaceHigh,
+    borderRadius: 12,
+    height: 46,
+    paddingVertical: 0,
+  },
+  hint: { color: Colors.muted, fontSize: 12, marginTop: Spacing.sm },
+  error: { color: Colors.danger, fontSize: 14 },
 });

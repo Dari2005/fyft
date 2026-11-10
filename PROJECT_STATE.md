@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-08 (crowd meter; no chat/interested; capacity required)_
+_Last updated: 2026-11-10 (New event form redesigned, layout A)_
 
 ## What this is
 
@@ -118,6 +118,12 @@ do not rename).
    description. Videos stay in the app (create + event detail) but are
    NEVER shown on the Events card (Dari, 2026-11-08). The map pin preview uses the
    SAME `PartyCard` (+ ✕ and a "Show more details" button under it), so both always look identical.
+10. **New event form = layout "A"** (Dari, 2026-11-10, `app/create.tsx`):
+   one screen of grouped cards: big 16:9 cover (first photo/video) + thumb
+   strip → name + type → When → Where (address search + mini map) → How
+   many (−/+ stepper, steps of 5, still typeable) → About → Publish.
+   **No example placeholders** like "Rave, BBQ" (Dari rejected them); SVG
+   icons only, no emoji.
 
 ## Fragile fixes — do not undo
 
@@ -159,6 +165,9 @@ do not rename).
 
 ## Not verified yet
 
+- **New event form redesign (2026-11-10, JS-only).** tsc + lint pass; not
+  yet seen on Dari's phone. Check: cover photo + thumbs, −/+ stepper,
+  address search via keyboard "search" key, edit mode still prefills.
 - Two-account test: follow an ORGANIZER → they publish → push arrives.
   If push fails: `select status_code, content from net._http_response
   order by created desc limit 5;`
