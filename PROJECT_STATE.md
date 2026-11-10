@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-10 (New event form redesigned, layout A)_
+_Last updated: 2026-11-10 (New event form layout A; styled delete dialog)_
 
 ## What this is
 
@@ -124,6 +124,10 @@ do not rename).
    many (−/+ stepper, steps of 5, still typeable) → About → Publish.
    **No example placeholders** like "Rave, BBQ" (Dari rejected them); SVG
    icons only, no emoji.
+11. **Confirm dialogs use `components/ConfirmDialog`** (centered, app
+   styled), not the native `Alert` (Dari: it looks ugly). Done for Delete
+   event; Report / Sign in / error alerts still use `Alert`. Copy avoids
+   jargon ("everyone who said they're going", never "RSVPs").
 
 ## Fragile fixes — do not undo
 
@@ -168,6 +172,8 @@ do not rename).
 - **New event form redesign (2026-11-10, JS-only).** tsc + lint pass; not
   yet seen on Dari's phone. Check: cover photo + thumbs, −/+ stepper,
   address search via keyboard "search" key, edit mode still prefills.
+- **Styled delete dialog (2026-11-10, JS-only)** — tsc + lint pass, not
+  yet seen on the phone.
 - Two-account test: follow an ORGANIZER → they publish → push arrives.
   If push fails: `select status_code, content from net._http_response
   order by created desc limit 5;`

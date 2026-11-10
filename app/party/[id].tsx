@@ -24,6 +24,7 @@ import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
 import { crowdColor, crowdFor } from '@/lib/crowd';
 import { reportParty } from '@/lib/reports';
 import Avatar from '@/components/Avatar';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import FollowButton from '@/components/FollowButton';
 import Icon, { type IconName } from '@/components/Icon';
 import { outline, Spacing, type Palette } from '@/constants/theme';
@@ -84,6 +85,9 @@ export default function PartyDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [slide, setSlide] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
 
   const {
     goingCount,
@@ -193,21 +197,20 @@ export default function PartyDetailScreen() {
   };
 
   const handleDeletePress = () => {
-    Alert.alert('Delete this event?', 'This action cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const { error: delErr } = await supabase.from('parties').delete().eq('id', id);
-          if (delErr) {
-            Alert.alert('Error', 'Delete failed. Try again.');
-          } else {
-            router.replace('/');
-          }
-        },
-      },
-    ]);
+    setDeleteFailed(false);
+    setConfirmDelete(true);
+  };
+
+  const deleteEvent = async () => {
+    setDeleting(true);
+    const { error: delErr } = await supabase.from('parties').delete().eq('id', id);
+    setDeleting(false);
+    if (delErr) {
+      setDeleteFailed(true);
+    } else {
+      setConfirmDelete(false);
+      router.replace('/');
+    }
   };
 
   if (loading) {
@@ -430,6 +433,22 @@ export default function PartyDetailScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      <ConfirmDialog
+        visible={confirmDelete}
+        icon="trash"
+        destructive
+        title="Delete this event?"
+        message={
+          deleteFailed
+            ? "Couldn't delete the event. Check your connection and try again."
+            : `“${party.title}” will be removed, along with everyone who said they're going. This can't be undone.`
+        }
+        confirmLabel={deleteFailed ? 'Try again' : 'Delete'}
+        loading={deleting}
+        onConfirm={deleteEvent}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </View>
   );
 }
