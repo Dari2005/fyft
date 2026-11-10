@@ -172,6 +172,9 @@ do not rename).
 - **New event form redesign (2026-11-10, JS-only).** tsc + lint pass; not
   yet seen on Dari's phone. Check: cover photo + thumbs, −/+ stepper,
   address search via keyboard "search" key, edit mode still prefills.
+- **Map: no green (2026-11-10, JS-only, Dari picked option 2)** — parks and
+  `landscape.natural` (mountains/forests) are a slightly darker gray in
+  both map styles (`lib/mapStyle.ts`). Not yet seen on the phone.
 - **Styled delete dialog (2026-11-10, JS-only)** — tsc + lint pass, not
   yet seen on the phone.
 - Two-account test: follow an ORGANIZER → they publish → push arrives.
