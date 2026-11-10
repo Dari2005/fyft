@@ -63,7 +63,11 @@ do not rename).
    would not switch. **Accent color = MAGENTA** (Dari, 2026-11-10; it
    replaced purple everywhere — "purple" below means this accent): dark
    `primary #dc5ad8`, `primaryBright #f08ce9`, `border #4a2748`; light
-   `primary #b832b4`, `primaryBright #a3279f`. Dark Glass details:
+   `primary #b832b4`, `primaryBright #a3279f`.
+   2026-11-10: Dari looked at full redesigns (photo-first, timeline, grid,
+   swipe, tickets, poster, "Heat", Instagram-style black/white) and chose
+   to KEEP the current design for now. Don't redesign unasked.
+   Dark Glass details:
    Near-black background, neutral gray glass surfaces, and **every border
    is a thin purple line**: soft `Colors.border` on ordinary
    edges, bright `Colors.primary` on active/primary ones.
