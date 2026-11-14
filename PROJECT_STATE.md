@@ -336,13 +336,17 @@ do not rename).
 - PowerShell execution policy blocks `npx.ps1`. Use `npx.cmd …` in
   PowerShell (or run from cmd / Git Bash) instead of changing the policy.
   Dev server: `npx.cmd expo start --dev-client` (Metro on :8081).
-- **Looking at the app in a browser** (`expo start --web`) does not work
-  out of the box: `web.output: "static"` crashes on server rendering
-  (Supabase/AsyncStorage → `window is not defined`), and
-  `react-native-maps` + `expo-notifications` have no web build. For the
-  2026-11-14 review Claude temporarily set `web.output` to `"single"` and
-  added a `metro.config.js` that swaps those two modules for stubs on
-  `platform === 'web'`; all of it was removed afterwards (not committed).
+- **Browser preview of the app** (Dari asked for it, 2026-11-14):
+  `npx.cmd expo start --web --port 8081` → http://localhost:8081 (in the
+  Claude desktop app: preview config `fyft-web` in `.claude/launch.json`).
+  It works because `app.json` has `web.output: "single"` (`"static"`
+  crashed on server rendering: Supabase/AsyncStorage → `window is not
+  defined`) and `metro.config.js` swaps `react-native-maps` and
+  `expo-notifications` for stand-ins from `scripts/web-preview/` **on web
+  only** — Android/iOS bundles are unchanged. Limits: the map is a flat
+  gray placeholder (pins are tappable but not at real positions), no
+  notifications, pickers/camera behave like a browser. Good for looking at
+  layout and both themes; it does NOT replace checking on the phone.
 
 ## Known limitations / roadmap
 
