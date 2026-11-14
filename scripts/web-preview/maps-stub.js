@@ -20,7 +20,23 @@ const MapView = React.forwardRef(function MapView(props, ref) {
     Pressable,
     {
       style: [props.style, { backgroundColor: '#1b1c22', overflow: 'hidden' }],
-      onPress: () => props.onPress && props.onPress({ nativeEvent: {} }),
+      onPress: (e) => {
+        if (!props.onPress) return;
+        // Turn the click position into a coordinate, like a real map tap.
+        let coordinate = region
+          ? { latitude: region.latitude, longitude: region.longitude }
+          : undefined;
+        const el = e && e.currentTarget;
+        const ne = e && e.nativeEvent;
+        if (region && el && el.getBoundingClientRect && ne && ne.clientX != null) {
+          const r = el.getBoundingClientRect();
+          coordinate = {
+            latitude: region.latitude + (0.5 - (ne.clientY - r.top) / r.height) * region.latitudeDelta,
+            longitude: region.longitude + ((ne.clientX - r.left) / r.width - 0.5) * region.longitudeDelta,
+          };
+        }
+        props.onPress({ nativeEvent: { coordinate } });
+      },
     },
     React.createElement(
       Text,
