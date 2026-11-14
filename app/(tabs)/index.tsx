@@ -30,6 +30,9 @@ const SKOPJE_REGION: Region = {
   longitudeDelta: 0.15,
 };
 
+/** Zoom level after tapping a pin: a few streets around it, not street-level. */
+const PIN_ZOOM_DELTA = 0.035;
+
 /** Map screen: browse all published parties as pins. */
 export default function MapScreen() {
   const Colors = useColors();
@@ -111,6 +114,26 @@ export default function MapScreen() {
     return located.filter(matches);
   }, [located, filters, followingIds]);
   const selected = pinned.find((p) => p.id === selectedId) ?? null;
+
+  /**
+   * Tapping a pin zooms in on it a little (Dari, 2026-11-14: "not too
+   * much") — neighbourhood level, never zooming OUT if the user is already
+   * closer. The pin is placed above the middle so the preview card at the
+   * bottom does not cover it.
+   */
+  const focusPin = (latitude: number, longitude: number) => {
+    const delta = Math.min(lastRegion?.latitudeDelta ?? PIN_ZOOM_DELTA, PIN_ZOOM_DELTA);
+    userMovedRef.current = true;
+    mapRef.current?.animateToRegion(
+      {
+        latitude: latitude - delta * 0.18,
+        longitude,
+        latitudeDelta: delta,
+        longitudeDelta: delta,
+      },
+      450
+    );
+  };
   const filtering = hasFilters(filters);
 
   return (
@@ -142,6 +165,7 @@ export default function MapScreen() {
                 // Keep the map tap from immediately deselecting this pin.
                 e.stopPropagation();
                 setSelectedId(p.id);
+                focusPin(p.latitude, p.longitude);
               }}
             />
           ))}

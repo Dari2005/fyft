@@ -161,6 +161,9 @@ do not rename).
    The map filter row ends with a count of matching pins ("12 events",
    Dari chose option A 2026-11-14; events without a location are not
    counted).
+   Tapping a pin zooms in a little (`PIN_ZOOM_DELTA` 0.035, never zooms
+   out) and puts the pin above the middle so the preview card does not
+   cover it (Dari, 2026-11-14).
 
 ## Fragile fixes — do not undo
 
