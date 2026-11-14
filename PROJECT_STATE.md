@@ -158,6 +158,9 @@ do not rename).
    Map stays as it is (Dari, 2026-11-14): no Sort on the map, and he
    rejected count/crowd-colored pins + a my-location button. Plain magenta
    pins; don't re-propose unasked.
+   The map filter row ends with a count of matching pins ("12 events",
+   Dari chose option A 2026-11-14; events without a location are not
+   counted).
 
 ## Fragile fixes — do not undo
 

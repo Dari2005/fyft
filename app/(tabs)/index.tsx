@@ -200,6 +200,14 @@ export default function MapScreen() {
             onChange={setFilters}
             floating
             style={styles.filterBar}
+            trailing={
+              // How many pins match the filters (Dari, 2026-11-14).
+              <View style={styles.count}>
+                <Text style={styles.countText}>
+                  {pinned.length} {pinned.length === 1 ? 'event' : 'events'}
+                </Text>
+              </View>
+            }
           />
         </View>
         {!selected && (
@@ -276,6 +284,15 @@ const makeStyles = (Colors: Palette) =>
   },
   topBar: {},
   filterBar: { marginTop: Spacing.xs },
+  count: {
+    marginLeft: 'auto',
+    alignSelf: 'center',
+    backgroundColor: Colors.glass,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 7,
+  },
+  countText: { color: Colors.primaryBright, fontSize: 13, fontWeight: '700' },
   appTitle: { paddingHorizontal: Spacing.md, alignSelf: 'flex-start' },
   fab: {
     position: 'absolute',
