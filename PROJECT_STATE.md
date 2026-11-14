@@ -197,6 +197,29 @@ do not rename).
    - Light theme `success` `#167a3b` and `warning` `#8f5f0a` (were 3.3:1 and
      3.6:1 on white; now ≥ 4.5:1). Dark theme unchanged.
    - Unselected category buttons use `textSoft`, not `muted`.
+   Third round (Dari saw sketches A–D and said "do all", 2026-11-14):
+   - **A — empty Events with a next step:** an empty Tonight / Tomorrow /
+     This weekend shows "Nothing tonight yet · 3 events this weekend" + a
+     button that switches the When filter (weekend first, else "See all
+     events"). No suggestion → the old empty text.
+   - **B — no native `Alert` anywhere:** `lib/DialogContext.tsx`
+     (`DialogProvider` in `app/_layout.tsx`, `useDialog()` → `notify` /
+     `ask` / `choose`). Report is a list of reasons + "Send report";
+     sign-in prompts and errors use it too. Its main button is `outline()`
+     (magenta is never a fill). `ConfirmDialog` stays for the red Delete.
+     **Never add `Alert.alert` again.**
+   - **C — card text:** date 12, place 13, count 21 / 13, crowd label 13,
+     bar 6 px; the count row wraps instead of cutting the label.
+   - **D — host name:** optional "Who is hosting?" field in New event →
+     `parties.host_name` (≤ 60). The event page shows it as the headline of
+     "Hosted by" with "Posted by @account" under it; Follow still follows
+     the account. Search matches it. **Needs
+     `supabase/migration_host_name.sql` run once in the SQL editor** — until
+     then the app works but silently saves no host name. This settles the
+     old "Hosted by @darijan" open question.
+   - Bug found on the way: "This weekend" matched ANY Saturday/Sunday, even
+     weeks ahead (`isWeekend` in `lib/eventFilters.ts`). Now only this
+     weekend's Saturday + Sunday.
    Still open from the review (Claude advised against the first two):
    control borders are below 3:1 (fixing it would change the Dark Glass
    look); map pins have no screen-reader name (a marker title would open a
@@ -226,7 +249,8 @@ do not rename).
 ## Setup status
 
 - Supabase: `schema.sql` and all migrations applied, including
-  `migration_social_notifications.sql`. Realtime on `rsvps` (`comments` too, but the chat was removed).
+  `migration_social_notifications.sql` — **except
+  `migration_host_name.sql` (2026-11-14), which Dari still has to run.** Realtime on `rsvps` (`comments` too, but the chat was removed).
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
   `projectId` set in `app.json` (fixed 2026-11-09). Push is sent by a Postgres trigger
@@ -249,6 +273,13 @@ do not rename).
   under the pill, Back/Share sit where they were, "I'm going" stands out.
   In the browser the capacity stepper pushed "+" off-screen — may be
   web-only; check on the phone.
+- **Third round, A–D (2026-11-14, JS-only + one SQL migration)** — tsc +
+  lint pass. Seen in the browser: the empty Events suggestion, the Report
+  dialog, the two sign-in dialogs, the bigger card text. NOT seen: host
+  name (form field, saving, the event page — the column does not exist
+  until `migration_host_name.sql` is run), and every dialog that needs a
+  signed-in user or a phone (report sent, location/photo permission,
+  notification settings). Dialogs were not checked on Android at all.
 - **Second round (2026-11-14, JS-only)** — tsc + lint pass. Seen in the
   browser: the sign-in screen on `/create` and the map "+" going to
   `/auth`. NOT seen anywhere (the form needs a signed-in user): the address

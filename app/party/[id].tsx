@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   Image,
   Linking,
@@ -18,6 +17,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
+import { useDialog } from '@/lib/DialogContext';
 import { onRsvpChanged } from '@/lib/notifications';
 import { isLiveNow, isOver } from '@/lib/tonight';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
@@ -89,6 +89,7 @@ export default function PartyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const { ask, choose, notify } = useDialog();
   const [party, setParty] = useState<Party | null>(null);
   const [organizerAvatar, setOrganizerAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,6 +133,7 @@ export default function PartyDetailScreen() {
           starts_at: data.starts_at,
           capacity: data.capacity,
           created_at: data.created_at,
+          host_name: data.host_name ?? null,
           organizer_username: data.profiles?.username ?? undefined,
         });
         setOrganizerAvatar(data.profiles?.avatar_url ?? null);
@@ -153,45 +155,60 @@ export default function PartyDetailScreen() {
       onRsvpChanged(user.id, adding);
     }
     if (result === 'logged-out') {
-      Alert.alert('Sign In', 'You must be signed in to RSVP.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => router.push('/auth') },
-      ]);
+      ask({
+        title: 'Sign in to say you\'re going',
+        message: 'It takes a moment, then you count toward how busy it gets.',
+        confirmLabel: 'Sign in',
+        onConfirm: () => router.push('/auth'),
+      });
     }
   };
 
   const submitReport = async (reason: string) => {
     if (!user) {
-      Alert.alert('Sign In', 'You must be signed in to report an event.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => router.push('/auth') },
-      ]);
+      ask({
+        title: 'Sign in to report',
+        message: 'We need to know who sent a report so it can be reviewed.',
+        confirmLabel: 'Sign in',
+        onConfirm: () => router.push('/auth'),
+      });
       return;
     }
     const result = await reportParty(id, user.id, reason);
     if (result === 'ok') {
-      Alert.alert('Thank you!', 'We received your report and will review it.');
+      notify('Report sent', "Thanks. We'll review this event.", 'check');
     } else if (result === 'already-reported') {
-      Alert.alert('Already reported', 'You already reported this event.');
+      notify('Already reported', 'You already reported this event.');
     } else {
-      Alert.alert('Error', 'Report failed. Try again.');
+      notify("Couldn't send the report", 'Check your connection and try again.');
     }
   };
 
   const handleReportPress = () => {
-    Alert.alert('Report this event', 'Why are you reporting this event?', [
-      ...REPORT_REASONS.map((reason) => ({
-        text: reason[0].toUpperCase() + reason.slice(1),
-        onPress: () => submitReport(reason),
+    // Ask to sign in BEFORE the reasons, not after one was picked.
+    if (!user) {
+      submitReport('');
+      return;
+    }
+    choose({
+      icon: 'flag',
+      title: 'Report this event',
+      message: 'Why are you reporting it?',
+      options: REPORT_REASONS.map((reason) => ({
+        key: reason,
+        label: reason[0].toUpperCase() + reason.slice(1),
       })),
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+      confirmLabel: 'Send report',
+      onChoose: submitReport,
+    });
   };
 
   const openNavigation = () => {
     if (party?.latitude == null || party?.longitude == null) return;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${party.latitude},${party.longitude}`;
-    Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open navigation.'));
+    Linking.openURL(url).catch(() =>
+      notify("Couldn't open directions", 'No maps app answered. Try again.')
+    );
   };
 
   const handleShare = () => {
@@ -376,13 +393,30 @@ export default function PartyDetailScreen() {
               <View style={styles.hostBox}>
                 <Link href={{ pathname: '/user/[id]', params: { id: party.organizer_id } }} asChild>
                   <TouchableOpacity style={styles.hostInfo} activeOpacity={0.7}>
+                    {/* With a host name: the venue is the headline and the
+                        account moves to a small "Posted by" line. */}
                     <Avatar
-                      profile={{ username: party.organizer_username, avatar_url: organizerAvatar }}
+                      profile={
+                        party.host_name
+                          ? { username: party.host_name, avatar_url: null }
+                          : { username: party.organizer_username, avatar_url: organizerAvatar }
+                      }
                       size={34}
                     />
-                    <Text style={styles.hostName} numberOfLines={1}>
-                      @{party.organizer_username}
-                    </Text>
+                    {party.host_name ? (
+                      <View style={styles.hostText}>
+                        <Text style={styles.hostName} numberOfLines={1}>
+                          {party.host_name}
+                        </Text>
+                        <Text style={styles.hostBy} numberOfLines={1}>
+                          Posted by @{party.organizer_username}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.hostName} numberOfLines={1}>
+                        @{party.organizer_username}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 </Link>
                 {!isOrganizer && (
@@ -613,6 +647,8 @@ const makeStyles = (Colors: Palette) =>
   },
   hostInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   hostName: { color: Colors.text, fontSize: 15, fontWeight: '700', flexShrink: 1 },
+  hostText: { flexShrink: 1 },
+  hostBy: { color: Colors.muted, fontSize: 12, marginTop: 1 },
   description: { color: Colors.textSoft, fontSize: 15, lineHeight: 23 },
   error: { color: Colors.danger, fontSize: 14, textAlign: 'center' },
 

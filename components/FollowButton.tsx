@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
+import { useDialog } from '@/lib/DialogContext';
 import { useSocial } from '@/lib/SocialContext';
 import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
@@ -17,6 +18,7 @@ export default function FollowButton({ profile, compact = false }: FollowButtonP
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
   const { isFollowing, follow, unfollow } = useSocial();
+  const { ask, notify } = useDialog();
   const [busy, setBusy] = useState(false);
   const active = isFollowing(profile.id);
 
@@ -26,12 +28,14 @@ export default function FollowButton({ profile, compact = false }: FollowButtonP
     try {
       const result = active ? await unfollow(profile.id) : await follow(profile);
       if (result === 'logged-out') {
-        Alert.alert('Sign In', 'You must be signed in to follow organizers.', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign In', onPress: () => router.push('/auth') },
-        ]);
+        ask({
+          title: 'Sign in to follow',
+          message: 'Follow organizers to hear about their next events.',
+          confirmLabel: 'Sign in',
+          onConfirm: () => router.push('/auth'),
+        });
       } else if (result === 'error') {
-        Alert.alert('Error', 'Something went wrong. Try again.');
+        notify("Couldn't update follow", 'Check your connection and try again.');
       }
     } finally {
       setBusy(false);

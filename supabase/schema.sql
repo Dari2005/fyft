@@ -29,6 +29,7 @@ create table if not exists public.parties (
   latitude double precision,
   longitude double precision,
   address text,
+  host_name text check (host_name is null or char_length(host_name) between 1 and 60),
   starts_at timestamptz not null,
   capacity int check (capacity is null or capacity > 0),
   created_at timestamptz not null default now()

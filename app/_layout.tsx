@@ -11,6 +11,7 @@ import {
   syncReminders,
 } from '@/lib/notifications';
 import { ThemeProvider, useColors } from '@/lib/ThemeContext';
+import { DialogProvider } from '@/lib/DialogContext';
 
 configureNotifications();
 
@@ -88,8 +89,10 @@ export default function RootLayout() {
     <ThemeProvider>
       <AuthProvider>
         <SocialProvider>
-          <NotificationsBridge />
-          <ThemedStack />
+          <DialogProvider>
+            <NotificationsBridge />
+            <ThemedStack />
+          </DialogProvider>
         </SocialProvider>
       </AuthProvider>
     </ThemeProvider>

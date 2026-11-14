@@ -163,11 +163,11 @@ const makeStyles = (Colors: Palette) =>
     liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success },
     liveText: { color: Colors.success, fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
     info: { flex: 1, padding: Spacing.sm, gap: 4 },
-    when: { color: Colors.primaryBright, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+    when: { color: Colors.primaryBright, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
     title: { color: Colors.text, fontSize: 17, fontWeight: '700' },
     placeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     category: { color: Colors.textSoft, fontSize: 13, fontWeight: '700' },
-    place: { flexShrink: 1, color: Colors.muted, fontSize: 12 },
+    place: { flexShrink: 1, color: Colors.muted, fontSize: 13 },
     meter: {
       gap: 6,
       marginTop: 'auto',
@@ -179,11 +179,15 @@ const makeStyles = (Colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'baseline',
       justifyContent: 'space-between',
-      gap: 6,
+      // With three-digit numbers the label moves to its own line instead of
+      // being cut off ("Getting b…").
+      flexWrap: 'wrap',
+      columnGap: 6,
     },
-    count: { color: Colors.text, fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
-    countOf: { color: Colors.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0 },
-    level: { flexShrink: 1, fontSize: 12, fontWeight: '800' },
-    track: { height: 5, borderRadius: 3, backgroundColor: Colors.track, overflow: 'hidden' },
+    count: { color: Colors.text, fontSize: 21, fontWeight: '800', letterSpacing: -0.5 },
+    countOf: { color: Colors.muted, fontSize: 13, fontWeight: '600', letterSpacing: 0 },
+    // The crowd label is the point of the card — not the smallest text on it.
+    level: { fontSize: 13, fontWeight: '800' },
+    track: { height: 6, borderRadius: 3, backgroundColor: Colors.track, overflow: 'hidden' },
     fill: { height: '100%', borderRadius: 3 },
   });

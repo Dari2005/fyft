@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   Keyboard,
   RefreshControl,
   SectionList,
@@ -13,16 +12,18 @@ import { Link, useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/AuthContext';
+import { useDialog } from '@/lib/DialogContext';
 import { useSocial } from '@/lib/SocialContext';
 import { useParties } from '@/hooks/useParties';
 import { usePartyStats } from '@/hooks/usePartyStats';
 import { haversineKm } from '@/lib/geo';
-import { nightGroup } from '@/lib/tonight';
+import { nightGroup, nightWindows } from '@/lib/tonight';
 import {
   DEFAULT_FILTERS,
   isFiltering as hasFilters,
   makeEventMatcher,
   type EventFilters,
+  type TimeFilter,
 } from '@/lib/eventFilters';
 import PartyCard from '@/components/PartyCard';
 import SkeletonCard from '@/components/SkeletonCard';
@@ -57,6 +58,7 @@ export default function PartyListScreen() {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
+  const { notify } = useDialog();
   const { parties, loading, error, refresh } = useParties();
   const { stats, refresh: refreshStats } = usePartyStats();
   const { followingIds, refresh: refreshSocial } = useSocial();
@@ -73,7 +75,7 @@ export default function PartyListScreen() {
     try {
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(
+        notify(
           'Location needed',
           'Allow location access to sort events by distance from you.'
         );
@@ -85,12 +87,12 @@ export default function PartyListScreen() {
       setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
       return true;
     } catch {
-      Alert.alert('Location unavailable', 'Could not read your location.');
+      notify('Location unavailable', 'Could not read your location.');
       return false;
     } finally {
       setLocating(false);
     }
-  }, [coords]);
+  }, [coords, notify]);
 
   const handleSort = async (mode: SortMode) => {
     if (mode === 'nearest') {
@@ -140,6 +142,43 @@ export default function PartyListScreen() {
     }
     return out;
   }, [parties, filters, followingIds, sort, stats, distanceOf]);
+
+  /**
+   * Empty "Tonight / Tomorrow / This weekend": instead of a dead end, offer
+   * the nearest wider time that does have events (same search + type).
+   */
+  const emptyTime = useMemo(() => {
+    if (sections.length > 0 || filters.time === 'all') return null;
+    const now = new Date();
+    const count = (time: TimeFilter) =>
+      parties.filter(makeEventMatcher({ ...filters, time }, { now, followingIds })).length;
+    const when =
+      filters.time === 'tonight'
+        ? nightWindows(now).tonightLabel.toLowerCase()
+        : filters.time === 'tomorrow'
+          ? 'tomorrow'
+          : 'this weekend';
+    const plural = (n: number) => `${n} ${n === 1 ? 'event' : 'events'}`;
+    const weekend = filters.time !== 'weekend' ? count('weekend') : 0;
+    if (weekend > 0) {
+      return {
+        title: `Nothing ${when} yet`,
+        text: `${plural(weekend)} this weekend`,
+        button: 'See this weekend',
+        time: 'weekend' as TimeFilter,
+      };
+    }
+    const all = count('all');
+    if (all > 0) {
+      return {
+        title: `Nothing ${when} yet`,
+        text: `${plural(all)} coming up`,
+        button: 'See all events',
+        time: 'all' as TimeFilter,
+      };
+    }
+    return null;
+  }, [sections, filters, parties, followingIds]);
 
   const isFiltering = hasFilters(filters);
   const needsLogin = !user && filters.people !== 'all';
@@ -226,7 +265,20 @@ export default function PartyListScreen() {
             />
           }
           ListEmptyComponent={
-            loading ? null : (
+            loading ? null : emptyTime && !error && !needsLogin ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyTitle}>{emptyTime.title}</Text>
+                <Text style={styles.emptyText}>{emptyTime.text}</Text>
+                <TouchableOpacity
+                  style={styles.emptyButton}
+                  onPress={() => setFilters({ ...filters, time: emptyTime.time })}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.emptyButtonText}>{emptyTime.button}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
               <View style={styles.empty}>
                 <Text style={styles.emptyTitle}>
                   {error
@@ -299,4 +351,14 @@ const makeStyles = (Colors: Palette) =>
   empty: { alignItems: 'center', marginTop: Spacing.xl },
   emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
   emptyText: { color: Colors.muted, fontSize: 14, marginTop: Spacing.xs, textAlign: 'center' },
+  emptyButton: {
+    ...outline(Colors),
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+    borderRadius: 14,
+    marginTop: Spacing.lg,
+  },
+  emptyButtonText: { color: Colors.primaryText, fontSize: 15, fontWeight: '700' },
 });

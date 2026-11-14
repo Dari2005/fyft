@@ -29,6 +29,8 @@ export interface Party {
   latitude: number | null;
   longitude: number | null;
   address: string | null;
+  /** Optional club / host name shown instead of the account that posted it. */
+  host_name?: string | null;
   starts_at: string;
   capacity: number | null;
   created_at: string;

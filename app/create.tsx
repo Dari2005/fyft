@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +20,7 @@ import MapView, { Marker, type Region } from 'react-native-maps';
 import { mapStyleFor } from '@/lib/mapStyle';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
+import { useDialog } from '@/lib/DialogContext';
 import { MAX_MEDIA_ITEMS, uploadPartyMedia } from '@/lib/media';
 import Icon from '@/components/Icon';
 import { CATEGORIES, categoryOf, type CategoryKey } from '@/lib/categories';
@@ -46,12 +46,15 @@ export default function CreatePartyScreen() {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
+  const { notify } = useDialog();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
   const editId = typeof edit === 'string' && edit ? edit : null;
   const navigation = useNavigation();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  /** Optional club / host name, shown instead of the posting account. */
+  const [hostName, setHostName] = useState('');
   const [category, setCategory] = useState<CategoryKey | null>(null);
   const [startsAt, setStartsAt] = useState<Date>(() => {
     const d = new Date();
@@ -106,6 +109,7 @@ export default function CreatePartyScreen() {
       setCategory(categoryOf(data.party_type));
       setStartsAt(new Date(data.starts_at));
       setAddress(data.address ?? '');
+      setHostName(data.host_name ?? '');
       if (data.latitude != null && data.longitude != null) {
         setPin({ latitude: data.latitude, longitude: data.longitude });
       }
@@ -119,7 +123,7 @@ export default function CreatePartyScreen() {
   const pickMedia = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(
+      notify(
         'Permission needed',
         'Allow photo access so you can add pictures and videos to your event.'
       );
@@ -151,7 +155,7 @@ export default function CreatePartyScreen() {
   const searchAddress = async () => {
     const query = address.trim();
     if (query.length < 3) {
-      Alert.alert('Enter an address', 'Type the street / address first.');
+      notify('Enter an address', 'Type the street / address first.');
       return;
     }
     setSearching(true);
@@ -164,7 +168,7 @@ export default function CreatePartyScreen() {
       const json = await res.json();
       const coords = json?.features?.[0]?.geometry?.coordinates;
       if (!Array.isArray(coords) || coords.length < 2) {
-        Alert.alert(
+        notify(
           'Not found',
 "I couldn't find that address. Try a different name or drop the pin on the map manually."
         );
@@ -177,7 +181,7 @@ export default function CreatePartyScreen() {
         500
       );
     } catch {
-      Alert.alert('Error', 'Search failed. Check your internet connection.');
+      notify("Couldn't search", 'Check your internet connection and try again.');
     } finally {
       setSearching(false);
     }
@@ -271,6 +275,8 @@ export default function CreatePartyScreen() {
       return;
     }
 
+    const host = hostName.trim() === '' ? null : hostName.trim();
+
     setSaving(true);
     try {
       // Edit mode: upload only the newly picked media, keep the rest, UPDATE.
@@ -279,20 +285,25 @@ export default function CreatePartyScreen() {
         if (mediaAssets.length > 0) {
           uploaded = await uploadPartyMedia(user.id, mediaAssets);
         }
-        const { error: updErr } = await supabase
-          .from('parties')
-          .update({
-            title: trimmedTitle,
-            description: description.trim() === '' ? null : description.trim(),
-            party_type: category,
-            address: address.trim() === '' ? null : address.trim(),
-            latitude: pin?.latitude ?? null,
-            longitude: pin?.longitude ?? null,
-            starts_at: date.toISOString(),
-            capacity: cap,
-            media: [...existingMedia, ...uploaded],
-          })
-          .eq('id', editId);
+        const changes: Record<string, unknown> = {
+          title: trimmedTitle,
+          description: description.trim() === '' ? null : description.trim(),
+          party_type: category,
+          address: address.trim() === '' ? null : address.trim(),
+          host_name: host,
+          latitude: pin?.latitude ?? null,
+          longitude: pin?.longitude ?? null,
+          starts_at: date.toISOString(),
+          capacity: cap,
+          media: [...existingMedia, ...uploaded],
+        };
+        let { error: updErr } = await supabase.from('parties').update(changes).eq('id', editId);
+        // host_name column not there yet (migration_host_name.sql not run):
+        // save everything else rather than failing the whole edit.
+        if (updErr?.message.includes('host_name')) {
+          delete changes.host_name;
+          ({ error: updErr } = await supabase.from('parties').update(changes).eq('id', editId));
+        }
         if (updErr) throw updErr;
         router.replace({ pathname: '/party/[id]', params: { id: editId } });
         return;
@@ -325,6 +336,7 @@ export default function CreatePartyScreen() {
         description: description.trim() === '' ? null : description.trim(),
         party_type: category,
         address: address.trim() === '' ? null : address.trim(),
+        host_name: host,
         latitude: pin?.latitude ?? null,
         longitude: pin?.longitude ?? null,
         starts_at: date.toISOString(),
@@ -342,7 +354,7 @@ export default function CreatePartyScreen() {
       // retired — if the DB still requires it, satisfy it with a default.
       if (insertResult.error) {
         let dropped = false;
-        for (const col of ['media', 'party_type']) {
+        for (const col of ['media', 'party_type', 'host_name']) {
           if (insertResult.error.message.includes(col)) {
             delete payload[col];
             dropped = true;
@@ -486,6 +498,23 @@ export default function CreatePartyScreen() {
             placeholderTextColor={Colors.muted}
             maxLength={120}
           />
+        </View>
+
+        {/* Host: optional. Shown on the event page instead of the account
+            that posted it (one account often posts for many venues). */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Who is hosting?</Text>
+          <View style={styles.field}>
+            <TextInput
+              style={styles.fieldInput}
+              value={hostName}
+              onChangeText={setHostName}
+              placeholder="Club or host name (optional)"
+              placeholderTextColor={Colors.muted}
+              accessibilityLabel="Club or host name, optional"
+              maxLength={60}
+            />
+          </View>
         </View>
 
         {/* Category: required, one of the fixed three (lib/categories). */}

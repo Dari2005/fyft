@@ -33,14 +33,19 @@ export function isFiltering(f: EventFilters): boolean {
   return f.query.trim() !== '' || f.time !== 'all' || f.people !== 'all' || f.category !== 'all';
 }
 
-/** True when the date falls on the coming Saturday/Sunday (or this one). */
+/**
+ * True when the date falls on THIS weekend: the coming Saturday/Sunday, or
+ * the one we are in. (Until 2026-11-14 any Saturday or Sunday matched, so
+ * "This weekend" also listed events weeks away.)
+ */
 function isWeekend(d: Date, now: Date): boolean {
-  const day = d.getDay();
-  if (day === 6 || day === 0) return true;
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   const saturday = new Date(today);
-  saturday.setDate(today.getDate() + ((6 - today.getDay() + 7) % 7));
+  // On a Sunday the weekend's Saturday was yesterday, not six days ahead.
+  saturday.setDate(
+    today.getDate() + (today.getDay() === 0 ? -1 : (6 - today.getDay() + 7) % 7)
+  );
   const sunday = new Date(saturday);
   sunday.setDate(saturday.getDate() + 1);
   const only = new Date(d);
@@ -69,6 +74,7 @@ export function makeEventMatcher(
       !(
         p.title.toLowerCase().includes(q) ||
         (p.address?.toLowerCase().includes(q) ?? false) ||
+        (p.host_name?.toLowerCase().includes(q) ?? false) ||
         categoryInfo(p.party_type).label.toLowerCase().includes(q)
       )
     ) {

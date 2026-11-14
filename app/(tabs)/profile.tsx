@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -14,6 +13,7 @@ import { Link, router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/lib/AuthContext';
+import { useDialog } from '@/lib/DialogContext';
 import { useSocial } from '@/lib/SocialContext';
 import { useParties } from '@/hooks/useParties';
 import { supabase } from '@/lib/supabase';
@@ -72,6 +72,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { preference, setPreference } = useTheme();
   const { user, signOut } = useAuth();
+  const { notify } = useDialog();
   const { parties, refresh } = useParties();
   const { following } = useSocial();
   const [username, setUsername] = useState<string | null>(null);
@@ -120,7 +121,7 @@ export default function ProfileScreen() {
     if (!user || uploadingAvatar) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission needed', 'Allow photo access so you can set a profile picture.');
+      notify('Permission needed', 'Allow photo access so you can set a profile picture.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -139,7 +140,7 @@ export default function ProfileScreen() {
       if (error) throw error;
       setAvatarUrl(url);
     } catch {
-      Alert.alert('Error', 'Could not update your profile picture. Try again.');
+      notify("Couldn't update your picture", 'Check your connection and try again.');
     } finally {
       setUploadingAvatar(false);
     }

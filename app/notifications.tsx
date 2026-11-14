@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import { Link } from 'expo-router';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
+import { useDialog } from '@/lib/DialogContext';
 import {
   ensurePermission,
   getRemindersEnabled,
@@ -41,6 +41,7 @@ export default function NotificationsScreen() {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
+  const { ask, notify } = useDialog();
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [reminders, setReminders] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -76,24 +77,23 @@ export default function NotificationsScreen() {
         { onConflict: 'user_id' }
       );
       if (error) {
-        Alert.alert('Error', 'Could not save your settings. Try again.');
+        notify("Couldn't save your settings", 'Check your connection and try again.');
         return false;
       }
       setPrefs(next);
       return true;
     },
-    [user]
+    [user, notify]
   );
 
   const explainPermissionDenied = () =>
-    Alert.alert(
-      'Notifications are off',
-      'Allow notifications for Fyft in your phone settings to turn this on.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open settings', onPress: () => Linking.openSettings() },
-      ]
-    );
+    ask({
+      icon: 'bell',
+      title: 'Notifications are off',
+      message: 'Allow notifications for Fyft in your phone settings to turn this on.',
+      confirmLabel: 'Open settings',
+      onConfirm: () => Linking.openSettings(),
+    });
 
   /** Registers this device for pushes; explains the failure when it can't. */
   const enablePush = async (): Promise<boolean> => {
@@ -105,7 +105,7 @@ export default function NotificationsScreen() {
     }
     const token = await registerForPush(user.id);
     if (!token) {
-      Alert.alert(
+      notify(
         'Push is not available here',
         'Push notifications need a real device and a development/production build (not Expo Go on Android).'
       );
@@ -152,7 +152,7 @@ export default function NotificationsScreen() {
       if (!(await enablePush())) return;
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(
+        notify(
           'Location needed',
           'Fyft needs your location once to know which events are near you.'
         );
@@ -168,7 +168,7 @@ export default function NotificationsScreen() {
         nearby_lng: pos.coords.longitude,
       });
     } catch {
-      Alert.alert('Location unavailable', 'Could not read your location. Try again.');
+      notify('Location unavailable', 'Could not read your location. Try again.');
     } finally {
       setBusy(false);
     }
@@ -201,10 +201,10 @@ export default function NotificationsScreen() {
           nearby_lng: pos.coords.longitude,
         })
       ) {
-        Alert.alert('Done', 'Your location for nearby alerts was updated.');
+        notify('Location updated', 'Nearby alerts now use where you are.', 'check');
       }
     } catch {
-      Alert.alert('Location unavailable', 'Could not read your location.');
+      notify('Location unavailable', 'Could not read your location.');
     } finally {
       setBusy(false);
     }
