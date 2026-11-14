@@ -89,8 +89,10 @@ export const lightColors: Palette = {
   divider: '#e6e7eb',
   track: '#c9ccd3',
   danger: '#dc2626',
-  success: '#16a34a',
-  warning: '#b7791f',
+  // Darkened 2026-11-14 so small text (LIVE, "Quiet so far") reaches 4.5:1
+  // on white cards; the old #16a34a / #b7791f were 3.3:1 / 3.6:1.
+  success: '#167a3b',
+  warning: '#8f5f0a',
   lime: '#4d7c0f',
   orange: '#c2410c',
   scrim: 'rgba(20, 21, 26, 0.45)',

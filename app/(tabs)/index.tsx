@@ -4,6 +4,7 @@ import MapView, { Marker, type Region } from 'react-native-maps';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/lib/AuthContext';
 import { useParties } from '@/hooks/useParties';
 import { usePartyStats } from '@/hooks/usePartyStats';
 import { useSocial } from '@/lib/SocialContext';
@@ -37,6 +38,7 @@ const PIN_ZOOM_DELTA = 0.035;
 export default function MapScreen() {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
+  const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
   const { followingIds, refresh: refreshSocial } = useSocial();
   const { stats, refresh: refreshStats } = usePartyStats();
@@ -237,7 +239,8 @@ export default function MapScreen() {
         </View>
         {!selected && (
           <TouchableOpacity
-            onPress={() => router.push('/create')}
+            // Same rule as the Events button: sign in first, then the form.
+            onPress={() => router.push(user ? '/create' : '/auth')}
             style={styles.fab}
             accessibilityRole="button"
             accessibilityLabel="New event"

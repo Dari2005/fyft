@@ -184,12 +184,24 @@ do not rename).
    - Screen reader: one spoken sentence per event card, roles/states on
      filter pills, menu items, the follow checkbox, category buttons,
      Follow, "I'm going"; labels on the map "+" and hero photos.
-   Still open from the review (not done, Dari has not decided): New event
-   opens without sign-in (map "+"); unselected category buttons look
-   disabled; no address text ("Location on the map"); "@" in front of a
-   display name; light theme LIVE green `#16a34a` (3.3:1) and amber
-   `#b7791f` (3.6:1) fail text contrast; control borders are below 3:1;
-   map pins have no screen-reader name.
+   Second round (Dari approved "1–4", 2026-11-14):
+   - **Address from the pin:** tapping the mini map in New event drops the
+     pin and fills the address field from it (`dropPin`, Photon
+     `/reverse`, no key — same service as the address search). It never
+     overwrites text the organizer typed, only an empty field or its own
+     earlier suggestion. **An address or a pin is now required** to
+     publish/save.
+   - **Sign-in before New event:** the map "+" goes to `/auth` when signed
+     out (like the Events button), and `/create` itself shows a "Sign in to
+     publish an event" screen instead of the form.
+   - Light theme `success` `#167a3b` and `warning` `#8f5f0a` (were 3.3:1 and
+     3.6:1 on white; now ≥ 4.5:1). Dark theme unchanged.
+   - Unselected category buttons use `textSoft`, not `muted`.
+   Still open from the review (Claude advised against the first two):
+   control borders are below 3:1 (fixing it would change the Dark Glass
+   look); map pins have no screen-reader name (a marker title would open a
+   callout on Android); "@" in front of a display name (goes away with the
+   host-name idea below).
 
 ## Fragile fixes — do not undo
 
@@ -237,6 +249,11 @@ do not rename).
   under the pill, Back/Share sit where they were, "I'm going" stands out.
   In the browser the capacity stepper pushed "+" off-screen — may be
   web-only; check on the phone.
+- **Second round (2026-11-14, JS-only)** — tsc + lint pass. Seen in the
+  browser: the sign-in screen on `/create` and the map "+" going to
+  `/auth`. NOT seen anywhere (the form needs a signed-in user): the address
+  filling in after a map tap, the "add where it is" error, the category
+  buttons, the new light-theme green/amber. Check all four on the phone.
 
 - **Dropdown filters (2026-11-14, JS-only)** — tsc + lint pass, Metro
   bundled for Android; not yet confirmed on the phone (check the menu opens

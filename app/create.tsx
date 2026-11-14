@@ -61,6 +61,12 @@ export default function CreatePartyScreen() {
   });
   const [pickerMode, setPickerMode] = useState<'date' | 'time' | null>(null);
   const [address, setAddress] = useState('');
+  // Latest address text + the last address we suggested from a pin (see dropPin).
+  const addressRef = useRef('');
+  const autoAddressRef = useRef('');
+  useEffect(() => {
+    addressRef.current = address;
+  }, [address]);
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(null);
   const [searching, setSearching] = useState(false);
   const mapRef = useRef<MapView>(null);
@@ -177,6 +183,38 @@ export default function CreatePartyScreen() {
     }
   };
 
+  /**
+   * Tapping the map drops the pin AND fills the address from it (Photon
+   * reverse geocoding, same no-key service as the search), so an event never
+   * ends up as just "Location on the map". Text the organizer typed is never
+   * overwritten — only an empty field or our own earlier suggestion.
+   */
+  const dropPin = async (coord: { latitude: number; longitude: number }) => {
+    setPin(coord);
+    const current = addressRef.current.trim();
+    if (current !== '' && current !== autoAddressRef.current) return;
+    try {
+      const url =
+        `https://photon.komoot.io/reverse?lat=${coord.latitude}&lon=${coord.longitude}&limit=1`;
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) return;
+      const json = await res.json();
+      const p = json?.features?.[0]?.properties;
+      if (!p) return;
+      const street = [p.street, p.housenumber].filter(Boolean).join(' ');
+      // A named place ("Плоштад Македонија") reads better than a bare street.
+      const found = [p.name, street !== p.name ? street : null].filter(Boolean).join(', ') ||
+        p.district || p.city || '';
+      // The organizer may have started typing while we were waiting.
+      const now = addressRef.current.trim();
+      if (found === '' || (now !== '' && now !== autoAddressRef.current)) return;
+      autoAddressRef.current = found;
+      setAddress(found);
+    } catch {
+      // No connection: the pin alone is still a valid location.
+    }
+  };
+
   /** Date/time picker flow: on Android, date dialog chains into time dialog. */
   const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS === 'android') {
@@ -216,6 +254,12 @@ export default function CreatePartyScreen() {
 
     if (!category) {
       setError('Pick what kind of night it is.');
+      return;
+    }
+
+    // People must be able to find it: an address or a pin is required.
+    if (address.trim() === '' && !pin) {
+      setError('Add where it is: search the address or tap the map.');
       return;
     }
 
@@ -327,6 +371,20 @@ export default function CreatePartyScreen() {
     }
   };
 
+  // Signed out: ask to sign in BEFORE showing the form, so nobody fills in
+  // a whole event only to be stopped at Publish.
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.gateTitle}>Sign in to publish an event</Text>
+        <Text style={styles.gateText}>It takes a moment, then you can add your event.</Text>
+        <View style={styles.gateButton}>
+          <PrimaryButton title="Sign in" onPress={() => router.replace('/auth')} />
+        </View>
+      </View>
+    );
+  }
+
   if (editId && loadingParty) {
     return (
       <View style={styles.center}>
@@ -366,10 +424,6 @@ export default function CreatePartyScreen() {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {!user && (
-          <Text style={styles.notice}>You must be signed in to publish an event.</Text>
-        )}
-
         {/* Cover: the first photo is what people see on the event card. */}
         {cover ? (
           <View style={styles.cover}>
@@ -450,7 +504,7 @@ export default function CreatePartyScreen() {
                   accessibilityState={{ selected: on }}
                   accessibilityLabel={c.label}
                 >
-                  <Icon name={c.icon} size={20} color={on ? Colors.primaryBright : Colors.muted} />
+                  <Icon name={c.icon} size={20} color={on ? Colors.primaryBright : Colors.textSoft} />
                   <Text style={[styles.categoryText, on && styles.categoryTextOn]}>{c.label}</Text>
                 </TouchableOpacity>
               );
@@ -533,7 +587,7 @@ export default function CreatePartyScreen() {
             style={styles.miniMap}
             customMapStyle={mapStyleFor(Colors.scheme)}
             initialRegion={SKOPJE_REGION}
-            onPress={(e) => setPin(e.nativeEvent.coordinate)}
+            onPress={(e) => dropPin(e.nativeEvent.coordinate)}
           >
             {pin && <Marker coordinate={pin} pinColor={Colors.primary} />}
           </MapView>
@@ -611,7 +665,15 @@ const makeStyles = (Colors: Palette) =>
     backgroundColor: Colors.background,
   },
   content: { padding: Spacing.md, paddingBottom: Spacing.xl, gap: Spacing.sm },
-  notice: { color: Colors.primaryBright, fontSize: 14 },
+  gateTitle: { color: Colors.text, fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  gateText: {
+    color: Colors.muted,
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.lg,
+  },
+  gateButton: { alignSelf: 'stretch', paddingHorizontal: Spacing.lg },
 
   cover: { position: 'relative' },
   coverImage: {
@@ -707,7 +769,8 @@ const makeStyles = (Colors: Palette) =>
     backgroundColor: Colors.surfaceHigh,
   },
   categoryOptionOn: { borderColor: Colors.primary, borderWidth: 1.5 },
-  categoryText: { color: Colors.muted, fontSize: 13, fontWeight: '700' },
+  // Not `muted`: a required choice must not look disabled before it is made.
+  categoryText: { color: Colors.textSoft, fontSize: 13, fontWeight: '700' },
   categoryTextOn: { color: Colors.text },
 
   field: {
