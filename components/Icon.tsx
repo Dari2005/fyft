@@ -26,7 +26,9 @@ export type IconName =
   | 'minus'
   | 'disco'
   | 'mic'
-  | 'wine';
+  | 'wine'
+  | 'chevronDown'
+  | 'grid';
 
 /**
  * Small stroke icons drawn as inline SVG (24x24 viewBox), used instead of
@@ -189,7 +191,11 @@ export default function Icon({
           <Path d="M12 12.5v8M8.5 20.5h7" {...p} />
         </>
       )}
-      {name === 'minus' &&<Line x1={5} y1={12} x2={19} y2={12} {...p} />}
+      {name === 'minus' && <Line x1={5} y1={12} x2={19} y2={12} {...p} />}
+      {name === 'chevronDown' && <Path d="M6 9.5l6 6 6-6" {...p} />}
+      {name === 'grid' && (
+        <Path d="M4.5 4.5h6v6h-6zM13.5 4.5h6v6h-6zM4.5 13.5h6v6h-6zM13.5 13.5h6v6h-6z" {...p} />
+      )}
       {name === 'trash' && (
         <>
           <Line x1={4.5} y1={7} x2={19.5} y2={7} {...p} />

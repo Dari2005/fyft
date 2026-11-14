@@ -27,7 +27,8 @@ import {
 import PartyCard from '@/components/PartyCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import Icon, { type IconName } from '@/components/Icon';
-import EventFilterBar, { FilterChip } from '@/components/EventFilterBar';
+import EventFilterBar from '@/components/EventFilterBar';
+import Dropdown from '@/components/Dropdown';
 import Logo from '@/components/Logo';
 import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
@@ -169,15 +170,16 @@ export default function PartyListScreen() {
         filters={filters}
         onChange={setFilters}
         style={styles.filterBar}
-        trailingChips={SORTS.map((s) => (
-          <FilterChip
-            key={s.key}
-            icon={s.icon}
-            label={s.key === 'nearest' && locating ? 'Locating…' : s.label}
-            active={sort === s.key}
-            onPress={() => handleSort(s.key)}
+        trailing={
+          <Dropdown<SortMode>
+            icon={SORTS.find((s) => s.key === sort)!.icon}
+            label={locating ? 'Locating…' : SORTS.find((s) => s.key === sort)!.label}
+            active={sort !== 'soonest'}
+            value={sort}
+            options={SORTS}
+            onSelect={handleSort}
           />
-        ))}
+        }
       />
 
       {firstLoad ? (

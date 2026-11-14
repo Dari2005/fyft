@@ -145,9 +145,16 @@ do not rename).
    not a venue simply being open. Stored in `parties.party_type` as
    `party|live|kafana` (`lib/categories.ts`); old free-text values count as
    Party — no SQL needed. Required in the create form (3 buttons, no free
-   text); filter chips on Events + Map; label + icon on the card and event
+   text); filter on Events + Map; label + icon on the card and event
    page. Dari rejected merging Live music + Kafana (different crowds) and a
    separate "Bar night" (overlaps Party).
+
+13. **Filters = ONE row of dropdowns, no sideways scrolling** (Dari,
+   2026-11-14; `components/Dropdown.tsx`): When ▾ (Any time / Tonight /
+   Tomorrow / This weekend), Type ▾ (All types / Party / Live music /
+   Kafana + an "Only organizers I follow" checkbox inside — Dari's choice;
+   Claude warned it hides Following), and on Events a Sort ▾ (Soonest /
+   Near me / Most going). A pill turns magenta when not on its default.
 
 ## Fragile fixes — do not undo
 
@@ -189,6 +196,9 @@ do not rename).
 
 ## Not verified yet
 
+- **Dropdown filters (2026-11-14, JS-only)** — tsc + lint pass, Metro
+  bundled for Android; not yet confirmed on the phone (check the menu opens
+  under the pill, also over the map).
 - **Categories (2026-11-14, JS-only)** — tsc + lint pass, not yet seen on
   the phone.
 - **New event form redesign (2026-11-10, JS-only).** tsc + lint pass; not

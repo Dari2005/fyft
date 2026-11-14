@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,19 +12,18 @@ import { Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import Icon, { type IconName } from '@/components/Icon';
 import { nightWindows } from '@/lib/tonight';
-import type { EventFilters, PeopleFilter, TimeFilter } from '@/lib/eventFilters';
-import { CATEGORIES } from '@/lib/categories';
+import type { EventFilters, TimeFilter } from '@/lib/eventFilters';
+import { CATEGORIES, type CategoryKey } from '@/lib/categories';
+import Dropdown from '@/components/Dropdown';
 
 const TIMES: { key: TimeFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
+  { key: 'all', label: 'Any time' },
   { key: 'tonight', label: 'Tonight' },
   { key: 'tomorrow', label: 'Tomorrow' },
   { key: 'weekend', label: 'This weekend' },
 ];
 
-const PEOPLE: { key: Exclude<PeopleFilter, 'all'>; icon: IconName; label: string }[] = [
-  { key: 'following', icon: 'star', label: 'Following' },
-];
+const ALL_TYPES = { key: 'all' as const, label: 'All types', icon: 'grid' as IconName };
 
 interface ChipProps {
   label: string;
@@ -56,18 +54,22 @@ export function FilterChip({ label, icon, active, onPress, floating }: ChipProps
 interface Props {
   filters: EventFilters;
   onChange: (next: EventFilters) => void;
-  /** Extra chips shown last, after the filters (e.g. the Events list's sort options). */
-  trailingChips?: ReactNode;
+  /** Extra control shown last in the row (e.g. the Events list's sort menu). */
+  trailing?: ReactNode;
   /** Translucent glass style for drawing over the map. */
   floating?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
-/** Search bar + one row of time, people and category filter chips. */
+/**
+ * Search bar + ONE row of dropdowns (Dari, 2026-11-14: no sideways
+ * scrolling): When, Type (with "Only organizers I follow" inside), plus an
+ * optional trailing control.
+ */
 export default function EventFilterBar({
   filters,
   onChange,
-  trailingChips,
+  trailing,
   floating,
   style,
 }: Props) {
@@ -95,50 +97,52 @@ export default function EventFilterBar({
         )}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        style={styles.chipScroll}
-        contentContainerStyle={styles.chipRow}
-      >
-        {TIMES.map((t) => (
-          <FilterChip
-            key={t.key}
-            // "Tonight" in the evening, "Today" in the daytime (05:00 boundary).
-            label={t.key === 'tonight' ? nightWindows().tonightLabel : t.label}
-            active={filters.time === t.key}
-            onPress={() => set({ time: t.key })}
-            floating={floating}
-          />
-        ))}
-        <View style={styles.chipDivider} />
-        {PEOPLE.map((p) => (
-          <FilterChip
-            key={p.key}
-            icon={p.icon}
-            label={p.label}
-            active={filters.people === p.key}
-            // Tapping the active people chip again turns it off.
-            onPress={() => set({ people: filters.people === p.key ? 'all' : p.key })}
-            floating={floating}
-          />
-        ))}
-        <View style={styles.chipDivider} />
-        {CATEGORIES.map((c) => (
-          <FilterChip
-            key={c.key}
-            icon={c.icon}
-            label={c.label}
-            active={filters.category === c.key}
-            // Tapping the active category again shows all categories.
-            onPress={() => set({ category: filters.category === c.key ? 'all' : c.key })}
-            floating={floating}
-          />
-        ))}
-        {trailingChips ? <View style={styles.chipDivider} /> : null}
-        {trailingChips}
-      </ScrollView>
+      <View style={styles.row}>
+        <Dropdown<TimeFilter>
+          label={
+            filters.time === 'tonight'
+              ? nightWindows().tonightLabel
+              : TIMES.find((t) => t.key === filters.time)!.label
+          }
+          active={filters.time !== 'all'}
+          value={filters.time}
+          // "Tonight" in the evening, "Today" in the daytime (05:00 boundary).
+          options={TIMES.map((t) => ({
+            key: t.key,
+            label: t.key === 'tonight' ? nightWindows().tonightLabel : t.label,
+          }))}
+          onSelect={(time) => set({ time })}
+          floating={floating}
+        />
+        <Dropdown<CategoryKey | 'all'>
+          label={
+            filters.category === 'all'
+              ? filters.people === 'following'
+                ? 'Following'
+                : ALL_TYPES.label
+              : CATEGORIES.find((c) => c.key === filters.category)!.label
+          }
+          icon={
+            filters.people === 'following'
+              ? 'star'
+              : filters.category === 'all'
+                ? undefined
+                : CATEGORIES.find((c) => c.key === filters.category)!.icon
+          }
+          active={filters.category !== 'all' || filters.people === 'following'}
+          value={filters.category}
+          options={[ALL_TYPES, ...CATEGORIES]}
+          onSelect={(category) => set({ category })}
+          toggle={{
+            label: 'Only organizers I follow',
+            icon: 'star',
+            on: filters.people === 'following',
+            onToggle: () => set({ people: filters.people === 'following' ? 'all' : 'following' }),
+          }}
+          floating={floating}
+        />
+        {trailing}
+      </View>
     </View>
   );
 }
@@ -158,8 +162,13 @@ const makeStyles = (Colors: Palette) =>
   },
   searchFloating: { backgroundColor: Colors.glass },
   searchInput: { flex: 1, color: Colors.text, fontSize: 15, paddingVertical: 10 },
-  chipScroll: { flexGrow: 0, marginTop: Spacing.sm },
-  chipRow: { paddingHorizontal: Spacing.md, gap: Spacing.xs, alignItems: 'center' },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
+  },
   chip: {
     borderWidth: 1,
     borderColor: Colors.border,
