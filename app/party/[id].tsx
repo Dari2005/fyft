@@ -25,6 +25,7 @@ import { crowdColor, crowdFor } from '@/lib/crowd';
 import { reportParty } from '@/lib/reports';
 import Avatar from '@/components/Avatar';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { categoryInfo } from '@/lib/categories';
 import FollowButton from '@/components/FollowButton';
 import Icon, { type IconName } from '@/components/Icon';
 import { outline, Spacing, type Palette } from '@/constants/theme';
@@ -310,11 +311,10 @@ export default function PartyDetailScreen() {
             )}
           </View>
           <Text style={styles.title}>{party.title}</Text>
-          {party.party_type ? (
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>{party.party_type}</Text>
-            </View>
-          ) : null}
+          <View style={styles.tag}>
+            <Icon name={categoryInfo(party.party_type).icon} size={13} color={Colors.primaryBright} />
+            <Text style={styles.tagText}>{categoryInfo(party.party_type).label}</Text>
+          </View>
 
           {/* Crowd meter — the main thing: will it be empty or busy? */}
           <View style={styles.meterBox}>
@@ -514,6 +514,9 @@ const makeStyles = (Colors: Palette) =>
   title: { color: Colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.4, marginTop: -2 },
   tag: {
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 999,

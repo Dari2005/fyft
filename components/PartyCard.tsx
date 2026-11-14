@@ -6,6 +6,7 @@ import { formatDistance } from '@/lib/geo';
 import { isLiveNow } from '@/lib/tonight';
 import { crowdColor, crowdFor } from '@/lib/crowd';
 import Icon from '@/components/Icon';
+import { categoryInfo } from '@/lib/categories';
 import type { Party, PartyStats } from '@/lib/types';
 
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -43,13 +44,14 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
   const place =
     [party.address, distanceKm != null ? formatDistance(distanceKm) : null]
       .filter(Boolean)
-      .join(' · ') || party.party_type || '';
+      .join(' · ');
+  const category = categoryInfo(party.party_type);
 
   return (
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
       {/* Plain style object on purpose: <Link asChild> drops function-style
           props (({ pressed }) => …), which left the card with no style. */}
-      <Pressable style={styles.card} android_ripple={{ color: 'rgba(139,108,240,0.12)' }}>
+      <Pressable style={styles.card} android_ripple={{ color: 'rgba(220,90,216,0.12)' }}>
         <View style={styles.media}>
           {cover ? (
             <Image source={{ uri: cover.url }} style={styles.mediaImage} resizeMode="cover" />
@@ -69,16 +71,15 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
           <Text style={styles.title} numberOfLines={2}>
             {party.title}
           </Text>
-          {place !== '' && (
-            <View style={styles.placeRow}>
-              {party.address || distanceKm != null ? (
-                <Icon name="pin" size={13} color={Colors.muted} />
-              ) : null}
+          <View style={styles.placeRow}>
+            <Icon name={category.icon} size={13} color={Colors.primaryBright} />
+            <Text style={styles.category}>{category.label}</Text>
+            {place !== '' && (
               <Text style={styles.place} numberOfLines={1}>
-                {place}
+                {`· ${place}`}
               </Text>
-            </View>
-          )}
+            )}
+          </View>
 
           {/* Crowd meter */}
           <View style={styles.meter}>
@@ -142,6 +143,7 @@ const makeStyles = (Colors: Palette) =>
     when: { color: Colors.primaryBright, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
     title: { color: Colors.text, fontSize: 17, fontWeight: '700' },
     placeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    category: { color: Colors.textSoft, fontSize: 13, fontWeight: '700' },
     place: { flexShrink: 1, color: Colors.muted, fontSize: 12 },
     meter: {
       gap: 6,

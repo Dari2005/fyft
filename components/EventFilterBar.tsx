@@ -14,6 +14,7 @@ import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import Icon, { type IconName } from '@/components/Icon';
 import { nightWindows } from '@/lib/tonight';
 import type { EventFilters, PeopleFilter, TimeFilter } from '@/lib/eventFilters';
+import { CATEGORIES } from '@/lib/categories';
 
 const TIMES: { key: TimeFilter; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -62,7 +63,7 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
-/** Search bar + one row of time and people filter chips. */
+/** Search bar + one row of time, people and category filter chips. */
 export default function EventFilterBar({
   filters,
   onChange,
@@ -81,7 +82,7 @@ export default function EventFilterBar({
         <TextInput
           value={filters.query}
           onChangeText={(query) => set({ query })}
-          placeholder="Search events, places, types…"
+          placeholder="Search events and places…"
           placeholderTextColor={Colors.muted}
           style={styles.searchInput}
           autoCorrect={false}
@@ -120,6 +121,18 @@ export default function EventFilterBar({
             active={filters.people === p.key}
             // Tapping the active people chip again turns it off.
             onPress={() => set({ people: filters.people === p.key ? 'all' : p.key })}
+            floating={floating}
+          />
+        ))}
+        <View style={styles.chipDivider} />
+        {CATEGORIES.map((c) => (
+          <FilterChip
+            key={c.key}
+            icon={c.icon}
+            label={c.label}
+            active={filters.category === c.key}
+            // Tapping the active category again shows all categories.
+            onPress={() => set({ category: filters.category === c.key ? 'all' : c.key })}
             floating={floating}
           />
         ))}

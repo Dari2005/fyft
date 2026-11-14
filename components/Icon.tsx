@@ -23,7 +23,10 @@ export type IconName =
   | 'sun'
   | 'image'
   | 'video'
-  | 'minus';
+  | 'minus'
+  | 'disco'
+  | 'mic'
+  | 'wine';
 
 /**
  * Small stroke icons drawn as inline SVG (24x24 viewBox), used instead of
@@ -167,7 +170,26 @@ export default function Icon({
           <Path d="M16 10.5l5-3v9l-5-3" {...p} />
         </>
       )}
-      {name === 'minus' && <Line x1={5} y1={12} x2={19} y2={12} {...p} />}
+      {name === 'disco' && (
+        <>
+          <Line x1={12} y1={2.5} x2={12} y2={5.5} {...p} />
+          <Circle cx={12} cy={13.5} r={8} {...p} />
+          <Path d="M4 13.5h16M12 5.5c-3 2.5-3 13.5 0 16M12 5.5c3 2.5 3 13.5 0 16M5.5 9h13M5.5 18h13" {...p} />
+        </>
+      )}
+      {name === 'mic' && (
+        <>
+          <Path d="M9 4.5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z" {...p} />
+          <Path d="M5.5 10.5a6.5 6.5 0 0 0 13 0M12 17v4M8.5 21h7" {...p} />
+        </>
+      )}
+      {name === 'wine' && (
+        <>
+          <Path d="M7.5 3.5h9l-.5 5a4 4 0 0 1-8 0z" {...p} />
+          <Path d="M12 12.5v8M8.5 20.5h7" {...p} />
+        </>
+      )}
+      {name === 'minus' &&<Line x1={5} y1={12} x2={19} y2={12} {...p} />}
       {name === 'trash' && (
         <>
           <Line x1={4.5} y1={7} x2={19.5} y2={7} {...p} />

@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-10 (accent purple → magenta; new "fyft" logo)_
+_Last updated: 2026-11-14 (evening-only; 3 fixed event categories)_
 
 ## What this is
 
@@ -129,7 +129,7 @@ do not rename).
    SAME `PartyCard` (+ ✕ and a "Show more details" button under it), so both always look identical.
 10. **New event form = layout "A"** (Dari, 2026-11-10, `app/create.tsx`):
    one screen of grouped cards: big 16:9 cover (first photo/video) + thumb
-   strip → name + type → When → Where (address search + mini map) → How
+   strip → name → category → When → Where (address search + mini map) → How
    many (−/+ stepper, steps of 5, still typeable) → About → Publish.
    **No example placeholders** like "Rave, BBQ" (Dari rejected them); SVG
    icons only, no emoji.
@@ -137,6 +137,17 @@ do not rename).
    styled), not the native `Alert` (Dari: it looks ugly). Done for Delete
    event; Report / Sign in / error alerts still use `Alert`. Copy avoids
    jargon ("everyone who said they're going", never "RSVPs").
+
+12. **Evening-only, three fixed categories** (Dari, 2026-11-14): every
+   event is **Party** (clubs, discos, bars with a DJ, house parties),
+   **Live music** (concerts, gigs, jazz, rock) or **Kafana** (kafana night
+   with live music). Rule: an event = something special happens that night,
+   not a venue simply being open. Stored in `parties.party_type` as
+   `party|live|kafana` (`lib/categories.ts`); old free-text values count as
+   Party — no SQL needed. Required in the create form (3 buttons, no free
+   text); filter chips on Events + Map; label + icon on the card and event
+   page. Dari rejected merging Live music + Kafana (different crowds) and a
+   separate "Bar night" (overlaps Party).
 
 ## Fragile fixes — do not undo
 
@@ -178,6 +189,9 @@ do not rename).
 
 ## Not verified yet
 
+- **Categories (2026-11-14, JS-only)** — tsc + lint pass, not yet seen on
+  the phone. Evening start-time rule (block vs warning before 17:00) still
+  NOT built — waiting for Dari.
 - **New event form redesign (2026-11-10, JS-only).** tsc + lint pass; not
   yet seen on Dari's phone. Check: cover photo + thumbs, −/+ stepper,
   address search via keyboard "search" key, edit mode still prefills.

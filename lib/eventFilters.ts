@@ -1,5 +1,6 @@
 import { nightWindows } from '@/lib/tonight';
 import type { Party } from '@/lib/types';
+import { categoryInfo, categoryOf, type CategoryKey } from '@/lib/categories';
 
 /**
  * Search + filter state shared by the Events list and the Map, so both
@@ -13,9 +14,15 @@ export interface EventFilters {
   query: string;
   time: TimeFilter;
   people: PeopleFilter;
+  category: CategoryKey | 'all';
 }
 
-export const DEFAULT_FILTERS: EventFilters = { query: '', time: 'all', people: 'all' };
+export const DEFAULT_FILTERS: EventFilters = {
+  query: '',
+  time: 'all',
+  people: 'all',
+  category: 'all',
+};
 
 export interface FilterContext {
   now: Date;
@@ -23,7 +30,7 @@ export interface FilterContext {
 }
 
 export function isFiltering(f: EventFilters): boolean {
-  return f.query.trim() !== '' || f.time !== 'all' || f.people !== 'all';
+  return f.query.trim() !== '' || f.time !== 'all' || f.people !== 'all' || f.category !== 'all';
 }
 
 /** True when the date falls on the coming Saturday/Sunday (or this one). */
@@ -59,11 +66,13 @@ export function makeEventMatcher(
       !(
         p.title.toLowerCase().includes(q) ||
         (p.address?.toLowerCase().includes(q) ?? false) ||
-        (p.party_type?.toLowerCase().includes(q) ?? false)
+        categoryInfo(p.party_type).label.toLowerCase().includes(q)
       )
     ) {
       return false;
     }
+
+    if (f.category !== 'all' && categoryOf(p.party_type) !== f.category) return false;
 
     if (f.people === 'following' && !ctx.followingIds.has(p.organizer_id)) return false;
 

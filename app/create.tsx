@@ -23,6 +23,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { MAX_MEDIA_ITEMS, uploadPartyMedia } from '@/lib/media';
 import Icon from '@/components/Icon';
+import { CATEGORIES, categoryOf, type CategoryKey } from '@/lib/categories';
 import PrimaryButton from '@/components/PrimaryButton';
 import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
@@ -51,7 +52,7 @@ export default function CreatePartyScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [partyType, setPartyType] = useState('');
+  const [category, setCategory] = useState<CategoryKey | null>(null);
   const [startsAt, setStartsAt] = useState<Date>(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -96,7 +97,7 @@ export default function CreatePartyScreen() {
       }
       setTitle(data.title);
       setDescription(data.description ?? '');
-      setPartyType(data.party_type ?? '');
+      setCategory(categoryOf(data.party_type));
       setStartsAt(new Date(data.starts_at));
       setAddress(data.address ?? '');
       if (data.latitude != null && data.longitude != null) {
@@ -213,6 +214,11 @@ export default function CreatePartyScreen() {
     }
     const date = startsAt;
 
+    if (!category) {
+      setError('Pick what kind of night it is.');
+      return;
+    }
+
     // Capacity is required (Dari, 2026-11-08): it drives the crowd meter
     // ("Quiet so far" → "Busy" → "Full"). It does not block RSVPs.
     const cap = parseInt(capacity.trim(), 10);
@@ -234,7 +240,7 @@ export default function CreatePartyScreen() {
           .update({
             title: trimmedTitle,
             description: description.trim() === '' ? null : description.trim(),
-            party_type: partyType.trim() === '' ? null : partyType.trim(),
+            party_type: category,
             address: address.trim() === '' ? null : address.trim(),
             latitude: pin?.latitude ?? null,
             longitude: pin?.longitude ?? null,
@@ -273,7 +279,7 @@ export default function CreatePartyScreen() {
         organizer_id: user.id,
         title: trimmedTitle,
         description: description.trim() === '' ? null : description.trim(),
-        party_type: partyType.trim() === '' ? null : partyType.trim(),
+        party_type: category,
         address: address.trim() === '' ? null : address.trim(),
         latitude: pin?.latitude ?? null,
         longitude: pin?.longitude ?? null,
@@ -420,15 +426,27 @@ export default function CreatePartyScreen() {
             placeholderTextColor={Colors.muted}
             maxLength={120}
           />
-          <View style={styles.divider} />
-          <TextInput
-            style={styles.plainInput}
-            value={partyType}
-            onChangeText={setPartyType}
-            placeholder="Event type (optional)"
-            placeholderTextColor={Colors.muted}
-            maxLength={30}
-          />
+        </View>
+
+        {/* Category: required, one of the fixed three (lib/categories). */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>What kind of night?</Text>
+          <View style={styles.categoryRow}>
+            {CATEGORIES.map((c) => {
+              const on = category === c.key;
+              return (
+                <TouchableOpacity
+                  key={c.key}
+                  style={[styles.categoryOption, on && styles.categoryOptionOn]}
+                  onPress={() => setCategory(c.key)}
+                  activeOpacity={0.8}
+                >
+                  <Icon name={c.icon} size={20} color={on ? Colors.primaryBright : Colors.muted} />
+                  <Text style={[styles.categoryText, on && styles.categoryTextOn]}>{c.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {/* When */}
@@ -662,7 +680,20 @@ const makeStyles = (Colors: Palette) =>
   titleInput: { color: Colors.text, fontSize: 20, fontWeight: '700', paddingVertical: 4 },
   plainInput: { color: Colors.text, fontSize: 15, paddingVertical: 4 },
   description: { minHeight: 90 },
-  divider: { height: 1, backgroundColor: Colors.divider, marginVertical: Spacing.sm },
+  categoryRow: { flexDirection: 'row', gap: Spacing.sm },
+  categoryOption: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceHigh,
+  },
+  categoryOptionOn: { borderColor: Colors.primary, borderWidth: 1.5 },
+  categoryText: { color: Colors.muted, fontSize: 13, fontWeight: '700' },
+  categoryTextOn: { color: Colors.text },
 
   field: {
     flexDirection: 'row',
