@@ -190,8 +190,7 @@ do not rename).
 ## Not verified yet
 
 - **Categories (2026-11-14, JS-only)** — tsc + lint pass, not yet seen on
-  the phone. Evening start-time rule (block vs warning before 17:00) still
-  NOT built — waiting for Dari.
+  the phone.
 - **New event form redesign (2026-11-10, JS-only).** tsc + lint pass; not
   yet seen on Dari's phone. Check: cover photo + thumbs, −/+ stepper,
   address search via keyboard "search" key, edit mode still prefills.
@@ -240,8 +239,10 @@ do not rename).
   signed-in user (the old friends feature needed that). Tighten RLS so
   users read only their own RSVPs and expose counts via a view/RPC (also
   fixes roadmap 4). Needs a migration — not done.
-- **DECIDED 2026-11-14: Option A, evening-only.** (Exact start-time rule —
-  block vs warning — still being agreed with Dari; not built yet.) Option A: Fyft = going out in the EVENING only (parties,
+- **DECIDED 2026-11-14: Option A, evening-only.** (Start-time rule: Dari
+  2026-11-14 chose NO block and NO warning for now — any start time is
+  allowed; evening-only is a content rule, kept by who posts. Revisit if
+  daytime events start appearing; Claude suggested a block before 16:00.) Option A: Fyft = going out in the EVENING only (parties,
   clubs, gigs, concerts, bar nights); soft: default start 21:00, warning
   (not a block) for starts before 17:00; drop the "Daytime/Tonight" split
   and end-time ideas. Option B: all events incl. daytime — then add an
