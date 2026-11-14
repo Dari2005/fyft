@@ -155,6 +155,9 @@ do not rename).
    Kafana + an "Only organizers I follow" checkbox inside — Dari's choice;
    Claude warned it hides Following), and on Events a Sort ▾ (Soonest /
    Near me / Most going). A pill turns magenta when not on its default.
+   Map stays as it is (Dari, 2026-11-14): no Sort on the map, and he
+   rejected count/crowd-colored pins + a my-location button. Plain magenta
+   pins; don't re-propose unasked.
 
 ## Fragile fixes — do not undo
 
