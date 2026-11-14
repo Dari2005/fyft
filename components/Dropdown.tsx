@@ -19,6 +19,8 @@ export interface DropdownOption<K extends string> {
 }
 
 const MENU_WIDTH = 230;
+/** Invisible touch padding above and below a pill (33pt pill → 45pt target). */
+export const PILL_SLOP = 6;
 
 /**
  * Filter "pill" that opens a small menu under itself (Dari, 2026-11-14:
@@ -29,6 +31,7 @@ const MENU_WIDTH = 230;
  */
 export default function Dropdown<K extends string>({
   label,
+  name,
   icon,
   active,
   options,
@@ -38,6 +41,8 @@ export default function Dropdown<K extends string>({
   floating,
 }: {
   label: string;
+  /** What the menu chooses ("When", "Type", "Sort") — read by screen readers. */
+  name?: string;
   icon?: IconName;
   /** Highlight the pill (a non-default choice is selected). */
   active: boolean;
@@ -64,19 +69,29 @@ export default function Dropdown<K extends string>({
 
   return (
     <>
-      <View ref={triggerRef} collapsable={false}>
-        <TouchableOpacity
-          onPress={open}
+      {/* The touchable is taller than the pill it draws (44pt touch target);
+          the negative margin keeps the row exactly as high as before. The
+          filter row adds matching padding so the extra area stays inside it. */}
+      <TouchableOpacity
+        onPress={open}
+        style={styles.touch}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={name ? `${name}: ${label}` : label}
+        accessibilityState={{ expanded: anchor != null }}
+      >
+        <View
+          ref={triggerRef}
+          collapsable={false}
           style={[styles.pill, floating && styles.pillFloating, active && styles.pillActive]}
-          activeOpacity={0.8}
         >
           {icon && <Icon name={icon} size={14} color={active ? Colors.primaryBright : textColor} />}
           <Text style={[styles.pillText, { color: textColor }]} numberOfLines={1}>
             {label}
           </Text>
           <Icon name="chevronDown" size={14} color={active ? Colors.primaryBright : Colors.muted} />
-        </TouchableOpacity>
-      </View>
+        </View>
+      </TouchableOpacity>
 
       <Modal visible={anchor != null} transparent animationType="fade" onRequestClose={close}>
         <Pressable style={StyleSheet.absoluteFill} onPress={close}>
@@ -88,6 +103,8 @@ export default function Dropdown<K extends string>({
                   <TouchableOpacity
                     key={o.key}
                     style={[styles.item, selected && styles.itemSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
                     onPress={() => {
                       onSelect(o.key);
                       close();
@@ -104,7 +121,12 @@ export default function Dropdown<K extends string>({
               {toggle && (
                 <>
                   <View style={styles.divider} />
-                  <TouchableOpacity style={styles.item} onPress={toggle.onToggle}>
+                  <TouchableOpacity
+                    style={styles.item}
+                    onPress={toggle.onToggle}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: toggle.on }}
+                  >
                     <Icon name={toggle.icon} size={16} color={toggle.on ? Colors.primaryBright : Colors.muted} />
                     <Text style={[styles.itemText, toggle.on && styles.itemTextSelected]}>{toggle.label}</Text>
                     <View style={[styles.box, toggle.on && styles.boxOn]}>
@@ -123,6 +145,7 @@ export default function Dropdown<K extends string>({
 
 const makeStyles = (Colors: Palette) =>
   StyleSheet.create({
+    touch: { paddingVertical: PILL_SLOP, marginVertical: -PILL_SLOP },
     pill: {
       flexDirection: 'row',
       alignItems: 'center',

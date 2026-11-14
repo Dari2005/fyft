@@ -196,6 +196,7 @@ export default function MapScreen() {
           <PartyCard party={selected} stats={stats[selected.id]} />
           <TouchableOpacity
             style={styles.previewButton}
+            accessibilityRole="button"
             onPress={() => router.push({ pathname: '/party/[id]', params: { id: selected.id } })}
             activeOpacity={0.85}
           >
@@ -238,6 +239,8 @@ export default function MapScreen() {
           <TouchableOpacity
             onPress={() => router.push('/create')}
             style={styles.fab}
+            accessibilityRole="button"
+            accessibilityLabel="New event"
           >
             <Icon name="plus" size={26} color={Colors.primaryBright} strokeWidth={2.2} />
           </TouchableOpacity>

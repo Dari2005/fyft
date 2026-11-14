@@ -67,6 +67,20 @@ export function nightGroup(startsAtIso: string, now: Date = new Date()): { key: 
   };
 }
 
+/**
+ * True once an event's night is finished: after the 05:00 cutoff that follows
+ * its start (and never sooner than the live window, for very late starts).
+ * Over events are hidden from the Events list and the Map.
+ */
+export function isOver(startsAtIso: string, now: Date = new Date()): boolean {
+  const start = new Date(startsAtIso);
+  const cutoff = new Date(start);
+  cutoff.setHours(NIGHT_CUTOFF_HOUR, 0, 0, 0);
+  if (start.getTime() >= cutoff.getTime()) cutoff.setDate(cutoff.getDate() + 1);
+  const end = Math.max(cutoff.getTime(), start.getTime() + LIVE_WINDOW_MS);
+  return now.getTime() > end;
+}
+
 /** True while an event is in progress (started within the live window). */
 export function isLiveNow(startsAtIso: string, now: Date = new Date()): boolean {
   const start = new Date(startsAtIso).getTime();

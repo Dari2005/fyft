@@ -33,6 +33,8 @@ export interface Palette {
   border: string;
   /** Hairline divider inside cards. */
   divider: string;
+  /** Empty part of the crowd meter bar — must stay visible on `surface`. */
+  track: string;
   danger: string;
   success: string;
   /** Crowd meter: quiet (amber), getting busy (lime), almost full (orange). */
@@ -60,6 +62,7 @@ export const darkColors: Palette = {
   muted: '#8e8e9a',
   border: '#4a2748',
   divider: '#4a2748',
+  track: '#3d3d4a',
   danger: '#ef4444',
   success: '#22c55e',
   warning: '#f5b83d',
@@ -84,6 +87,7 @@ export const lightColors: Palette = {
   muted: '#62646d',
   border: '#d2d4da',
   divider: '#e6e7eb',
+  track: '#c9ccd3',
   danger: '#dc2626',
   success: '#16a34a',
   warning: '#b7791f',

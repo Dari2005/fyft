@@ -28,7 +28,7 @@ import PartyCard from '@/components/PartyCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import Icon, { type IconName } from '@/components/Icon';
 import EventFilterBar from '@/components/EventFilterBar';
-import Dropdown from '@/components/Dropdown';
+import Dropdown, { PILL_SLOP } from '@/components/Dropdown';
 import Logo from '@/components/Logo';
 import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
@@ -172,6 +172,7 @@ export default function PartyListScreen() {
         style={styles.filterBar}
         trailing={
           <Dropdown<SortMode>
+            name="Sort"
             icon={SORTS.find((s) => s.key === sort)!.icon}
             label={locating ? 'Locating…' : SORTS.find((s) => s.key === sort)!.label}
             active={sort !== 'soonest'}
@@ -267,7 +268,8 @@ const makeStyles = (Colors: Palette) =>
   header: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xs },
   heading: { color: Colors.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.4, marginTop: 2 },
   filterBar: { marginTop: Spacing.md },
-  list: { padding: Spacing.md, paddingBottom: 96 },
+  // The filter row above already ends with PILL_SLOP of touch padding.
+  list: { padding: Spacing.md, paddingTop: Spacing.md - PILL_SLOP, paddingBottom: 96 },
   sectionTitle: {
     color: Colors.text,
     fontSize: 15,

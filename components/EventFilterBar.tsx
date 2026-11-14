@@ -14,7 +14,7 @@ import Icon, { type IconName } from '@/components/Icon';
 import { nightWindows } from '@/lib/tonight';
 import type { EventFilters, TimeFilter } from '@/lib/eventFilters';
 import { CATEGORIES, type CategoryKey } from '@/lib/categories';
-import Dropdown from '@/components/Dropdown';
+import Dropdown, { PILL_SLOP } from '@/components/Dropdown';
 
 const TIMES: { key: TimeFilter; label: string }[] = [
   { key: 'all', label: 'Any time' },
@@ -85,13 +85,19 @@ export default function EventFilterBar({
           value={filters.query}
           onChangeText={(query) => set({ query })}
           placeholder="Search events and places…"
+          accessibilityLabel="Search events and places"
           placeholderTextColor={Colors.muted}
           style={styles.searchInput}
           autoCorrect={false}
           returnKeyType="search"
         />
         {filters.query !== '' && (
-          <TouchableOpacity onPress={() => set({ query: '' })} hitSlop={8}>
+          <TouchableOpacity
+            onPress={() => set({ query: '' })}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+          >
             <Icon name="close" size={16} color={Colors.muted} />
           </TouchableOpacity>
         )}
@@ -99,6 +105,7 @@ export default function EventFilterBar({
 
       <View style={styles.row}>
         <Dropdown<TimeFilter>
+          name="When"
           label={
             filters.time === 'tonight'
               ? nightWindows().tonightLabel
@@ -115,6 +122,7 @@ export default function EventFilterBar({
           floating={floating}
         />
         <Dropdown<CategoryKey | 'all'>
+          name="Type"
           label={
             filters.category === 'all'
               ? filters.people === 'following'
@@ -167,7 +175,9 @@ const makeStyles = (Colors: Palette) =>
     flexWrap: 'wrap',
     gap: Spacing.xs,
     paddingHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
+    // Room for the pills' invisible touch padding (see Dropdown `touch`).
+    paddingVertical: PILL_SLOP,
+    marginTop: Spacing.sm - PILL_SLOP,
   },
   chip: {
     borderWidth: 1,

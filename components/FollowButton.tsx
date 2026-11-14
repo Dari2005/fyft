@@ -42,6 +42,13 @@ export default function FollowButton({ profile, compact = false }: FollowButtonP
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
+      // The compact pill is 31pt tall; the slop brings it to a 47pt target.
+      hitSlop={compact ? 8 : 4}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active, busy }}
+      accessibilityLabel={
+        active ? `Following ${profile.username}. Tap to unfollow.` : `Follow ${profile.username}`
+      }
       style={[
         styles.base,
         compact && styles.compact,

@@ -19,7 +19,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
 import { onRsvpChanged } from '@/lib/notifications';
-import { isLiveNow } from '@/lib/tonight';
+import { isLiveNow, isOver } from '@/lib/tonight';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
 import { crowdColor, crowdFor } from '@/lib/crowd';
 import { reportParty } from '@/lib/reports';
@@ -63,8 +63,16 @@ function FloatButton({ icon, onPress, label }: { icon: IconName; onPress: () => 
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
   return (
-    <TouchableOpacity onPress={onPress} style={styles.floatButton} accessibilityLabel={label} hitSlop={6}>
-      <Icon name={icon} size={18} color={Colors.text} />
+    // 44pt touch area around the 38pt circle (the look is unchanged).
+    <TouchableOpacity
+      onPress={onPress}
+      style={styles.floatTouch}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <View style={styles.floatButton}>
+        <Icon name={icon} size={18} color={Colors.text} />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -236,6 +244,7 @@ export default function PartyDetailScreen() {
   const hasMedia = party.media.length > 0;
   const hasLocation = party.latitude != null && party.longitude != null;
   const live = isLiveNow(party.starts_at);
+  const over = isOver(party.starts_at);
   const crowd = crowdFor(goingCount, party.capacity);
   const crowdTint = crowdColor(crowd.level, Colors);
   const going = myStatus === 'going';
@@ -263,6 +272,9 @@ export default function PartyDetailScreen() {
                   <Image
                     key={`${m.url}-${i}`}
                     source={{ uri: m.url }}
+                    accessible
+                    accessibilityRole="image"
+                    accessibilityLabel={`${party.title}, photo ${i + 1} of ${party.media.length}`}
                     style={styles.heroItem}
                     resizeMode="cover"
                   />
@@ -343,7 +355,13 @@ export default function PartyDetailScreen() {
                   {party.address ?? 'Location on the map'}
                 </Text>
                 {hasLocation && (
-                  <TouchableOpacity onPress={openNavigation} style={styles.miniButton}>
+                  <TouchableOpacity
+                    onPress={openNavigation}
+                    style={styles.miniButton}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="Directions"
+                  >
                     <Icon name="navigate" size={13} color={Colors.primaryBright} />
                     <Text style={styles.miniButtonText}>Directions</Text>
                   </TouchableOpacity>
@@ -415,23 +433,32 @@ export default function PartyDetailScreen() {
 
       {/* Dock: always on screen. Tap again to cancel. Only "going" exists. */}
       <View style={[styles.dock, { paddingBottom: insets.bottom + Spacing.sm }]}>
-        <TouchableOpacity
-          style={[styles.dockButton, going && styles.dockButtonActive]}
-          onPress={() => handleRsvp('going')}
-          disabled={busy}
-          activeOpacity={0.8}
-        >
-          {busy ? (
-            <ActivityIndicator size="small" color={Colors.primaryBright} />
-          ) : (
-            <>
-              {going && <Icon name="check" size={17} color={Colors.primaryBright} strokeWidth={2.4} />}
-              <Text style={[styles.dockText, going && styles.dockTextActive]}>
-                {going ? "You're going" : "I'm going"}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {over && !going ? (
+          <View style={[styles.dockButton, styles.dockButtonOver]}>
+            <Text style={styles.dockTextOver}>This event is over</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.dockButton}
+            onPress={() => handleRsvp('going')}
+            disabled={busy}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityState={{ selected: going, busy }}
+            accessibilityLabel={going ? "You're going. Tap to cancel." : "I'm going"}
+          >
+            {busy ? (
+              <ActivityIndicator size="small" color={Colors.primaryBright} />
+            ) : (
+              <>
+                {going && <Icon name="check" size={17} color={Colors.primaryBright} strokeWidth={2.4} />}
+                <Text style={[styles.dockText, going && styles.dockTextActive]}>
+                  {going ? "You're going" : "I'm going"}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       <ConfirmDialog
@@ -480,19 +507,24 @@ const makeStyles = (Colors: Palette) =>
   },
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: Colors.dotInactive },
   dotActive: { width: 16, backgroundColor: Colors.primaryBright },
+  // The rows are pulled in by 3 so the 44pt touch areas keep the 38pt
+  // circles exactly where they were.
   floatRow: {
     position: 'absolute',
-    left: Spacing.md,
-    right: Spacing.md,
+    left: Spacing.md - 3,
+    right: Spacing.md - 3,
+    marginTop: -3,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   floatRowStatic: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: Spacing.md - 3,
+    paddingBottom: Spacing.sm - 3,
+    marginTop: -3,
   },
+  floatTouch: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   floatButton: {
     width: 38,
     height: 38,
@@ -538,7 +570,7 @@ const makeStyles = (Colors: Palette) =>
   meterBig: { color: Colors.text, fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
   meterOf: { color: Colors.muted, fontSize: 15, fontWeight: '600', letterSpacing: 0 },
   meterLabel: { fontSize: 15, fontWeight: '800' },
-  meterTrack: { height: 8, borderRadius: 4, backgroundColor: Colors.surfaceHigh, overflow: 'hidden' },
+  meterTrack: { height: 8, borderRadius: 4, backgroundColor: Colors.track, overflow: 'hidden' },
   meterFill: { height: '100%', borderRadius: 4 },
   infoBox: {
     backgroundColor: Colors.surface,
@@ -628,12 +660,13 @@ const makeStyles = (Colors: Palette) =>
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    // The main action of the app: always the bright outline, never the
+    // quiet look ("You're going" is told apart by the check + magenta text).
+    ...outline(Colors),
     borderRadius: 14,
   },
-  dockButtonActive: { ...outline(Colors) },
-  dockText: { color: Colors.textSoft, fontSize: 15, fontWeight: '700' },
-  dockTextActive: { color: Colors.primaryText },
+  dockButtonOver: { backgroundColor: Colors.surface, borderColor: Colors.border },
+  dockText: { color: Colors.primaryText, fontSize: 15, fontWeight: '800' },
+  dockTextActive: { color: Colors.primaryBright },
+  dockTextOver: { color: Colors.muted, fontSize: 15, fontWeight: '700' },
 });

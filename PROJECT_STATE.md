@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-14 (evening-only; 3 fixed event categories)_
+_Last updated: 2026-11-14 (design + accessibility review fixes)_
 
 ## What this is
 
@@ -165,6 +165,32 @@ do not rename).
    out) and puts the pin above the middle so the preview card does not
    cover it (Dari, 2026-11-14).
 
+14. **Design + accessibility review fixes** (Dari approved, 2026-11-14; no
+   redesign, only fixes):
+   - **"I'm going" is always the bright `outline()` button** — it was the
+     quietest button on the event page. "You're going" = check + magenta
+     text. Never give it the soft border again.
+   - **Over events are hidden** from Events + Map (`isOver` in
+     `lib/tonight.ts`, applied in `makeEventMatcher`): over = after the
+     05:00 cutoff following the start (never sooner than start + 4 h).
+     Profile lists are untouched. The event page of an over event shows a
+     disabled "This event is over" instead of "I'm going".
+   - Crowd meter: new palette token `track` (the empty bar was invisible on
+     `surface`); the card says "0 / 30 going" like the event page.
+   - Touch targets ≥ 44: filter pills (`PILL_SLOP` touch padding in
+     `Dropdown`, the filter row has matching padding — keep them in sync),
+     Back/Share (44 touch area around the 38 circle), Directions/Follow
+     (`hitSlop`).
+   - Screen reader: one spoken sentence per event card, roles/states on
+     filter pills, menu items, the follow checkbox, category buttons,
+     Follow, "I'm going"; labels on the map "+" and hero photos.
+   Still open from the review (not done, Dari has not decided): New event
+   opens without sign-in (map "+"); unselected category buttons look
+   disabled; no address text ("Location on the map"); "@" in front of a
+   display name; light theme LIVE green `#16a34a` (3.3:1) and amber
+   `#b7791f` (3.6:1) fail text contrast; control borders are below 3:1;
+   map pins have no screen-reader name.
+
 ## Fragile fixes — do not undo
 
 - **MapView renders only while the Map tab is focused** (`useIsFocused`,
@@ -204,6 +230,13 @@ do not rename).
   works from it anymore.
 
 ## Not verified yet
+
+- **Review fixes (2026-11-14, JS-only)** — tsc + lint pass and checked in
+  a browser (web preview, both themes); not yet seen on the phone and not
+  tested with TalkBack. Check: filter pills still open their menu right
+  under the pill, Back/Share sit where they were, "I'm going" stands out.
+  In the browser the capacity stepper pushed "+" off-screen — may be
+  web-only; check on the phone.
 
 - **Dropdown filters (2026-11-14, JS-only)** — tsc + lint pass, Metro
   bundled for Android; not yet confirmed on the phone (check the menu opens
@@ -303,13 +336,21 @@ do not rename).
 - PowerShell execution policy blocks `npx.ps1`. Use `npx.cmd …` in
   PowerShell (or run from cmd / Git Bash) instead of changing the policy.
   Dev server: `npx.cmd expo start --dev-client` (Metro on :8081).
+- **Looking at the app in a browser** (`expo start --web`) does not work
+  out of the box: `web.output: "static"` crashes on server rendering
+  (Supabase/AsyncStorage → `window is not defined`), and
+  `react-native-maps` + `expo-notifications` have no web build. For the
+  2026-11-14 review Claude temporarily set `web.output` to `"single"` and
+  added a `metro.config.js` that swaps those two modules for stubs on
+  `platform === 'web'`; all of it was removed afterwards (not committed).
 
 ## Known limitations / roadmap
 
 1. **House-party safety** (top priority before public launch): exact address
    is public. Plan: approximate area until organizer approves, 18+ option,
    verification.
-2. Past events are not pruned from the Events list (filters hide them).
+2. ~~Past events are not pruned~~ — done 2026-11-14 (decision 14); the rows
+   stay in the DB, they are only hidden client-side.
 3. Capacity is required in the create form but only visual: it drives the
    crowd meter, and the DB does not block RSVPs over capacity (column is
    still nullable for old events).

@@ -46,12 +46,35 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
       .filter(Boolean)
       .join(' · ');
   const category = categoryInfo(party.party_type);
+  // One sentence for screen readers instead of eight separate fragments.
+  const spoken = [
+    party.title,
+    live ? 'live now' : null,
+    new Date(party.starts_at).toLocaleString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    category.label,
+    place || null,
+    party.capacity != null ? `${going} of ${party.capacity} going` : `${going} going`,
+    crowd.label,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <Link href={{ pathname: '/party/[id]', params: { id: party.id } }} asChild>
       {/* Plain style object on purpose: <Link asChild> drops function-style
           props (({ pressed }) => …), which left the card with no style. */}
-      <Pressable style={styles.card} android_ripple={{ color: 'rgba(220,90,216,0.12)' }}>
+      <Pressable
+        style={styles.card}
+        android_ripple={{ color: 'rgba(220,90,216,0.12)' }}
+        accessibilityRole="button"
+        accessibilityLabel={spoken}
+      >
         <View style={styles.media}>
           {cover ? (
             <Image source={{ uri: cover.url }} style={styles.mediaImage} resizeMode="cover" />
@@ -87,7 +110,7 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
               <Text style={styles.count}>
                 {going}
                 <Text style={styles.countOf}>
-                  {party.capacity != null ? ` / ${party.capacity}` : ' going'}
+                  {party.capacity != null ? ` / ${party.capacity} going` : ' going'}
                 </Text>
               </Text>
               <Text style={[styles.level, { color: tint }]} numberOfLines={1}>
@@ -161,6 +184,6 @@ const makeStyles = (Colors: Palette) =>
     count: { color: Colors.text, fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
     countOf: { color: Colors.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0 },
     level: { flexShrink: 1, fontSize: 12, fontWeight: '800' },
-    track: { height: 5, borderRadius: 3, backgroundColor: Colors.surfaceHigh, overflow: 'hidden' },
+    track: { height: 5, borderRadius: 3, backgroundColor: Colors.track, overflow: 'hidden' },
     fill: { height: '100%', borderRadius: 3 },
   });

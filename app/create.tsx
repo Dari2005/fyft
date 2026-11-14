@@ -387,7 +387,13 @@ export default function CreatePartyScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.coverEmpty} onPress={pickMedia} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.coverEmpty}
+            onPress={pickMedia}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Add cover photo, up to ${MAX_MEDIA_ITEMS} photos or videos`}
+          >
             <Icon name="image" size={28} color={Colors.primaryBright} />
             <Text style={styles.coverEmptyTitle}>Add cover photo</Text>
             <Text style={styles.coverEmptyHint}>Up to {MAX_MEDIA_ITEMS} photos or videos</Text>
@@ -440,6 +446,9 @@ export default function CreatePartyScreen() {
                   style={[styles.categoryOption, on && styles.categoryOptionOn]}
                   onPress={() => setCategory(c.key)}
                   activeOpacity={0.8}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={c.label}
                 >
                   <Icon name={c.icon} size={20} color={on ? Colors.primaryBright : Colors.muted} />
                   <Text style={[styles.categoryText, on && styles.categoryTextOn]}>{c.label}</Text>
@@ -503,7 +512,13 @@ export default function CreatePartyScreen() {
               returnKeyType="search"
               onSubmitEditing={searchAddress}
             />
-            <TouchableOpacity onPress={searchAddress} disabled={searching} hitSlop={8}>
+            <TouchableOpacity
+              onPress={searchAddress}
+              disabled={searching}
+              hitSlop={14}
+              accessibilityRole="button"
+              accessibilityLabel="Search address"
+            >
               {searching ? (
                 <ActivityIndicator size="small" color={Colors.primary} />
               ) : (

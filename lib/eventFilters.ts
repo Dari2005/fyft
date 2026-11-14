@@ -1,4 +1,4 @@
-import { nightWindows } from '@/lib/tonight';
+import { isOver, nightWindows } from '@/lib/tonight';
 import type { Party } from '@/lib/types';
 import { categoryInfo, categoryOf, type CategoryKey } from '@/lib/categories';
 
@@ -61,6 +61,9 @@ export function makeEventMatcher(
   const w = nightWindows(ctx.now);
 
   return (p) => {
+    // Events whose night is finished never show on Events or the Map.
+    if (isOver(p.starts_at, ctx.now)) return false;
+
     if (
       q &&
       !(
