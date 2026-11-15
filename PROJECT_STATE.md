@@ -161,6 +161,16 @@ do not rename).
    text); filter on Events + Map; label + icon on the card and event
    page. Dari rejected merging Live music + Kafana (different crowds) and a
    separate "Bar night" (overlaps Party).
+   **Re-confirmed 2026-11-15:** Dari weighed "all events in Skopje, crowd
+   count only for parties" and chose to stay evening-only after seeing the
+   competition: **Happens.mk** (Play + App Store, released 2026-10-06, 100+
+   installs) already does "all Skopje events on a map" (music, theatre,
+   exhibitions, workshops; date/category/neighborhood filters, saved events,
+   MK/EN). Fyft's difference is the going count + crowd meter, so it stays
+   "where is it busy tonight". Don't re-propose all-events without new facts.
+   **Open:** Dari dislikes the NAME "Kafana" (not the category). Suggested:
+   "Folk night" / "Live folk" / "Kafana night" — he has not picked yet. Only
+   the label in `lib/categories.ts` changes; the stored key stays `kafana`.
 
 13. **Filters = ONE row of dropdowns, no sideways scrolling** (Dari,
    2026-11-14; `components/Dropdown.tsx`): When ▾ (Any time / Tonight /
