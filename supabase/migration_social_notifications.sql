@@ -40,9 +40,9 @@ language sql
 stable
 security definer
 set search_path = public
-as $
+as $$
   select count(*)::int from public.follows where followee_id = profile_id;
-$;
+$$;
 
 revoke execute on function public.follower_count(uuid) from public;
 grant execute on function public.follower_count(uuid) to anon, authenticated;
