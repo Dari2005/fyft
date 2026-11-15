@@ -330,9 +330,10 @@ do not rename).
   0 → 1 → 0 (interested) → 1 → 0 (deleted)), API with the anon key
   (`rsvps` → `[]`; `party_counts` insert/patch and
   `rpc/reconcile_party_counts` → 401), browser preview (counts come from
-  `party_counts`). **NOT seen on the phone:** the live +1 / −1 with two
-  devices, "I'm going" moving the count, My plans, the reminder, deleting
-  an event that has "going", the follow push. A signed-in API read of
+  `party_counts`). **Dari confirmed on the phone (2026-11-15): "it works"**
+  (the checks given were: "I'm going" 0 → 1 → 0, live count on a second
+  device, My plans, the reminder). Still unchecked: deleting an event that
+  has "going", the follow push. A signed-in API read of
   `rsvps` was not tested (no test account); the policy itself was checked.
 - **Account first + Google (2026-11-15, JS-only)** — tsc + lint pass. Seen
   in the browser: the welcome screen appears on a fresh install, "Look
