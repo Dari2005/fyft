@@ -279,8 +279,12 @@ do not rename).
    Same rule for the leftovers `comments` and `party_ratings`: no grants, no
    policies, not in Realtime (they held who commented on / rated what). A
    feature that brings either back needs its own migration and Dari's OK.
-   Still public on purpose: `profiles`, `parties`, `follows` (who follows
-   which organizer — open question for Dari).
+   **`follows` is private too** (Dari, 2026-11-15): each user reads only the
+   follows they made; follower numbers come from the RPC
+   `follower_count(profile_id)` (`fetchFollowerCount` in
+   `lib/SocialContext.tsx`). `notify_new_party` is security definer and
+   still sees all followers. Still public on purpose: `profiles`, `parties`,
+   `party_counts`.
 
 ## Fragile fixes — do not undo
 
@@ -314,6 +318,8 @@ do not rename).
   in the SQL editor in Dari's Chrome, 2026-11-15). Realtime publication =
   `party_counts` only (`rsvps` taken out; `comments` taken out by
   `migration_close_leftovers.sql`, run by Claude 2026-11-15).
+  `migration_private_follows.sql` run by Claude 2026-11-15 (follows: read
+  own; anon has no access; `follower_count()` RPC).
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
   `projectId` set in `app.json` (fixed 2026-11-09). Push is sent by a Postgres trigger
@@ -329,6 +335,13 @@ do not rename).
   works from it anymore.
 
 ## Not verified yet
+
+- **Private follows (2026-11-15, JS-only + SQL, run)** — tsc + lint pass;
+  checked: anon read of `follows` → permission denied, `follower_count` RPC
+  → 200, policies in SQL, organizer profile in the browser shows
+  "0 followers" from the RPC. NOT checked (only one account exists): a
+  count above 0, Follow/Unfollow + the "Only organizers I follow" filter on
+  the phone, and the follow push (two-account test, already listed below).
 
 - **Private RSVPs (2026-11-15, JS-only + `migration_private_rsvps.sql`, run
   2026-11-15)** — tsc + lint pass. Checked: SQL editor (publication =

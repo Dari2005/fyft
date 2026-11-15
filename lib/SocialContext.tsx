@@ -27,22 +27,14 @@ const SocialContext = createContext<SocialContextValue | null>(null);
 
 /**
  * How many people follow a profile — a number only. `follows` is private
- * (each user reads only the follows they made), so never count it directly.
- *
- * TEMPORARY fallback: until migration_private_follows.sql has run, the RPC
- * does not exist (PGRST202) and the old count query is used. Remove the
- * fallback once the migration is in.
+ * (each user reads only the follows they made), so never count it directly;
+ * the security-definer RPC follower_count() returns just the number
+ * (supabase/migration_private_follows.sql).
  */
 export async function fetchFollowerCount(profileId: string): Promise<number> {
   const { data, error } = await supabase.rpc('follower_count', { profile_id: profileId });
-  if (!error) return (data as number | null) ?? 0;
-  if (error.code !== 'PGRST202') throw error;
-  const { count, error: legacyError } = await supabase
-    .from('follows')
-    .select('follower_id', { count: 'exact', head: true })
-    .eq('followee_id', profileId);
-  if (legacyError) throw legacyError;
-  return count ?? 0;
+  if (error) throw error;
+  return (data as number | null) ?? 0;
 }
 
 /**
