@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Link, router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -106,7 +106,16 @@ export default function PartyDetailScreen() {
     actionLoading,
     error: rsvpError,
     toggleRsvp,
+    refresh: refreshRsvps,
   } = useRsvps(id, user?.id ?? null);
+
+  // Coming back to the page (e.g. after signing in) re-reads the count and
+  // my status; the first focus duplicates the hook's own load, which is fine.
+  useFocusEffect(
+    useCallback(() => {
+      refreshRsvps();
+    }, [refreshRsvps])
+  );
 
 
   useEffect(() => {

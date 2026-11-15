@@ -45,6 +45,18 @@ create table if not exists public.rsvps (
   created_at timestamptz not null default now(),
   primary key (party_id, user_id)
 );
+-- My plans, reminders and the "read own" policy filter on user_id.
+create index if not exists rsvps_user_idx on public.rsvps (user_id);
+
+-- Going counts, numbers only (no user ids). Kept up to date by the
+-- sync_party_counts trigger on rsvps; read by everyone, written by no client.
+-- A missing row means 0. Published to Realtime (see
+-- migration_private_rsvps.sql) so the event page count updates live.
+create table if not exists public.party_counts (
+  party_id uuid primary key references public.parties (id) on delete cascade,
+  going_count int not null default 0 check (going_count >= 0),
+  updated_at timestamptz not null default now()
+);
 
 -- Comments on parties.
 create table if not exists public.comments (
@@ -149,11 +161,80 @@ create trigger party_creation_limit
   for each row execute function public.enforce_party_creation_limit();
 
 -- --------------------------------------------------------------------------
+-- Going counts: +1 when an rsvp becomes "going", -1 when it stops being
+-- "going" (see migration_private_rsvps.sql for the reasoning).
+-- --------------------------------------------------------------------------
+create or replace function public.sync_party_counts()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  was_going boolean := tg_op in ('UPDATE', 'DELETE') and old.status = 'going';
+  is_going boolean := tg_op in ('INSERT', 'UPDATE') and new.status = 'going';
+  moved boolean := tg_op = 'UPDATE' and old.party_id <> new.party_id;
+begin
+  if was_going and (not is_going or moved) then
+    update public.party_counts
+       set going_count = greatest(going_count - 1, 0),
+           updated_at = now()
+     where party_id = old.party_id;
+  end if;
+
+  if is_going and (not was_going or moved) then
+    insert into public.party_counts as pc (party_id, going_count)
+    values (new.party_id, 1)
+    on conflict (party_id) do update
+      set going_count = pc.going_count + 1,
+          updated_at = now();
+  end if;
+
+  return null;
+end;
+$$;
+
+drop trigger if exists rsvps_sync_party_counts on public.rsvps;
+create trigger rsvps_sync_party_counts
+  after insert or delete or update of status, party_id on public.rsvps
+  for each row execute function public.sync_party_counts();
+
+-- Repair tool / backfill (SQL editor only): set every count to the real number.
+create or replace function public.reconcile_party_counts()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.party_counts as pc (party_id, going_count, updated_at)
+  select p.id, count(r.party_id) filter (where r.status = 'going'), now()
+  from public.parties p
+  left join public.rsvps r on r.party_id = p.id
+  group by p.id
+  on conflict (party_id) do update
+    set going_count = excluded.going_count,
+        updated_at = now()
+    where pc.going_count is distinct from excluded.going_count;
+$$;
+
+revoke execute on function public.sync_party_counts() from public, anon, authenticated;
+revoke execute on function public.reconcile_party_counts() from public, anon, authenticated;
+
+-- --------------------------------------------------------------------------
 -- Row Level Security
 -- --------------------------------------------------------------------------
 alter table public.profiles enable row level security;
 alter table public.parties enable row level security;
 alter table public.rsvps enable row level security;
+alter table public.party_counts enable row level security;
+
+-- party_counts: read-only for the API; no write policy exists.
+revoke all on public.party_counts from anon, authenticated;
+grant select on public.party_counts to anon, authenticated;
+
+drop policy if exists "party_counts: public read" on public.party_counts;
+create policy "party_counts: public read"
+  on public.party_counts for select using (true);
 alter table public.comments enable row level security;
 alter table public.reports enable row level security;
 
@@ -189,10 +270,14 @@ drop policy if exists "parties: organizer delete" on public.parties;
 create policy "parties: organizer delete"
   on public.parties for delete using (auth.uid() = organizer_id);
 
--- rsvps: public read; users manage only their own RSVP rows.
+-- rsvps: private. Users (organizers too) read and manage only their own
+-- rows; nobody can list who goes where. Counts come from party_counts.
+-- Never re-add a public read policy here.
 drop policy if exists "rsvps: public read" on public.rsvps;
-create policy "rsvps: public read"
-  on public.rsvps for select using (true);
+drop policy if exists "rsvps: read own" on public.rsvps;
+create policy "rsvps: read own"
+  on public.rsvps for select to authenticated
+  using (auth.uid() = user_id);
 
 drop policy if exists "rsvps: insert own" on public.rsvps;
 create policy "rsvps: insert own"

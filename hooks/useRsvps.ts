@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fetchGoingCount, subscribeGoingCount } from '@/lib/goingCounts';
 
+/** 'interested' is still allowed by the table but no screen uses it. */
 export type RsvpStatus = 'going' | 'interested';
 
 interface UseRsvpsResult {
   goingCount: number;
-  interestedCount: number;
   myStatus: RsvpStatus | null;
   loading: boolean;
   actionLoading: boolean;
@@ -21,17 +22,15 @@ interface UseRsvpsResult {
 }
 
 /**
- * Manages RSVPs for one party: live going/interested counts, the current
- * user's RSVP status, and a realtime subscription on the rsvps table so the
- * counts update instantly when anyone RSVPs.
+ * RSVPs for one party: the live going count and the current user's own
+ * status.
  *
- * NOTE: for realtime to work, the `rsvps` table must be added to the
- * `supabase_realtime` publication (Dashboard → Database → Replication).
- * If it isn't, counts still update after the user's own actions via refetch.
+ * The count comes from `party_counts` (lib/goingCounts.ts), which is in the
+ * Realtime publication, so it updates live when anyone RSVPs. `rsvps` is
+ * private (own rows only) and NOT in Realtime — never count it here.
  */
 export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult {
   const [goingCount, setGoingCount] = useState(0);
-  const [interestedCount, setInterestedCount] = useState(0);
   const [myStatus, setMyStatus] = useState<RsvpStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -39,17 +38,8 @@ export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult
 
   const fetchRsvps = useCallback(async () => {
     try {
-      const [going, interested, mine] = await Promise.all([
-        supabase
-          .from('rsvps')
-          .select('party_id', { count: 'exact', head: true })
-          .eq('party_id', partyId)
-          .eq('status', 'going'),
-        supabase
-          .from('rsvps')
-          .select('party_id', { count: 'exact', head: true })
-          .eq('party_id', partyId)
-          .eq('status', 'interested'),
+      const [count, mine] = await Promise.all([
+        fetchGoingCount(partyId),
         userId
           ? supabase
               .from('rsvps')
@@ -59,13 +49,9 @@ export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult
               .maybeSingle()
           : Promise.resolve({ data: null, error: null }),
       ]);
-
-      if (going.error) throw going.error;
-      if (interested.error) throw interested.error;
       if (mine.error) throw mine.error;
 
-      setGoingCount(going.count ?? 0);
-      setInterestedCount(interested.count ?? 0);
+      setGoingCount(count);
       setMyStatus((mine.data?.status as RsvpStatus | undefined) ?? null);
       setError(null);
     } catch (e) {
@@ -75,29 +61,13 @@ export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult
     }
   }, [partyId, userId]);
 
-  // Initial load + realtime subscription for live capacity updates.
-  // The channel name gets a unique suffix per effect run: when the effect
-  // re-runs (e.g. auth resolves and userId changes), supabase.channel(name)
-  // would otherwise return the previous still-subscribed channel and
-  // adding .on() callbacks to it throws.
+  // Initial load + live count.
   useEffect(() => {
     setLoading(true);
     fetchRsvps();
-
-    const channel = supabase
-      .channel(`rsvps-party-${partyId}-${Math.random().toString(36).slice(2, 9)}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'rsvps', filter: `party_id=eq.${partyId}` },
-        () => {
-          fetchRsvps();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return subscribeGoingCount(partyId, setGoingCount, () => {
+      fetchRsvps();
+    });
   }, [partyId, fetchRsvps]);
 
   const toggleRsvp = useCallback(
@@ -124,6 +94,7 @@ export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult
           if (upsertError) throw upsertError;
           setMyStatus(status);
         }
+        // Re-read the count so it is right even if the live message is late.
         await fetchRsvps();
         return 'ok';
       } catch (e) {
@@ -138,7 +109,6 @@ export function useRsvps(partyId: string, userId: string | null): UseRsvpsResult
 
   return {
     goingCount,
-    interestedCount,
     myStatus,
     loading,
     actionLoading,

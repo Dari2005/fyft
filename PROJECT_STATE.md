@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-15 (account on first open, Google sign-in, logo with crowd bar)_
+_Last updated: 2026-11-15 (private RSVPs + party_counts — migration written, not yet run)_
 
 ## What this is
 
@@ -265,13 +265,26 @@ do not rename).
    - Also: the bell emoji on the signed-out Notifications screen is now the
      SVG bell icon.
 
+16. **RSVPs are private** (Dari, 2026-11-15; design `docs/designs/private_rsvps.md`,
+   made with the EGM brainstorm/draft flow). Each user reads only their own
+   `rsvps` rows — **organizers too: they see the number, never names**.
+   Going counts come ONLY from `party_counts` (numbers, no user ids; kept by
+   the `sync_party_counts` trigger, +1/−1; `select public.reconcile_party_counts();`
+   in the SQL editor repairs drift). The app reads it through
+   `lib/goingCounts.ts`. **Never re-add public read on `rsvps`, never put
+   `rsvps` back in Realtime** (Supabase skips RLS for DELETE events, so
+   cancellations would leak user ids), never count `rsvps` for a shown number.
+
 ## Fragile fixes — do not undo
 
 - **MapView renders only while the Map tab is focused** (`useIsFocused`,
   `app/(tabs)/index.tsx`). A live MapView in a detached screen crashes
   Android ("child already has a parent").
+- **Live counts listen to `party_counts`, not `rsvps`** (`subscribeGoingCount`
+  in `lib/goingCounts.ts`). Never embed `party_counts` in the `parties`
+  select — if the table were missing the whole list would fail.
 - **Realtime channel names have a unique random suffix** per effect run
-  (`hooks/useRsvps.ts`) — reusing a subscribed
+  (`lib/goingCounts.ts`) — reusing a subscribed
   channel name throws when the effect re-runs.
 - **Map opens instantly on Skopje**; GPS centering runs in the background
   (last-known → Balanced, skipped after user drag). Never gate the map
@@ -306,6 +319,16 @@ do not rename).
   works from it anymore.
 
 ## Not verified yet
+
+- **Private RSVPs (2026-11-15, JS-only + `migration_private_rsvps.sql`)** —
+  app code done (tsc + lint pass; browser preview with the OLD database
+  shows the same counts, dev log `going counts: legacy`). **The migration
+  is NOT run yet** — Dari runs it in the SQL editor, then the API checks in
+  the design doc. Until then `rsvps` is still public. While the table is
+  missing, every count call first probes `party_counts` (a 404 in the
+  browser console — expected). After it runs: remove the `legacy`
+  branches in `lib/goingCounts.ts`, then remove the "Privacy gap (DB)"
+  note and roadmap item 4 below.
 
 - **Account first + Google (2026-11-15, JS-only)** — tsc + lint pass. Seen
   in the browser: the welcome screen appears on a fresh install, "Look
