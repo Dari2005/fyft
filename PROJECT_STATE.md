@@ -252,8 +252,10 @@ do not rename).
    - **Google:** `signInWithGoogle` in `lib/AuthContext.tsx` — Supabase
      OAuth through `expo-web-browser`, returning on `fyft://auth-callback`
      (`app/auth-callback.tsx` only keeps that link from opening "not
-     found"). No new package, so JS-only. **Does nothing until Dari sets it
-     up:** (1) Google Cloud → OAuth client (type Web) with redirect
+     found"). No new package, so JS-only. **Set up and working on Dari's
+     phone (2026-11-15).** Google Auth Platform is still in "Testing", so
+     only the Gmail accounts listed under Audience → Test users can sign in;
+     "Publish app" there before real users come. Setup that was done: (1) Google Cloud → OAuth client (type Web) with redirect
      `https://<project-ref>.supabase.co/auth/v1/callback`; (2) Supabase →
      Auth → Providers → Google: paste client ID + secret, enable; (3)
      Supabase → Auth → URL Configuration → Redirect URLs: add `fyft://**`.
@@ -306,12 +308,11 @@ do not rename).
 
 - **Account first + Google (2026-11-15, JS-only)** — tsc + lint pass. Seen
   in the browser: the welcome screen appears on a fresh install, "Look
-  around first" closes it, it does not come back. **Google sign-in has
-  never run**: it is disabled in the browser preview and needs the three
-  dashboard steps in decision 15 plus a phone. Watch for: after Google the
-  app returns to the sign-up screen and closes it by itself; if it lands on
-  a blank/spinner screen instead, the `auth-callback` hand-off is the place
-  to look. Email sign-up → going back to the event is also unseen.
+  around first" closes it, it does not come back. **Google sign-in works on
+  Dari's phone (2026-11-15).** Still unseen: the welcome screen on the
+  phone, email sign-up → going back to the event, and a Google account
+  whose email prefix is already a taken username. Note: Supabase has email
+  confirmation ON, so email sign-ups must confirm before the first sign-in.
 
 - **Review fixes (2026-11-14, JS-only)** — tsc + lint pass and checked in
   a browser (web preview, both themes); not yet seen on the phone and not
