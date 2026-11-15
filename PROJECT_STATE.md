@@ -224,9 +224,7 @@ do not rename).
    - **D — host name:** optional "Who is hosting?" field in New event →
      `parties.host_name` (≤ 60). The event page shows it as the headline of
      "Hosted by" with "Posted by @account" under it; Follow still follows
-     the account. Search matches it. **Needs
-     `supabase/migration_host_name.sql` run once in the SQL editor** — until
-     then the app works but silently saves no host name. This settles the
+     the account. Search matches it. Column added (`migration_host_name.sql` run 2026-11-15). This settles the
      old "Hosted by @darijan" open question.
    - Bug found on the way: "This weekend" matched ANY Saturday/Sunday, even
      weeks ahead (`isWeekend` in `lib/eventFilters.ts`). Now only this
@@ -263,8 +261,7 @@ do not rename).
      before "@". **Taken names (2026-11-15):** the `handle_new_user` trigger
      adds a number (dari, dari2 …, case-insensitive) instead of failing the
      sign-up, and email sign-up checks the typed username first ("That
-     username is taken"). **Needs `supabase/migration_unique_username.sql`
-     run once** — until then a clash still fails the sign-up.
+     username is taken"). `migration_unique_username.sql` run 2026-11-15.
    - Also: the bell emoji on the signed-out Notifications screen is now the
      SVG bell icon.
 
@@ -291,9 +288,9 @@ do not rename).
 ## Setup status
 
 - Supabase: `schema.sql` and all migrations applied, including
-  `migration_social_notifications.sql` — **except
-  `migration_host_name.sql` (2026-11-14) and `migration_unique_username.sql`
-  (2026-11-15), which Dari still has to run.** Realtime on `rsvps` (`comments` too, but the chat was removed).
+  `migration_social_notifications.sql`, `migration_host_name.sql` and
+  `migration_unique_username.sql` (both run by Dari 2026-11-15; `host_name`
+  confirmed through the API). Realtime on `rsvps` (`comments` too, but the chat was removed).
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
   `projectId` set in `app.json` (fixed 2026-11-09). Push is sent by a Postgres trigger
@@ -315,8 +312,7 @@ do not rename).
   around first" closes it, it does not come back. **Google sign-in works on
   Dari's phone (2026-11-15).** Still unseen: the welcome screen on the
   phone, email sign-up → going back to the event, and a Google account
-  whose email prefix is already a taken username (fix written, needs
-  `migration_unique_username.sql` run, then a test). Note: Supabase has email
+  whose email prefix is already a taken username (fix and migration in place, not yet tested). Note: Supabase has email
   confirmation ON, so email sign-ups must confirm before the first sign-in.
 
 - **Review fixes (2026-11-14, JS-only)** — tsc + lint pass and checked in
@@ -328,8 +324,8 @@ do not rename).
 - **Third round, A–D (2026-11-14, JS-only + one SQL migration)** — tsc +
   lint pass. Seen in the browser: the empty Events suggestion, the Report
   dialog, the two sign-in dialogs, the bigger card text. NOT seen: host
-  name (form field, saving, the event page — the column does not exist
-  until `migration_host_name.sql` is run), and every dialog that needs a
+  name (form field, saving, the event page — the column exists since
+  2026-11-15, nobody has saved one yet), and every dialog that needs a
   signed-in user or a phone (report sent, location/photo permission,
   notification settings). Dialogs were not checked on Android at all.
 - **Second round (2026-11-14, JS-only)** — tsc + lint pass. Seen in the
@@ -406,7 +402,8 @@ do not rename).
 - **Open question (Dari, 2026-11-08):** at launch Dari will publish most
   events himself, so they would all show "Hosted by @darijan". Proposed:
   an optional "Host / venue name" on the event (new `parties.host_name`
-  column + form field), shown instead of the account. Not decided/built.
+  column + form field), shown instead of the account. → Built 2026-11-14
+  (decision 14, "D"); column added 2026-11-15.
 - **EAS `projectId` fixed (2026-11-09):** `eas init --account darijan10`
   linked the EXISTING project `4ed63e10-2f8b-4bab-9bdc-258a4438c9c8`
   (`app.json` → `extra.eas.projectId`, `owner: darijan10`). Push needs the
