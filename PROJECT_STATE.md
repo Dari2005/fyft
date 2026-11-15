@@ -168,9 +168,11 @@ do not rename).
    exhibitions, workshops; date/category/neighborhood filters, saved events,
    MK/EN). Fyft's difference is the going count + crowd meter, so it stays
    "where is it busy tonight". Don't re-propose all-events without new facts.
-   **Open:** Dari dislikes the NAME "Kafana" (not the category). Suggested:
-   "Folk night" / "Live folk" / "Kafana night" — he has not picked yet. Only
-   the label in `lib/categories.ts` changes; the stored key stays `kafana`.
+   **Label renamed "Kafana" → "Kafana night"** (Dari, 2026-11-15; he
+   disliked the bare name, not the category). Only the label in
+   `lib/categories.ts` changed; the stored key stays `kafana`. JS-only; seen
+   in the browser Type menu, not yet on the phone (check that the three
+   category buttons in New event still fit on one row).
 
 13. **Filters = ONE row of dropdowns, no sideways scrolling** (Dari,
    2026-11-14; `components/Dropdown.tsx`): When ▾ (Any time / Tonight /

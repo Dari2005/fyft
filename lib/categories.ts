@@ -11,7 +11,7 @@ export type CategoryKey = 'party' | 'live' | 'kafana';
 export const CATEGORIES: { key: CategoryKey; label: string; icon: IconName }[] = [
   { key: 'party', label: 'Party', icon: 'disco' },
   { key: 'live', label: 'Live music', icon: 'mic' },
-  { key: 'kafana', label: 'Kafana', icon: 'wine' },
+  { key: 'kafana', label: 'Kafana night', icon: 'wine' },
 ];
 
 export function categoryOf(partyType: string | null | undefined): CategoryKey {
