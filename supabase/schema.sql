@@ -291,23 +291,13 @@ drop policy if exists "rsvps: delete own" on public.rsvps;
 create policy "rsvps: delete own"
   on public.rsvps for delete using (auth.uid() = user_id);
 
--- comments: public read; authenticated insert as self; edit/delete own only.
+-- comments: unused leftover (the chat was removed). No API access at all —
+-- no policies, no grants (see migration_close_leftovers.sql).
 drop policy if exists "comments: public read" on public.comments;
-create policy "comments: public read"
-  on public.comments for select using (true);
-
 drop policy if exists "comments: authenticated insert" on public.comments;
-create policy "comments: authenticated insert"
-  on public.comments for insert
-  with check (auth.role() = 'authenticated' and auth.uid() = user_id);
-
 drop policy if exists "comments: author update" on public.comments;
-create policy "comments: author update"
-  on public.comments for update using (auth.uid() = user_id);
-
 drop policy if exists "comments: author delete" on public.comments;
-create policy "comments: author delete"
-  on public.comments for delete using (auth.uid() = user_id);
+revoke all on public.comments from anon, authenticated;
 
 -- reports: users can file reports and see only their own (moderation view
 -- would go through the Supabase dashboard or a service-role backend).

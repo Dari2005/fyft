@@ -16,26 +16,10 @@ create index if not exists party_ratings_party_idx on public.party_ratings (part
 
 alter table public.party_ratings enable row level security;
 
--- New tables (from 2026-10-30) need explicit grants or the API denies access.
-grant select on public.party_ratings to anon;
-grant select, insert, update, delete on public.party_ratings to authenticated;
-
-create policy "party_ratings: public read"
-  on public.party_ratings for select
-  using (true);
-
-create policy "party_ratings: insert own"
-  on public.party_ratings for insert
-  with check (auth.uid() = user_id);
-
-create policy "party_ratings: update own"
-  on public.party_ratings for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
-
-create policy "party_ratings: delete own"
-  on public.party_ratings for delete
-  using (auth.uid() = user_id);
+-- No API access: ratings were dropped from the product (decision 1) and the
+-- old "public read" exposed who rated what. Closed by
+-- migration_close_leftovers.sql; kept closed here so a re-run can't reopen it.
+revoke all on public.party_ratings from anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Comment media: a comment may carry ONE photo or video (same public
