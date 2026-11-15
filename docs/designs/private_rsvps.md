@@ -2,6 +2,7 @@
 
 *   **Author:** Darijan Risteski
 *   **Status:** Approved (Dari, 2026-11-15: "do everything"). The formal `/egm:egm-review` was not run: only Dari can start EGM skills, and he chose to go straight to building.
+*   **Implemented:** 2026-11-15 (migration run, legacy fallback removed).
 *   **Date:** 2026-11-15
 
 --------------------------------------------------------------------------------

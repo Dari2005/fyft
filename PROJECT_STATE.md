@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-15 (private RSVPs + party_counts — migration written, not yet run)_
+_Last updated: 2026-11-15 (private RSVPs + party_counts, migration run)_
 
 ## What this is
 
@@ -303,7 +303,9 @@ do not rename).
 - Supabase: `schema.sql` and all migrations applied, including
   `migration_social_notifications.sql`, `migration_host_name.sql` and
   `migration_unique_username.sql` (both run by Dari 2026-11-15; `host_name`
-  confirmed through the API). Realtime on `rsvps` (`comments` too, but the chat was removed).
+  confirmed through the API) and `migration_private_rsvps.sql` (run by Claude
+  in the SQL editor in Dari's Chrome, 2026-11-15). Realtime publication =
+  `party_counts` + `comments` (chat removed); `rsvps` was taken OUT.
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
   `projectId` set in `app.json` (fixed 2026-11-09). Push is sent by a Postgres trigger
@@ -320,16 +322,18 @@ do not rename).
 
 ## Not verified yet
 
-- **Private RSVPs (2026-11-15, JS-only + `migration_private_rsvps.sql`)** —
-  app code done (tsc + lint pass; browser preview with the OLD database
-  shows the same counts, dev log `going counts: legacy`). **The migration
-  is NOT run yet** — Dari runs it in the SQL editor, then the API checks in
-  the design doc. Until then `rsvps` is still public. While the table is
-  missing, every count call first probes `party_counts` (a 404 in the
-  browser console — expected). After it runs: remove the `legacy`
-  branches in `lib/goingCounts.ts`, then remove the "Privacy gap (DB)"
-  note and roadmap item 4 below.
-
+- **Private RSVPs (2026-11-15, JS-only + `migration_private_rsvps.sql`, run
+  2026-11-15)** — tsc + lint pass. Checked: SQL editor (publication =
+  `comments, party_counts`, no `rsvps`; `rsvps` policies = read own
+  [authenticated] + insert/update/delete own; `party_counts` grants =
+  SELECT only; counts match `rsvps`; a rolled-back trigger test went
+  0 → 1 → 0 (interested) → 1 → 0 (deleted)), API with the anon key
+  (`rsvps` → `[]`; `party_counts` insert/patch and
+  `rpc/reconcile_party_counts` → 401), browser preview (counts come from
+  `party_counts`). **NOT seen on the phone:** the live +1 / −1 with two
+  devices, "I'm going" moving the count, My plans, the reminder, deleting
+  an event that has "going", the follow push. A signed-in API read of
+  `rsvps` was not tested (no test account); the policy itself was checked.
 - **Account first + Google (2026-11-15, JS-only)** — tsc + lint pass. Seen
   in the browser: the welcome screen appears on a fresh install, "Look
   around first" closes it, it does not come back. **Google sign-in works on
@@ -405,11 +409,6 @@ do not rename).
   `LIGHT_MAP_STYLE`, dark = `DARK_MAP_STYLE` (`lib/mapStyle.ts`, MapView
   remounts via `key={scheme}` so the switch always applies). "Tonight" chip reads
   "Today" in the daytime (same 05:00 rule as the section headers).
-- **Privacy gap (DB):** the app no longer SHOWS who is going, but `rsvps`
-  rows (with user ids) are probably still readable through the API by any
-  signed-in user (the old friends feature needed that). Tighten RLS so
-  users read only their own RSVPs and expose counts via a view/RPC (also
-  fixes roadmap 4). Needs a migration — not done.
 - **DECIDED 2026-11-14: Option A, evening-only.** (Start-time rule: Dari
   2026-11-14 chose NO block and NO warning for now — any start time is
   allowed; evening-only is a content rule, kept by who posts. Revisit if
@@ -484,7 +483,8 @@ do not rename).
 3. Capacity is required in the create form but only visual: it drives the
    crowd meter, and the DB does not block RSVPs over capacity (column is
    still nullable for old events).
-4. `usePartyStats` loads all "going" rows client-side — move to a view/RPC.
+4. ~~`usePartyStats` loads all "going" rows client-side~~ — done 2026-11-15
+   (`party_counts`, decision 16).
 5. Moderation is manual (reports table); auto-hide after N reports planned.
 6. Get 5–10 real organizers publishing regularly (the app is useless empty).
 7. Songkick auto-import of Skopje concerts is the planned content seed
