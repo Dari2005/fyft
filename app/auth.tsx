@@ -13,6 +13,7 @@ import { router, useIsFocused, useLocalSearchParams, useNavigation } from 'expo-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '@/lib/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { useDialog } from '@/lib/DialogContext';
 import Logo from '@/components/Logo';
 import TextField from '@/components/TextField';
@@ -96,6 +97,13 @@ export default function AuthScreen() {
 
     setLoading(true);
     try {
+      // Tell people their chosen name is taken, instead of the database
+      // quietly renaming them to "name2" (it does that only as a fallback).
+      if (mode === 'signup' && (await usernameTaken(username.trim()))) {
+        setError('That username is taken. Try another one.');
+        return;
+      }
+
       const { error: authError } =
         mode === 'signin'
           ? await signIn(trimmedEmail, password)
@@ -263,6 +271,19 @@ function GoogleMark() {
       />
     </Svg>
   );
+}
+
+/** Case-insensitive check against existing profiles (they are public). On a
+ * network error it says "free" and lets the sign-up trigger sort it out. */
+async function usernameTaken(name: string): Promise<boolean> {
+  // ILIKE without wildcards = case-insensitive equality; escape _ and %.
+  const pattern = name.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .ilike('username', pattern)
+    .limit(1);
+  return !error && (data?.length ?? 0) > 0;
 }
 
 function prettifyAuthError(message: string): string {

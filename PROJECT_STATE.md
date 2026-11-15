@@ -260,8 +260,11 @@ do not rename).
      Auth → Providers → Google: paste client ID + secret, enable; (3)
      Supabase → Auth → URL Configuration → Redirect URLs: add `fyft://**`.
      Google accounts get `profiles.username` = the part of their email
-     before "@" (existing trigger); it is `unique`, so a clash would fail
-     the sign-up — not handled yet.
+     before "@". **Taken names (2026-11-15):** the `handle_new_user` trigger
+     adds a number (dari, dari2 …, case-insensitive) instead of failing the
+     sign-up, and email sign-up checks the typed username first ("That
+     username is taken"). **Needs `supabase/migration_unique_username.sql`
+     run once** — until then a clash still fails the sign-up.
    - Also: the bell emoji on the signed-out Notifications screen is now the
      SVG bell icon.
 
@@ -289,7 +292,8 @@ do not rename).
 
 - Supabase: `schema.sql` and all migrations applied, including
   `migration_social_notifications.sql` — **except
-  `migration_host_name.sql` (2026-11-14), which Dari still has to run.** Realtime on `rsvps` (`comments` too, but the chat was removed).
+  `migration_host_name.sql` (2026-11-14) and `migration_unique_username.sql`
+  (2026-11-15), which Dari still has to run.** Realtime on `rsvps` (`comments` too, but the chat was removed).
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
   `projectId` set in `app.json` (fixed 2026-11-09). Push is sent by a Postgres trigger
@@ -311,7 +315,8 @@ do not rename).
   around first" closes it, it does not come back. **Google sign-in works on
   Dari's phone (2026-11-15).** Still unseen: the welcome screen on the
   phone, email sign-up → going back to the event, and a Google account
-  whose email prefix is already a taken username. Note: Supabase has email
+  whose email prefix is already a taken username (fix written, needs
+  `migration_unique_username.sql` run, then a test). Note: Supabase has email
   confirmation ON, so email sign-ups must confirm before the first sign-in.
 
 - **Review fixes (2026-11-14, JS-only)** — tsc + lint pass and checked in

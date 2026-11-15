@@ -67,7 +67,9 @@ create table if not exists public.reports (
 );
 
 -- --------------------------------------------------------------------------
--- Auto-create a profile row when a user signs up
+-- Auto-create a profile row when a user signs up. A taken username (case-
+-- insensitive) gets a number added — dari, dari2 … — so a sign-up never
+-- fails on the unique constraint (see migration_unique_username.sql).
 -- --------------------------------------------------------------------------
 create or replace function public.handle_new_user()
 returns trigger
@@ -75,16 +77,38 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  base text;
+  candidate text;
+  n int := 1;
 begin
-  insert into public.profiles (id, username)
-  values (
-    new.id,
+  base := left(
     coalesce(
-      nullif(new.raw_user_meta_data ->> 'username', ''),
-      split_part(new.email, '@', 1)
-    )
-  )
-  on conflict (id) do nothing;
+      nullif(trim(new.raw_user_meta_data ->> 'username'), ''),
+      nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+      'user'
+    ),
+    30
+  );
+
+  candidate := base;
+  while exists (
+    select 1 from public.profiles where lower(username) = lower(candidate)
+  ) loop
+    n := n + 1;
+    candidate := base || n::text;
+  end loop;
+
+  begin
+    insert into public.profiles (id, username)
+    values (new.id, candidate)
+    on conflict (id) do nothing;
+  exception when unique_violation then
+    insert into public.profiles (id, username)
+    values (new.id, base || '_' || left(replace(new.id::text, '-', ''), 6))
+    on conflict (id) do nothing;
+  end;
+
   return new;
 end;
 $$;
