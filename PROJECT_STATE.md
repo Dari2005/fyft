@@ -42,7 +42,8 @@ do not rename).
 ## Standing decisions — do NOT silently revert
 
 1. **No ratings. At all.** No event ratings, no organizer ratings
-   (Dari, 2026-11-01). The `party_ratings` table is an unused leftover (the
+   (Dari, 2026-11-01). The `party_ratings` table is an unused leftover with NO API access
+   (closed 2026-11-15, `migration_close_leftovers.sql`) (the
    dead `rating*` styles were removed with the 2026-11-08 detail redesign).
 2. **Event type is free-text** (`parties.party_type`). No preset genre or
    category lists, ever. **No venue choice** (House/Club) in the form either.
@@ -132,7 +133,8 @@ do not rename).
    button is "I'm going"; reminders only for going). **Capacity is
    required** when creating an event ("How many people can come?", plain
    number, no preset chips — Dari rejected presets). Per-event chat
-   removed (`app/chat`, `hooks/useComments` deleted; `comments` table left).
+   removed (`app/chat`, `hooks/useComments` deleted; `comments` table left,
+   with NO API access since 2026-11-15 — `migration_close_leftovers.sql`).
    **Event card = "B"**: big photo on the left (calendar icon when there is
    no photo), date + title + place + crowd meter on the right, no
    description. Videos stay in the app (create + event detail) but are
@@ -274,6 +276,11 @@ do not rename).
    `lib/goingCounts.ts`. **Never re-add public read on `rsvps`, never put
    `rsvps` back in Realtime** (Supabase skips RLS for DELETE events, so
    cancellations would leak user ids), never count `rsvps` for a shown number.
+   Same rule for the leftovers `comments` and `party_ratings`: no grants, no
+   policies, not in Realtime (they held who commented on / rated what). A
+   feature that brings either back needs its own migration and Dari's OK.
+   Still public on purpose: `profiles`, `parties`, `follows` (who follows
+   which organizer — open question for Dari).
 
 ## Fragile fixes — do not undo
 
@@ -305,7 +312,8 @@ do not rename).
   `migration_unique_username.sql` (both run by Dari 2026-11-15; `host_name`
   confirmed through the API) and `migration_private_rsvps.sql` (run by Claude
   in the SQL editor in Dari's Chrome, 2026-11-15). Realtime publication =
-  `party_counts` + `comments` (chat removed); `rsvps` was taken OUT.
+  `party_counts` only (`rsvps` taken out; `comments` taken out by
+  `migration_close_leftovers.sql`, run by Claude 2026-11-15).
 - Push: Firebase project created; `google-services.json` in project root
   (local only); FCM V1 service-account key uploaded to EAS; EAS
   `projectId` set in `app.json` (fixed 2026-11-09). Push is sent by a Postgres trigger
