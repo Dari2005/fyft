@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-14 (design + accessibility review fixes)_
+_Last updated: 2026-11-15 (logo with crowd bar; review fixes A–D)_
 
 ## What this is
 
@@ -80,6 +80,17 @@ do not rename).
    (`components/Icon.tsx`, tab icons in `(tabs)/_layout.tsx`) — no emoji
    in chrome, and icon fonts never rendered in his builds, so don't
    reintroduce them. Google maps use `lib/mapStyle.ts` (dark).
+   **Logo update 2026-11-15 — "2C", crowd bar:** the same wordmark plus the
+   app's crowd meter under it, cut in two by the tail of the "y" (left
+   piece full, right piece a `Colors.track` bar filled part-way). Numbers
+   live in `LOGO_BAR` (`components/Logo.tsx`) and are repeated in
+   `scripts/make-logo.js`; the logo's width/height did not change. Dari
+   picked it from sketches (he passed on: three bars, monogram f, pin,
+   y-as-a-person, moon, two circles, stacked/outlined/slanted letters).
+   Icon / adaptive foreground / splash / favicon PNGs were regenerated —
+   **native: they show only after the next build.** Claude's caveat: at
+   launcher-icon size the bar is a pixel or two, so the icon is no more
+   readable than before.
    **Logo: "fyft"** (Dari, 2026-11-10; replaced the 2026-11-08 "fyft.")
    — lowercase letters in Outfit ExtraBold (OFL), letter-spaced +14, ONLY
    in the magenta accent (`Colors.primary`), no dot; stored as SVG outlines

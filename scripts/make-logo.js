@@ -18,10 +18,18 @@ const PATH = 'M55.6 148.2L20.8 148.2L20.8 79.4L0 79.4L0 50.4L20.8 50.4L20.8 44.2
 const W = 409.6;
 const H = 189.6;
 
+// Crowd bar under the word, cut in two by the tail of the "y" ("2C",
+// 2026-11-15). Same numbers as LOGO_BAR in components/Logo.tsx.
+const TRACK = '#3d3d4a'; // Colors.track (dark)
+const BAR =
+  `<rect x="0" y="163.6" width="106" height="26" rx="13" fill="${MAGENTA}"/>` +
+  `<rect x="192" y="163.6" width="217.6" height="26" rx="13" fill="${TRACK}"/>` +
+  `<rect x="192" y="163.6" width="96" height="26" rx="13" fill="${MAGENTA}"/>`;
+
 /** Wordmark scaled to `width` px and centered at (cx, cy). */
 function placedWordmark(cx, cy, width) {
   const k = width / W;
-  return `<g transform="translate(${cx - (W / 2) * k} ${cy - (H / 2) * k}) scale(${k})"><path d="${PATH}" fill="${MAGENTA}"/></g>`;
+  return `<g transform="translate(${cx - (W / 2) * k} ${cy - (H / 2) * k}) scale(${k})"><path d="${PATH}" fill="${MAGENTA}"/>${BAR}</g>`;
 }
 
 function render(svg, size, file) {

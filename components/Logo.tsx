@@ -1,4 +1,4 @@
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { useColors } from '@/lib/ThemeContext';
 
 /** Glyph outlines of "fyft" in Outfit ExtraBold (SIL Open Font License),
@@ -9,6 +9,20 @@ export const LOGO_WIDTH = 409.6;
 export const LOGO_HEIGHT = 189.6;
 
 /**
+ * Crowd bar under the word ("2C", Dari 2026-11-15): the app's crowd meter
+ * runs along the baseline and the tail of the "y" cuts it in two. Left piece
+ * is full, the right piece is a track filled part-way. It sits in the space
+ * the "y" descender already takes, so the logo's size did not change.
+ * Shared with scripts/make-logo.js — keep both in sync.
+ */
+export const LOGO_BAR = {
+  y: 163.6,
+  height: 26,
+  left: { x: 0, width: 106 },
+  right: { x: 192, width: 217.6, fill: 96 },
+};
+
+/**
  * The "fyft" wordmark (2026-11-10): lowercase letters in a single magenta
  * (Colors.primary), drawn as SVG outlines so no font file is needed and it
  * renders identically everywhere. `height` sets the size.
@@ -16,6 +30,7 @@ export const LOGO_HEIGHT = 189.6;
 export default function Logo({ height = 22 }: { height?: number }) {
   const Colors = useColors();
   const width = (height * LOGO_WIDTH) / LOGO_HEIGHT;
+  const r = LOGO_BAR.height / 2;
   return (
     <Svg
       width={width}
@@ -24,6 +39,30 @@ export default function Logo({ height = 22 }: { height?: number }) {
       accessibilityLabel="Fyft"
     >
       <Path d={LOGO_PATH} fill={Colors.primary} />
+      <Rect
+        x={LOGO_BAR.left.x}
+        y={LOGO_BAR.y}
+        width={LOGO_BAR.left.width}
+        height={LOGO_BAR.height}
+        rx={r}
+        fill={Colors.primary}
+      />
+      <Rect
+        x={LOGO_BAR.right.x}
+        y={LOGO_BAR.y}
+        width={LOGO_BAR.right.width}
+        height={LOGO_BAR.height}
+        rx={r}
+        fill={Colors.track}
+      />
+      <Rect
+        x={LOGO_BAR.right.x}
+        y={LOGO_BAR.y}
+        width={LOGO_BAR.right.fill}
+        height={LOGO_BAR.height}
+        rx={r}
+        fill={Colors.primary}
+      />
     </Svg>
   );
 }
