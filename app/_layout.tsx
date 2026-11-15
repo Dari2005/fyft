@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useRootNavigationState } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -58,6 +59,35 @@ function NotificationsBridge() {
   return null;
 }
 
+const WELCOMED_KEY = 'fyft.welcomed';
+
+/**
+ * Very first open, not signed in: show "Create your account" once (Dari,
+ * 2026-11-15). It can be skipped ("Look around first") and never returns on
+ * its own — later sign-in prompts come from actions like "I'm going".
+ */
+function FirstOpenGate() {
+  const { user, loading } = useAuth();
+  const navigationReady = useRootNavigationState()?.key != null;
+  const checked = useRef(false);
+
+  useEffect(() => {
+    if (loading || !navigationReady || checked.current) return;
+    checked.current = true;
+    (async () => {
+      try {
+        if ((await AsyncStorage.getItem(WELCOMED_KEY)) === '1') return;
+        await AsyncStorage.setItem(WELCOMED_KEY, '1');
+        if (!user) router.push({ pathname: '/auth', params: { welcome: '1' } });
+      } catch {
+        // Storage unavailable: skip the welcome rather than show it forever.
+      }
+    })();
+  }, [loading, navigationReady, user]);
+
+  return null;
+}
+
 /** Stack + status bar styled from the active theme (needs ThemeProvider above). */
 function ThemedStack() {
   const Colors = useColors();
@@ -73,7 +103,8 @@ function ThemedStack() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ title: 'Sign In', presentation: 'modal' }} />
+        <Stack.Screen name="auth" options={{ title: 'Create account', presentation: 'modal' }} />
+        <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
         <Stack.Screen name="create" options={{ title: 'New Event' }} />
         <Stack.Screen name="party/[id]" options={{ title: 'Event', headerShown: false }} />
         <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
@@ -91,6 +122,7 @@ export default function RootLayout() {
         <SocialProvider>
           <DialogProvider>
             <NotificationsBridge />
+            <FirstOpenGate />
             <ThemedStack />
           </DialogProvider>
         </SocialProvider>

@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-15 (logo with crowd bar; review fixes A–D)_
+_Last updated: 2026-11-15 (account on first open, Google sign-in, logo with crowd bar)_
 
 ## What this is
 
@@ -237,6 +237,32 @@ do not rename).
    callout on Android); "@" in front of a display name (goes away with the
    host-name idea below).
 
+15. **Account first, Google sign-in** (Dari, 2026-11-15):
+   - **First open:** `FirstOpenGate` (`app/_layout.tsx`) pushes
+     `/auth?welcome=1` once per install when nobody is signed in
+     (AsyncStorage `fyft.welcomed`). Dari asked for "an account right
+     away"; Claude added a **"Look around first"** way out because a hard
+     wall before any content loses first-time visitors. It is one block in
+     `app/auth.tsx` (`isWelcome`) if Dari wants it gone.
+   - **`app/auth.tsx` redone:** logo, "Create your account" / "Welcome
+     back", "Continue with Google" on top, email below. **No emoji, no
+     example placeholders.** Opens on "Create account" until this device has
+     signed in once (`fyft.hasAccount`), then on "Sign in". After signing in
+     it goes BACK to where the person was (the event), not to the map.
+   - **Google:** `signInWithGoogle` in `lib/AuthContext.tsx` — Supabase
+     OAuth through `expo-web-browser`, returning on `fyft://auth-callback`
+     (`app/auth-callback.tsx` only keeps that link from opening "not
+     found"). No new package, so JS-only. **Does nothing until Dari sets it
+     up:** (1) Google Cloud → OAuth client (type Web) with redirect
+     `https://<project-ref>.supabase.co/auth/v1/callback`; (2) Supabase →
+     Auth → Providers → Google: paste client ID + secret, enable; (3)
+     Supabase → Auth → URL Configuration → Redirect URLs: add `fyft://**`.
+     Google accounts get `profiles.username` = the part of their email
+     before "@" (existing trigger); it is `unique`, so a clash would fail
+     the sign-up — not handled yet.
+   - Also: the bell emoji on the signed-out Notifications screen is now the
+     SVG bell icon.
+
 ## Fragile fixes — do not undo
 
 - **MapView renders only while the Map tab is focused** (`useIsFocused`,
@@ -277,6 +303,15 @@ do not rename).
   works from it anymore.
 
 ## Not verified yet
+
+- **Account first + Google (2026-11-15, JS-only)** — tsc + lint pass. Seen
+  in the browser: the welcome screen appears on a fresh install, "Look
+  around first" closes it, it does not come back. **Google sign-in has
+  never run**: it is disabled in the browser preview and needs the three
+  dashboard steps in decision 15 plus a phone. Watch for: after Google the
+  app returns to the sign-up screen and closes it by itself; if it lands on
+  a blank/spinner screen instead, the `auth-callback` hand-off is the place
+  to look. Email sign-up → going back to the event is also unseen.
 
 - **Review fixes (2026-11-14, JS-only)** — tsc + lint pass and checked in
   a browser (web preview, both themes); not yet seen on the phone and not

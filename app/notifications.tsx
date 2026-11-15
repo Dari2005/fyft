@@ -21,6 +21,7 @@ import {
   setRemindersEnabled,
   syncReminders,
 } from '@/lib/notifications';
+import Icon from '@/components/Icon';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
@@ -213,7 +214,7 @@ export default function NotificationsScreen() {
   if (!user) {
     return (
       <View style={styles.center}>
-        <Text style={styles.bigEmoji}>🔔</Text>
+        <Icon name="bell" size={44} color={Colors.primaryBright} />
         <Text style={styles.title}>Sign in to manage notifications</Text>
         <Link href="/auth" asChild>
           <PrimaryButton title="Sign In" onPress={() => {}} />
@@ -331,7 +332,6 @@ const makeStyles = (Colors: Palette) =>
     padding: Spacing.lg,
     gap: Spacing.sm,
   },
-  bigEmoji: { fontSize: 52 },
   title: { color: Colors.text, fontSize: 18, fontWeight: '700', textAlign: 'center' },
   row: {
     flexDirection: 'row',
