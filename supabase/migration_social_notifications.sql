@@ -4,8 +4,8 @@
 --
 -- One table, `follows`, powers BOTH features:
 --   * "follow an organizer" -> get a push when they publish an event
---   * "friends"             -> the people you follow; their "going" RSVPs show
---                              up on cards / event pages as "friends going"
+--   (the "friends going" use was removed 2026-11-08; follows are private
+--    since 2026-11-15 — see migration_private_follows.sql)
 
 -- ---------------------------------------------------------------------------
 -- follows: follower_id follows followee_id (any profile, organizer or friend)
@@ -23,12 +23,29 @@ alter table public.follows enable row level security;
 
 -- New tables need explicit grants or the API denies access (see the ratings
 -- migration for the same note).
-grant select on public.follows to anon;
+-- Private since 2026-11-15 (migration_private_follows.sql): users read only
+-- the follows they made; follower numbers come from follower_count().
+revoke all on public.follows from anon;
 grant select, insert, delete on public.follows to authenticated;
 
 drop policy if exists "follows: public read" on public.follows;
-create policy "follows: public read"
-  on public.follows for select using (true);
+drop policy if exists "follows: read own" on public.follows;
+create policy "follows: read own"
+  on public.follows for select to authenticated
+  using (auth.uid() = follower_id);
+
+create or replace function public.follower_count(profile_id uuid)
+returns int
+language sql
+stable
+security definer
+set search_path = public
+as $
+  select count(*)::int from public.follows where followee_id = profile_id;
+$;
+
+revoke execute on function public.follower_count(uuid) from public;
+grant execute on function public.follower_count(uuid) to anon, authenticated;
 
 drop policy if exists "follows: insert own" on public.follows;
 create policy "follows: insert own"

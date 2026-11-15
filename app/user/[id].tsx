@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/AuthContext';
+import { fetchFollowerCount } from '@/lib/SocialContext';
 import { parsePartyMedia, type Party, type ProfileLite } from '@/lib/types';
 import { LIVE_WINDOW_MS } from '@/lib/tonight';
 import Avatar from '@/components/Avatar';
@@ -54,7 +55,7 @@ export default function UserProfileScreen() {
         const since = new Date(Date.now() - LIVE_WINDOW_MS).toISOString();
         const [prof, fers, org] = await Promise.all([
           supabase.from('profiles').select('id, username, avatar_url').eq('id', id).single(),
-          supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followee_id', id),
+          fetchFollowerCount(id),
           supabase
             .from('parties')
             .select('*, profiles!parties_organizer_id_fkey(username)')
@@ -64,7 +65,7 @@ export default function UserProfileScreen() {
         ]);
         if (prof.error) throw prof.error;
         setProfile(prof.data as ProfileLite);
-        setFollowers(fers.count ?? 0);
+        setFollowers(fers);
         setOrganizing((org.data ?? []).map(mapParty));
         setError(null);
       } catch (e) {
