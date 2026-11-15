@@ -424,6 +424,12 @@ do not rename).
   https://expo.dev/accounts/darijan10/projects/fyft/builds/16b081b9-c284-4e94-9a98-20e2b31b837b
   Third build 2026-11-10 (magenta accent, new "fyft" icon/splash):
   https://expo.dev/accounts/darijan10/projects/fyft/builds/873cb9dd-b7cc-4627-ae9a-507c76a22856
+  Fourth build 2026-11-15 (logo with crowd bar on icon/splash; started by
+  Claude at Dari's request, no haptics, no Expo update):
+  https://expo.dev/accounts/darijan10/projects/fyft/builds/df4547b6-81b7-42e5-8ce7-4383b563043b
+  After installing: check the icon/splash, and that the map is not black
+  (the CLI reported no plain/sensitive EAS env vars for "development"; the
+  Maps key is expected as a secret-visibility `GOOGLE_MAPS_API_KEY`).
 - `npm install` (2026-11-08) reports 23 audit vulnerabilities (6 high) and
   `expo` 57.0.29 → ~57.0.32 available (`npx expo install --check`). Not
   addressed yet.
