@@ -25,7 +25,7 @@ import Icon from '@/components/Icon';
 import PrimaryButton from '@/components/PrimaryButton';
 import { Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
-import type { NotificationPrefs } from '@/lib/types';
+import { BUSY_THRESHOLDS, type NotificationPrefs } from '@/lib/types';
 
 const RADIUS_OPTIONS = [2, 5, 10, 20];
 
@@ -35,7 +35,13 @@ const DEFAULT_PREFS: NotificationPrefs = {
   nearby_lat: null,
   nearby_lng: null,
   nearby_radius_km: 5,
+  busy_enabled: true,
+  busy_threshold: 75,
+  changes_enabled: true,
 };
+
+/** Columns added by migration_smart_notifications.sql (may not exist yet). */
+const SMART_COLUMNS = ['busy_enabled', 'busy_threshold', 'changes_enabled'] as const;
 
 /** Notification settings: reminders, followed organizers, events near me. */
 export default function NotificationsScreen() {
@@ -62,6 +68,9 @@ export default function NotificationsScreen() {
           nearby_lat: data.nearby_lat,
           nearby_lng: data.nearby_lng,
           nearby_radius_km: data.nearby_radius_km,
+          busy_enabled: data.busy_enabled ?? DEFAULT_PREFS.busy_enabled,
+          busy_threshold: data.busy_threshold ?? DEFAULT_PREFS.busy_threshold,
+          changes_enabled: data.changes_enabled ?? DEFAULT_PREFS.changes_enabled,
         });
       }
       setReminders(remindersOn);
@@ -73,10 +82,22 @@ export default function NotificationsScreen() {
   const savePrefs = useCallback(
     async (next: NotificationPrefs): Promise<boolean> => {
       if (!user) return false;
-      const { error } = await supabase.from('notification_prefs').upsert(
-        { user_id: user.id, ...next, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      );
+      const row: Record<string, unknown> = {
+        user_id: user.id,
+        ...next,
+        updated_at: new Date().toISOString(),
+      };
+      let { error } = await supabase
+        .from('notification_prefs')
+        .upsert(row, { onConflict: 'user_id' });
+      // Before the smart-notifications migration the new columns are missing:
+      // save the old settings anyway instead of failing the whole row.
+      if (error && SMART_COLUMNS.some((c) => error!.message.includes(c))) {
+        SMART_COLUMNS.forEach((c) => delete row[c]);
+        ({ error } = await supabase
+          .from('notification_prefs')
+          .upsert(row, { onConflict: 'user_id' }));
+      }
       if (error) {
         notify("Couldn't save your settings", 'Check your connection and try again.');
         return false;
@@ -175,6 +196,38 @@ export default function NotificationsScreen() {
     }
   };
 
+  const toggleBusy = async (value: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (value && !(await enablePush())) return;
+      await savePrefs({ ...prefs, busy_enabled: value });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setThreshold = async (pct: number) => {
+    if (busy || pct === prefs.busy_threshold) return;
+    setBusy(true);
+    try {
+      await savePrefs({ ...prefs, busy_threshold: pct });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleChanges = async (value: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (value && !(await enablePush())) return;
+      await savePrefs({ ...prefs, changes_enabled: value });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const setRadius = async (km: number) => {
     if (busy || km === prefs.nearby_radius_km) return;
     setBusy(true);
@@ -240,6 +293,46 @@ export default function NotificationsScreen() {
         onChange={toggleReminders}
         disabled={busy}
       />
+      <SettingRow
+        title="Changes to my events"
+        description="When an event you're going to is cancelled, or gets a new time or place."
+        value={prefs.changes_enabled}
+        onChange={toggleChanges}
+        disabled={busy}
+      />
+      <SettingRow
+        title="Getting busy"
+        description="When an event you're going to, or one from an organizer you follow, fills up. Your own events too."
+        value={prefs.busy_enabled}
+        onChange={toggleBusy}
+        disabled={busy}
+      />
+      {prefs.busy_enabled && (
+        <View style={styles.radiusBox}>
+          <Text style={styles.radiusTitle}>Tell me when it is</Text>
+          <View style={styles.radiusRow}>
+            {BUSY_THRESHOLDS.map((pct) => (
+              <TouchableOpacity
+                key={pct}
+                onPress={() => setThreshold(pct)}
+                style={[styles.chip, prefs.busy_threshold === pct && styles.chipActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: prefs.busy_threshold === pct }}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    prefs.busy_threshold === pct && styles.chipTextActive,
+                  ]}
+                >
+                  {pct}% full
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.hint}>One notification per event, the first time it gets there.</Text>
+        </View>
+      )}
       <SettingRow
         title="Organizers I follow"
         description="Get a notification when an organizer you follow publishes a new event."

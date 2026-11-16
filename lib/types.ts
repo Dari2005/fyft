@@ -89,4 +89,12 @@ export interface NotificationPrefs {
   nearby_lat: number | null;
   nearby_lng: number | null;
   nearby_radius_km: number;
+  /** "Getting busy" pushes (supabase/migration_smart_notifications.sql). */
+  busy_enabled: boolean;
+  /** One of BUSY_THRESHOLDS: the % of capacity that triggers the push. */
+  busy_threshold: number;
+  /** Cancelled / new time / new place for events I'm going to. */
+  changes_enabled: boolean;
 }
+
+export const BUSY_THRESHOLDS = [50, 75, 90] as const;
