@@ -31,7 +31,14 @@ in [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
   near you; local reminder 1 h before an event you are going to.
 - **Profile:** your plans (private), your events, appearance (light / dark),
   notification settings. Sign in with email/password or Google.
-- **Report** an event (moderation happens in the Supabase dashboard).
+- **Trust:** organizers verified by Fyft get a badge on their events and
+  profile (set only in the SQL editor:
+  `update profiles set is_verified = true where username = '...'`). An event
+  reported by 3 different users is hidden for everyone except its organizer
+  until it is restored (`update parties set hidden_at = null where id = '...'`);
+  verified organizers' events are never auto-hidden. Publishing needs a
+  confirmed email, enforced in the database.
+- **Report** an event (reviewed in the Supabase dashboard).
 
 ## Project structure
 
@@ -76,6 +83,8 @@ docs/e/index.html         share-link landing page (GitHub Pages)
    8. `migration_private_rsvps.sql`
    9. `migration_close_leftovers.sql`
    10. `migration_private_follows.sql`
+   11. `migration_trust.sql` (verified organizers, auto-hide after 3 reports,
+       confirmed email required to publish)
 3. **Realtime:** only `party_counts` should be in the `supabase_realtime`
    publication (the migrations set this up). Never add `rsvps`, `follows` or
    `comments`: Realtime does not apply RLS to DELETE events, so it would leak

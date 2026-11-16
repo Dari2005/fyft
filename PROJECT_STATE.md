@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-16 (share links; README rewritten; security review of the privacy migrations: no findings)_
+_Last updated: 2026-11-16 (trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
 
 ## What this is
 
@@ -349,6 +349,25 @@ do not rename).
 
 ## Not verified yet
 
+- **Trust (2026-11-16, JS-only + `migration_trust.sql`, run by Claude in
+  Dari's Chrome)** — `profiles.is_verified` (badge on PartyCard, event page
+  host line, organizer page; read via `lib/verified.ts` in its own query so
+  the app survives a missing column), `parties.hidden_at` (auto-set after 3
+  reports by `reports_auto_hide`, not for verified organizers; "public read"
+  now = `hidden_at is null or own`; organizer sees a notice), DB refuses a new
+  event from an unconfirmed account (`guard_party_write` +
+  `current_user_confirmed()`). Clients cannot set `is_verified`/`hidden_at`
+  (invoker guard triggers keyed on `current_user`). Checked: rolled-back SQL
+  test (2 reports → visible, 3 → hidden; other user sees 0, organizer 1;
+  organizer un-hide and self-verify both blocked; confirmed user can post,
+  unconfirmed gets "Confirm your email before posting events."), anon API
+  (verified list readable, `rpc/current_user_confirmed` → 401), browser
+  (badge on event page + organizer page, no console errors). Dari's account
+  (the only real user) set `is_verified = true`. NOT verified: the badge
+  inside the card title on the phone (Svg nested in Text; no upcoming event to
+  look at in the browser), the hidden notice on screen. Moderation is manual:
+  list hidden events with
+  `select id, title, hidden_at from parties where hidden_at is not null`.
 - **Share links (2026-11-16, JS-only + static page)** — the existing Share
   button now sends title, date, venue (host name, address) and
   `https://dari2005.github.io/fyft/e/?id=<id>` (`lib/shareLink.ts`). The page
