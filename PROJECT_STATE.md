@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-16 (README rewritten to match the app; security review of the privacy migrations: no findings)_
+_Last updated: 2026-11-16 (share links; README rewritten; security review of the privacy migrations: no findings)_
 
 ## What this is
 
@@ -349,6 +349,17 @@ do not rename).
 
 ## Not verified yet
 
+- **Share links (2026-11-16, JS-only + static page)** — the existing Share
+  button now sends title, date, venue (host name, address) and
+  `https://dari2005.github.io/fyft/e/?id=<id>` (`lib/shareLink.ts`). The page
+  `docs/e/index.html` validates the uuid, opens the app via an Android
+  `intent://` link (fallback back to the page with `noapp=1`) or `fyft://`
+  elsewhere, else shows "Fyft is not on this phone". tsc + lint pass; page
+  states checked in the browser at phone width. NOT done/verified: GitHub
+  Pages must be turned on by Dari (Settings → Pages → main, /docs); link →
+  app on the phone; that the first-open sign-up screen does not hide the
+  event. Of the 4-feature prompt Dari chose only Share (Who's Going broke
+  decision 8/16; smart notifications and venue profiles left for after launch).
 - **Private follows (2026-11-15, JS-only + SQL, run)** — tsc + lint pass;
   checked: anon read of `follows` → permission denied, `follower_count` RPC
   → 200, policies in SQL, organizer profile in the browser shows

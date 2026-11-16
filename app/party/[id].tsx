@@ -23,6 +23,7 @@ import { isLiveNow, isOver } from '@/lib/tonight';
 import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
 import { crowdColor, crowdFor } from '@/lib/crowd';
 import { reportParty } from '@/lib/reports';
+import { eventShareMessage } from '@/lib/shareLink';
 import Avatar from '@/components/Avatar';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { categoryInfo } from '@/lib/categories';
@@ -222,8 +223,16 @@ export default function PartyDetailScreen() {
 
   const handleShare = () => {
     if (!party) return;
-    const lines = [party.title, formatWhen(party.starts_at), party.address, 'via Fyft'];
-    Share.share({ message: lines.filter(Boolean).join('\n') }).catch(() => {});
+    const message = eventShareMessage({
+      id: party.id,
+      title: party.title,
+      when: formatWhen(party.starts_at),
+      hostName: party.host_name,
+      address: party.address,
+    });
+    Share.share({ message }).catch(() =>
+      notify("Couldn't share", 'Your phone did not open the share menu. Try again.')
+    );
   };
 
   const goBack = () => {

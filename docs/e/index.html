@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Open in Fyft</title>
+<!--
+  Share-link landing page for Fyft events (see lib/shareLink.ts).
+  Served by GitHub Pages from /docs on main:
+    https://dari2005.github.io/fyft/e/?id=<event id>
+  It opens fyft://party/<id> in the app when installed, otherwise shows a
+  fallback. It loads nothing from Supabase and contains no keys.
+-->
+<style>
+  :root {
+    --bg: #0b0b0f; --card: #16161d; --text: #f4f4f7; --muted: #9a9aa8;
+    --accent: #ff2fb3; --border: #2a2a35;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; padding: 24px 16px; background: var(--bg);
+    color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .card {
+    width: 100%; max-width: 380px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 20px; padding: 28px 22px;
+    text-align: center;
+  }
+  .logo { font-size: 34px; font-weight: 900; letter-spacing: -0.5px; margin: 0 0 6px; }
+  .bar { display: flex; gap: 4px; justify-content: center; margin-bottom: 20px; }
+  .bar span { width: 18px; height: 6px; border-radius: 3px; background: var(--accent); }
+  .bar span:nth-child(n+3) { background: var(--border); }
+  h1 { font-size: 19px; margin: 0 0 8px; }
+  p { color: var(--muted); margin: 0 0 20px; font-size: 15px; }
+  .btn {
+    display: block; width: 100%; padding: 13px 16px; border-radius: 14px;
+    border: 1.5px solid var(--accent); color: var(--text); background: transparent;
+    font-weight: 700; font-size: 16px; text-decoration: none;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="logo">Fyft</div>
+    <div class="bar" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+    <section id="opening">
+      <h1>Opening the event in Fyft…</h1>
+      <p>If nothing happens, tap the button.</p>
+      <a id="open" class="btn" href="#">Open in Fyft</a>
+    </section>
+
+    <section id="noapp" class="hidden">
+      <h1>Fyft is not on this phone</h1>
+      <p>Fyft shows where people are going tonight in Skopje. The event details
+         are in the message you got. The app is coming to Google Play soon.</p>
+      <a id="retry" class="btn" href="#">I have Fyft, open it</a>
+    </section>
+
+    <section id="bad" class="hidden">
+      <h1>This link is broken</h1>
+      <p>Ask the person who sent it to share the event again.</p>
+    </section>
+  </main>
+
+<script>
+(function () {
+  var PACKAGE = 'com.dari2005.fyft';
+  var params = new URLSearchParams(location.search);
+  var id = params.get('id') || '';
+  // Event ids are uuids; anything else is not passed on to the app.
+  var valid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  function show(name) {
+    ['opening', 'noapp', 'bad'].forEach(function (s) {
+      document.getElementById(s).classList.toggle('hidden', s !== name);
+    });
+  }
+
+  if (!valid) { show('bad'); return; }
+
+  var deepLink = 'fyft://party/' + id;
+  var isAndroid = /Android/i.test(navigator.userAgent);
+  var here = location.origin + location.pathname + '?id=' + id;
+  // On Android an intent link opens the app, or comes back here with noapp=1.
+  var target = isAndroid
+    ? 'intent://party/' + id + '#Intent;scheme=fyft;package=' + PACKAGE +
+      ';S.browser_fallback_url=' + encodeURIComponent(here + '&noapp=1') + ';end'
+    : deepLink;
+
+  document.getElementById('open').href = target;
+  document.getElementById('retry').href = target;
+
+  if (params.get('noapp') === '1') { show('noapp'); return; }
+
+  show('opening');
+  location.href = target;
+  // If the page is still visible after a moment, the app did not open.
+  setTimeout(function () {
+    if (!document.hidden) show('noapp');
+  }, 1800);
+})();
+</script>
+</body>
+</html>

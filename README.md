@@ -22,6 +22,9 @@ in [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
   disappears once it is over.
 - **Event page:** photos and videos, host name, address, crowd meter based on
   the going count and capacity, "I'm going" (updates live for everyone).
+  **Share** sends the name, date, venue and an https link
+  (`https://dari2005.github.io/fyft/e/?id=<id>`). That page, `docs/e/index.html`
+  on GitHub Pages, opens `fyft://party/<id>` in the app or shows a fallback.
 - **Create / edit an event:** pin on the map, address search, category,
   capacity, media. Max 3 new events per user per day (enforced in the database).
 - **Follow organizers** and get a push when they publish; push for new events
@@ -53,6 +56,7 @@ supabase/                 schema.sql + migration_*.sql
 scripts/make-logo.js      renders icon / splash / favicon PNGs
 scripts/web-preview/      stubs for the browser preview (maps, notifications)
 docs/designs/             design documents
+docs/e/index.html         share-link landing page (GitHub Pages)
 ```
 
 ## Setup
@@ -88,7 +92,14 @@ docs/designs/             design documents
   the `GOOGLE_MAPS_API_KEY` environment variable. `app.config.js` injects it;
   do not paste keys into `app.json`.
 
-### 3. Run it
+### 3. Share links (GitHub Pages)
+
+In the GitHub repo: Settings → Pages → Deploy from a branch → `main`, folder
+`/docs`. Without this, shared links show GitHub's 404 page (the event details
+are still in the message text). If the repo is forked or renamed, change
+`SHARE_PAGE_URL` in `lib/shareLink.ts`.
+
+### 4. Run it
 
 ```bash
 npm install
