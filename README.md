@@ -1,140 +1,134 @@
-# Fyft 🎉
+# Fyft
 
-A mobile app (iOS + Android) where anyone can publish parties — house or club — and
-people can browse them and see how many are going (so nobody ends up at an
-empty party). Built with **React Native (Expo)** +
-**TypeScript**, backend on **Supabase** (Postgres + Auth + RLS).
+A mobile app (Android first, iOS later) for nights out in Skopje: parties,
+live music and kafana nights on a map and in a list, with a crowd meter that
+shows how many people are going. Built with **React Native (Expo SDK 57)** +
+**TypeScript** and **expo-router**; the backend is **Supabase** (Postgres,
+Auth, Row Level Security, Realtime, Storage).
 
-This is a Phase 1 MVP: everything except real ticket payments (payments are
-Phase 2 — intentionally not built here).
+**Privacy rule:** going counts are numbers only. Nobody can see who is going
+where, and there is no friends layer. RSVPs, follows and the old comments are
+private at the database level (see `docs/designs/private_rsvps.md`).
+
+Current status, standing product decisions and what is still unverified live
+in [`PROJECT_STATE.md`](PROJECT_STATE.md). Coding rules for AI assistants are
+in [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
+
+## What the app does
+
+- **Map** (landing tab) and **Events** list, sharing one filter bar: Tonight,
+  Tomorrow, This weekend, category (Party / Live / Kafana night), Following.
+  A night ends at 05:00; an event counts as live for 4 h after it starts and
+  disappears once it is over.
+- **Event page:** photos and videos, host name, address, crowd meter based on
+  the going count and capacity, "I'm going" (updates live for everyone).
+- **Create / edit an event:** pin on the map, address search, category,
+  capacity, media. Max 3 new events per user per day (enforced in the database).
+- **Follow organizers** and get a push when they publish; push for new events
+  near you; local reminder 1 h before an event you are going to.
+- **Profile:** your plans (private), your events, appearance (light / dark),
+  notification settings. Sign in with email/password or Google.
+- **Report** an event (moderation happens in the Supabase dashboard).
 
 ## Project structure
 
 ```
-app/                  # expo-router screens (file-based navigation)
-  index.tsx           # home: party list
-  map.tsx             # map: party pins, user location
-  auth.tsx            # sign in / sign up
-  create.tsx          # publish a party (tap-to-set-pin map)
-  party/[id].tsx      # event detail (crowd meter + "I'm going")
-components/           # reusable UI (PartyCard, PrimaryButton, TextField)
-hooks/                # data hooks (useParties, useRsvps, usePartyStats)
-lib/                  # supabase client, AuthContext, shared types
-constants/            # theme colors & spacing
-supabase/schema.sql   # full database schema + RLS policies (run once)
+app/                      expo-router routes
+  (tabs)/index.tsx        Map (landing tab)
+  (tabs)/list.tsx         Events list
+  (tabs)/profile.tsx      Profile
+  party/[id].tsx          event page
+  create.tsx              new / edit event (?edit=<id>)
+  auth.tsx, auth-callback.tsx   sign in / sign up, Google OAuth return
+  user/[id].tsx           organizer page (follower count + upcoming events)
+  people.tsx              find / manage organizers you follow
+  notifications.tsx       notification settings
+  _layout.tsx             providers: theme, auth, follows, dialogs
+components/               shared UI (PartyCard, EventFilterBar, Icon, Logo, ...)
+hooks/                    useParties, usePartyStats, useRsvps
+lib/                      Supabase client, contexts, filters, time logic,
+                          crowd levels, categories, going counts
+constants/theme.ts        light and dark palettes
+supabase/                 schema.sql + migration_*.sql
+scripts/make-logo.js      renders icon / splash / favicon PNGs
+scripts/web-preview/      stubs for the browser preview (maps, notifications)
+docs/designs/             design documents
 ```
 
 ## Setup
 
-1. **Create a free Supabase project** at https://supabase.com (no code needed —
-   create it in the dashboard).
-2. In the Supabase dashboard go to **SQL Editor** and run the whole contents of
-   `supabase/schema.sql`. This creates tables, RLS policies, the auto-profile
-   trigger, and the anti-spam trigger (max 3 parties per user per day).
-3. Copy `.env.example` to `.env` and fill in your project values (Dashboard →
-   Project Settings → API):
-   ```bash
-   cp .env.example .env
-   ```
-4. Install and start:
-   ```bash
-   npm install
-   npx expo start
-   ```
-   Scan the QR code with the **Expo Go** app, or press `w` for web.
+### 1. Supabase
 
-> **Note:** The map uses **Google Maps** (`react-native-maps`). It needs a
-> Google Maps API key and a **development build** — it does NOT work in
-> plain Expo Go (Expo Go's bundled key fails to load tiles on some
-> devices). Setup: (1) Google Cloud project with billing ($30 one-time
-> prepayment, refundable on account closure) → enable **Maps SDK for
-> Android** → create an API key; (2) paste the key into `app.json`
-> (`android.config.googleMaps.apiKey`, `ios.config.googleMapsApiKey`);
-> (3) `eas build --profile development --platform android`, install the
-> APK, then run `npx expo start --dev-client`.
+1. Create a project at https://supabase.com.
+2. In **SQL Editor**, run `supabase/schema.sql`, then the migrations in this
+   order (each is safe to run again):
+   1. `migration_party_type.sql`
+   2. `migration_media.sql` (also creates the public `party-media` bucket)
+   3. `migration_no_venue.sql`
+   4. `migration_ratings_chat_media.sql`
+   5. `migration_social_notifications.sql` (follows, push tokens, push trigger)
+   6. `migration_host_name.sql`
+   7. `migration_unique_username.sql`
+   8. `migration_private_rsvps.sql`
+   9. `migration_close_leftovers.sql`
+   10. `migration_private_follows.sql`
+3. **Realtime:** only `party_counts` should be in the `supabase_realtime`
+   publication (the migrations set this up). Never add `rsvps`, `follows` or
+   `comments`: Realtime does not apply RLS to DELETE events, so it would leak
+   who is going where.
+4. For Google sign-in: enable the Google provider in Authentication →
+   Providers and add `fyft://auth-callback` to the redirect URLs.
 
-## Phase 1 milestones
+### 2. Local config (never commit these, the repo is public)
 
-- **M1 — Skeleton + Auth** ✅ (this commit)
-  Expo router app, Supabase client, sign in/sign up, party list, create-party
-  form, schema.sql with RLS + 3/day anti-spam trigger.
-- **M2 — Map browse + location** ✅
-  `react-native-maps` (Google Maps provider; needs API key + dev build, see
-  note above). `app/map.tsx`: full-screen map with all parties as pins
-  (🏠 purple, 🎶 green), tap a pin to open the party detail,
-  `expo-location` foreground permission with user-location dot, Skopje
-  fallback when denied. `app/create.tsx`: tap-to-set-pin mini map + address
-  search ("🔍 Најди ја адресата на мапа" geocodes via Photon, no key) that
-  drops and zooms to the pin; manual lat/lng inputs removed (pin optional,
-  removable).
-- **M3 — RSVP + live capacity** ✅ (this commit)
-  "Доаѓам / Заинтересиран" buttons with toggle (tap again to remove),
-  live "going" count + progress bar + ПОЛНО badge (realtime subscription on
-  `rsvps`), report-party button with reason picker wired to the `reports`
-  table. Note: enable `rsvps` in Dashboard → Database → Replication for the
-  live updates to arrive from other users' devices.
-- **M4 — Comments** ✅ (removed again on 2026-11-08 — no chat in Fyft)
-  Comment list (newest first, author @usernames, mk-MK timestamps) + composer
-  with validation on the party detail screen, realtime subscription on
-  `comments`, own-comment delete with confirmation. Note: enable `comments`
-  in Dashboard → Database → Replication for live updates to arrive from
-  other users' devices.
-- **M5 — Polish & store** (in progress)
-  Navigation redesigned to a bottom tab bar (Instagram / YouTube Music
-  style): **Журки** (list) left, **Мапа** center (landing tab, full-screen
-  Google Map with ＋ create FAB), **Профил** right — profile screen shows
-  avatar initial, username/email, "Мои журки" (own published parties) and
-  sign out. Still to do: app icon, splash, EAS build for TestFlight/Play.
+- Copy `.env.example` to `.env` and fill in `EXPO_PUBLIC_SUPABASE_URL` and
+  `EXPO_PUBLIC_SUPABASE_ANON_KEY` (Project Settings → API).
+- Put the Google Maps API key (Maps SDK for Android enabled) in
+  `google-maps-key.local` (see `maps-key.txt.example`). On EAS it comes from
+  the `GOOGLE_MAPS_API_KEY` environment variable. `app.config.js` injects it;
+  do not paste keys into `app.json`.
 
-- **M6 — Social + notifications** ✅
-  - **Shared search + filters on Events and Map** (`components/EventFilterBar.tsx`,
-    `lib/eventFilters.ts`): *Tonight* / *Tomorrow* (05:00 night boundary, live
-    events included for 4 h after they start), *This weekend*,
-    *Following* (organizers you follow). On the map only matching pins are drawn. (Tonight used to be
-    its own tab; it is now a filter chip.)
-  - **Follow organizers** (`follows` table): Follow button on event pages and
-    organizer pages (`app/user/[id].tsx`), search/manage in `app/people.tsx`.
-    There is deliberately no friends layer: nobody sees who is going where;
-    Profile shows your own plans privately.
-  - **Notifications** (settings in Profile → Notifications):
-    local reminder 1 h before events you're going to; push when
-    an organizer you follow publishes; push for new events within N km of you.
+### 3. Run it
 
-## Notifications setup
+```bash
+npm install
+npx expo start --dev-client
+```
 
-1. Run `supabase/migration_social_notifications.sql` once in the SQL Editor
-   (creates `follows`, `push_tokens`, `notification_prefs` and the
-   `notify_new_party` trigger that sends pushes through the Expo push API via
-   `pg_net`).
-2. `npm install` (adds `expo-notifications`) and run `eas init` so the project
-   gets an EAS `projectId` (needed to issue push tokens).
-3. **Android pushes** need FCM credentials: create a Firebase project, add the
-   Android app `com.dari2005.fyft`, then follow
-   https://docs.expo.dev/push-notifications/fcm-credentials/ (upload the FCM
-   V1 service-account key with `eas credentials`). **iOS** needs an Apple
-   Developer account; EAS sets up the push key for you.
-4. Rebuild the development build (`eas build --profile development`) — the
-   notifications plugin changes the native project. Push does not work in Expo
-   Go on Android or on simulators/emulators without Google Play.
+The app needs a **development build** (Google Maps and push notifications do
+not work in Expo Go). Build one when native code changes (new native package,
+`app.json` plugins, icon / splash):
 
-Local reminders (1 h before) work without steps 1 and 3.
+```bash
+npx eas-cli@latest build --profile development --platform android
+```
 
-**Phase 2 (out of scope):** real ticket purchasing, payments, refunds — needs a
-legal entity and a payment provider.
+Push on Android needs FCM credentials (Firebase project for
+`com.dari2005.fyft`, uploaded with `eas credentials`). Local reminders work
+without it.
 
-## Anti-spam
+On Windows PowerShell use `npx.cmd` instead of `npx`.
 
-- Rate limit: **max 3 published parties per user per day** — enforced
-  server-side by the `party_creation_limit` trigger in `supabase/schema.sql`
-  (plus a client-side pre-check in `app/create.tsx` for nicer UX).
-- Report flow: `reports` table (one report per user per party); moderation
-  happens in the Supabase dashboard for now.
+### Browser preview
 
-## Scripts
+```bash
+npx expo start --web --port 8081
+```
 
-| Command            | What it does                          |
-|--------------------|---------------------------------------|
-| `npx expo start`   | dev server (QR for Expo Go)           |
-| `npx tsc --noEmit` | typecheck                             |
-| `npx expo lint`    | lint (if configured)                  |
-| `npx expo-doctor`  | diagnose dependency/SDK issues        |
+Good for checking layout and data. The map is a gray placeholder; Google
+sign-in, push and native pickers do not work in the browser.
+
+## Checks
+
+There is no test suite. Before calling a change done:
+
+```bash
+npx tsc --noEmit
+npx expo lint
+```
+
+Then look at it in the browser preview and on the phone.
+
+## Out of scope for now
+
+Ticket sales and payments, a friends layer, daytime events.

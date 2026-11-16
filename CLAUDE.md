@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Read first:** `AGENTS.md` (Expo rules: SDK 57, fetch versioned docs before touching Expo/RN APIs, `npx expo install` for packages, no hand-edited `ios/`/`android/`) and `PROJECT_STATE.md` (current status, standing product decisions that must not be silently reverted, fragile fixes, what is unverified on the phone). Update `PROJECT_STATE.md` at the end of a session when anything changed. `README.md` is partly out of date (old file names, old milestones) — trust the code and `PROJECT_STATE.md` over it.
+**Read first:** `AGENTS.md` (Expo rules: SDK 57, fetch versioned docs before touching Expo/RN APIs, `npx expo install` for packages, no hand-edited `ios/`/`android/`) and `PROJECT_STATE.md` (current status, standing product decisions that must not be silently reverted, fragile fixes, what is unverified on the phone). Update `PROJECT_STATE.md` at the end of a session when anything changed, and `README.md` when setup, structure, migrations or features change (the repo is public; README is its front page and must never give unsafe instructions such as adding `rsvps` to Realtime or putting keys in `app.json`).
 
 ## Commands
 

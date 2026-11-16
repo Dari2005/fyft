@@ -4,12 +4,13 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-15 (private RSVPs + party_counts, migration run)_
+_Last updated: 2026-11-16 (README rewritten to match the app; security review of the privacy migrations: no findings)_
 
 ## What this is
 
-**Fyft** — a mobile app (Android first, iOS later) for discovering ALL events in
-Skopje (concerts, parties, sports, meetups…), not just parties: map, event list,
+**Fyft** — a mobile app (Android first, iOS later) for nights out in Skopje
+(parties, live music, kafana nights — evening only, re-confirmed 2026-11-15,
+see decision 12): map, event list,
 a "Going" count with a crowd meter, follow ORGANIZERS (no friends — see
 decision 8), reminders and push notifications. No chat, no "interested".
 
@@ -536,4 +537,12 @@ do not rename).
 - Add packages with `npx expo install <pkg>`. New Supabase tables need
   explicit GRANTs + RLS in the same migration.
 - Commit per feature with clear messages; update this file when state changes.
+- Update `README.md` when setup, structure, the migration list or features
+  change (rewritten 2026-11-16 after going stale since 11-08; it had told
+  readers to add `rsvps` to Realtime and paste keys into `app.json`). New
+  migrations go at the end of its numbered run order.
+- Security review of the privacy migrations (2026-11-16, `/security-review`):
+  no exploitable findings. It caught `$` instead of `$$` in
+  `migration_social_notifications.sql` (`follower_count`), fixed in 4625ba0;
+  the live DB was not affected.
 
