@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-16 (trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
+_Last updated: 2026-11-16 (smart notifications; trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
 
 ## What this is
 
@@ -349,6 +349,26 @@ do not rename).
 
 ## Not verified yet
 
+- **Smart notifications (2026-11-16, JS-only + `migration_smart_notifications.sql`,
+  run by Claude in Dari's Chrome)** — new `notification_prefs` columns
+  `busy_enabled` (default on), `busy_threshold` (50/75/90, default 75),
+  `changes_enabled` (default on); internal `party_alerts` (once per
+  event+threshold, RLS on, no grants); `push_to_users()`; triggers
+  `notify_party_busy` (party_counts: going users, organizer's followers who
+  are not going, and the organizer, each at their own threshold) and
+  `notify_party_changed` (parties: new time / new place / cancelled → going
+  users with changes on, never the organizer). Skips hidden events and events
+  over 4 h past the start. Notifications screen: two toggles + threshold
+  chips; saving retries without the new columns if missing. Checked by a
+  rolled-back SQL test reading `net.http_request_queue`: 25 % → no push,
+  50 % → the 50 % user, crossing 50 % again → nothing, 75 % → going user +
+  follower, title-only edit → nothing, new time / new place / delete → going
+  user with changes on (the one with changes off got none). tsc + lint pass.
+  NOT verified: a real push arriving on the phone, the settings screen on the
+  phone (needs sign-in; not looked at in the browser), the organizer's "your
+  event is getting busy" push (Dari's account had no push token in the test).
+  Decision (Claude, 2026-11-16): one threshold per user rather than three
+  switches, so a follower gets at most one "busy" push per event.
 - **Trust (2026-11-16, JS-only + `migration_trust.sql`, run by Claude in
   Dari's Chrome)** — `profiles.is_verified` (badge on PartyCard, event page
   host line, organizer page; read via `lib/verified.ts` in its own query so

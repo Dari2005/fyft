@@ -27,8 +27,17 @@ in [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
   on GitHub Pages, opens `fyft://party/<id>` in the app or shows a fallback.
 - **Create / edit an event:** pin on the map, address search, category,
   capacity, media. Max 3 new events per user per day (enforced in the database).
-- **Follow organizers** and get a push when they publish; push for new events
-  near you; local reminder 1 h before an event you are going to.
+- **Notifications** (each can be turned off in Profile → Notifications):
+  - a push when an organizer you follow publishes, and for new events near you;
+  - "getting busy": once per event when it reaches 50, 75 or 90 % of its
+    capacity (you pick one), for events you are going to, events from
+    organizers you follow, and your own events;
+  - changes to events you are going to: cancelled, new time, new place;
+  - a local reminder 1 h before an event you are going to.
+
+  All pushes are sent by Postgres triggers through `pg_net` to the Expo push
+  API, so they work when nobody has the app open. Each push goes only to its
+  recipient; nobody learns who else is going.
 - **Profile:** your plans (private), your events, appearance (light / dark),
   notification settings. Sign in with email/password or Google.
 - **Trust:** organizers verified by Fyft get a badge on their events and
@@ -85,6 +94,8 @@ docs/e/index.html         share-link landing page (GitHub Pages)
    10. `migration_private_follows.sql`
    11. `migration_trust.sql` (verified organizers, auto-hide after 3 reports,
        confirmed email required to publish)
+   12. `migration_smart_notifications.sql` ("getting busy" and event-change
+       pushes)
 3. **Realtime:** only `party_counts` should be in the `supabase_realtime`
    publication (the migrations set this up). Never add `rsvps`, `follows` or
    `comments`: Realtime does not apply RLS to DELETE events, so it would leak
