@@ -377,7 +377,10 @@ export default function CreatePartyScreen() {
       if (insertError) throw insertError;
       router.replace({ pathname: '/party/[id]', params: { id: data.id } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to publish.');
+      // Supabase errors are plain objects with a message (e.g. the database
+      // refusing an unconfirmed email), not always Error instances.
+      const message = (e as { message?: unknown } | null)?.message;
+      setError(typeof message === 'string' && message ? message : 'Failed to publish.');
     } finally {
       setSaving(false);
     }

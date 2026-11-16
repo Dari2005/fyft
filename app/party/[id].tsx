@@ -24,6 +24,7 @@ import { useRsvps, type RsvpStatus } from '@/hooks/useRsvps';
 import { crowdColor, crowdFor } from '@/lib/crowd';
 import { reportParty } from '@/lib/reports';
 import { eventShareMessage } from '@/lib/shareLink';
+import { useIsVerified } from '@/lib/verified';
 import Avatar from '@/components/Avatar';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { categoryInfo } from '@/lib/categories';
@@ -78,6 +79,16 @@ function FloatButton({ icon, onPress, label }: { icon: IconName; onPress: () => 
   );
 }
 
+/** Badge next to a verified organizer's name (set by Fyft, never by users). */
+function VerifiedMark() {
+  const Colors = useColors();
+  return (
+    <View accessible accessibilityLabel="Verified organizer">
+      <Icon name="verified" size={16} color={Colors.primaryBright} strokeWidth={2.2} />
+    </View>
+  );
+}
+
 /**
  * Event detail ("Dark Glass", 2026-11-08): photo/video hero that fades into
  * the background, date line + title + type, one glass info block (place +
@@ -109,6 +120,7 @@ export default function PartyDetailScreen() {
     toggleRsvp,
     refresh: refreshRsvps,
   } = useRsvps(id, user?.id ?? null);
+  const organizerVerified = useIsVerified(party?.organizer_id);
 
   // Coming back to the page (e.g. after signing in) re-reads the count and
   // my status; the first focus duplicates the hook's own load, which is fine.
@@ -144,6 +156,7 @@ export default function PartyDetailScreen() {
           capacity: data.capacity,
           created_at: data.created_at,
           host_name: data.host_name ?? null,
+          hidden_at: data.hidden_at ?? null,
           organizer_username: data.profiles?.username ?? undefined,
         });
         setOrganizerAvatar(data.profiles?.avatar_url ?? null);
@@ -363,6 +376,16 @@ export default function PartyDetailScreen() {
             <Text style={styles.tagText}>{categoryInfo(party.party_type).label}</Text>
           </View>
 
+          {isOrganizer && party.hidden_at && (
+            <View style={styles.hiddenBox}>
+              <Icon name="flag" size={16} color={Colors.warning} />
+              <Text style={styles.hiddenText}>
+                This event is hidden because several people reported it. Only you can see it. Fyft
+                will review it; if it is real, it comes back.
+              </Text>
+            </View>
+          )}
+
           {/* Crowd meter — the main thing: will it be empty or busy? */}
           <View style={styles.meterBox}>
             <View style={styles.meterRow}>
@@ -423,17 +446,23 @@ export default function PartyDetailScreen() {
                     />
                     {party.host_name ? (
                       <View style={styles.hostText}>
-                        <Text style={styles.hostName} numberOfLines={1}>
-                          {party.host_name}
-                        </Text>
+                        <View style={styles.hostNameRow}>
+                          <Text style={styles.hostName} numberOfLines={1}>
+                            {party.host_name}
+                          </Text>
+                          {organizerVerified && <VerifiedMark />}
+                        </View>
                         <Text style={styles.hostBy} numberOfLines={1}>
                           Posted by @{party.organizer_username}
                         </Text>
                       </View>
                     ) : (
-                      <Text style={styles.hostName} numberOfLines={1}>
-                        @{party.organizer_username}
-                      </Text>
+                      <View style={styles.hostNameRow}>
+                        <Text style={styles.hostName} numberOfLines={1}>
+                          @{party.organizer_username}
+                        </Text>
+                        {organizerVerified && <VerifiedMark />}
+                      </View>
                     )}
                   </TouchableOpacity>
                 </Link>
@@ -666,6 +695,18 @@ const makeStyles = (Colors: Palette) =>
   hostInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   hostName: { color: Colors.text, fontSize: 15, fontWeight: '700', flexShrink: 1 },
   hostText: { flexShrink: 1 },
+  hostNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1 },
+  hiddenBox: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: Colors.warning,
+    borderRadius: 14,
+    padding: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  hiddenText: { flex: 1, color: Colors.text, fontSize: 13, lineHeight: 18 },
   hostBy: { color: Colors.muted, fontSize: 12, marginTop: 1 },
   description: { color: Colors.textSoft, fontSize: 15, lineHeight: 23 },
   error: { color: Colors.danger, fontSize: 14, textAlign: 'center' },

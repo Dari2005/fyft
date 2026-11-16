@@ -34,6 +34,9 @@ export interface Party {
   starts_at: string;
   capacity: number | null;
   created_at: string;
+  /** Set when 3 users reported the event; then only its organizer can see it
+   * (supabase/migration_trust.sql). Undefined before that migration. */
+  hidden_at?: string | null;
   /** Joined organizer username (from profiles) — optional, fetched via join. */
   organizer_username?: string;
 }

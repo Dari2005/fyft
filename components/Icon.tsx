@@ -28,7 +28,8 @@ export type IconName =
   | 'mic'
   | 'wine'
   | 'chevronDown'
-  | 'grid';
+  | 'grid'
+  | 'verified';
 
 /**
  * Small stroke icons drawn as inline SVG (24x24 viewBox), used instead of
@@ -200,6 +201,12 @@ export default function Icon({
         <>
           <Line x1={4.5} y1={7} x2={19.5} y2={7} {...p} />
           <Path d="M9 7V4.5h6V7M6.5 7l1 13h9l1-13" {...p} />
+        </>
+      )}
+      {name === 'verified' && (
+        <>
+          <Path d="M12 3l7 2.8v5.4c0 4.4-3 8.1-7 9.8-4-1.7-7-5.4-7-9.8V5.8z" {...p} />
+          <Path d="M8.8 12.2l2.3 2.3 4.2-4.6" {...p} />
         </>
       )}
     </Svg>

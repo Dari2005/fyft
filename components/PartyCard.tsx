@@ -7,6 +7,7 @@ import { isLiveNow } from '@/lib/tonight';
 import { crowdColor, crowdFor } from '@/lib/crowd';
 import Icon from '@/components/Icon';
 import { categoryInfo } from '@/lib/categories';
+import { useIsVerified } from '@/lib/verified';
 import type { Party, PartyStats } from '@/lib/types';
 
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -46,9 +47,11 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
       .filter(Boolean)
       .join(' · ');
   const category = categoryInfo(party.party_type);
+  const verified = useIsVerified(party.organizer_id);
   // One sentence for screen readers instead of eight separate fragments.
   const spoken = [
     party.title,
+    verified ? 'verified organizer' : null,
     live ? 'live now' : null,
     new Date(party.starts_at).toLocaleString('en-GB', {
       weekday: 'long',
@@ -93,6 +96,12 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
           <Text style={styles.when}>{formatWhen(party.starts_at)}</Text>
           <Text style={styles.title} numberOfLines={2}>
             {party.title}
+            {verified && (
+              <>
+                {' '}
+                <Icon name="verified" size={15} color={Colors.primaryBright} strokeWidth={2.2} />
+              </>
+            )}
           </Text>
           <View style={styles.placeRow}>
             <Icon name={category.icon} size={13} color={Colors.primaryBright} />

@@ -8,6 +8,8 @@ import { parsePartyMedia, type Party, type ProfileLite } from '@/lib/types';
 import { LIVE_WINDOW_MS } from '@/lib/tonight';
 import Avatar from '@/components/Avatar';
 import FollowButton from '@/components/FollowButton';
+import Icon from '@/components/Icon';
+import { useIsVerified } from '@/lib/verified';
 import PartyCard from '@/components/PartyCard';
 import { Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
@@ -42,6 +44,7 @@ export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const navigation = useNavigation();
+  const verified = useIsVerified(id);
 
   const [profile, setProfile] = useState<ProfileLite | null>(null);
   const [followers, setFollowers] = useState(0);
@@ -102,7 +105,15 @@ export default function UserProfileScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Avatar profile={profile} size={84} />
-        <Text style={styles.name}>@{profile.username ?? 'user'}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>@{profile.username ?? 'user'}</Text>
+          {verified && (
+            <View accessible accessibilityLabel="Verified organizer" style={styles.badge}>
+              <Icon name="verified" size={20} color={Colors.primaryBright} strokeWidth={2.2} />
+            </View>
+          )}
+        </View>
+        {verified && <Text style={styles.verifiedNote}>Verified by Fyft</Text>}
         <View style={styles.statsRow}>
           <Text style={styles.stat}>
             <Text style={styles.statNum}>{followers}</Text> followers
@@ -128,7 +139,10 @@ const makeStyles = (Colors: Palette) =>
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
   error: { color: Colors.danger, fontSize: 14 },
   header: { alignItems: 'center', paddingVertical: Spacing.lg, gap: Spacing.xs },
-  name: { color: Colors.text, fontSize: 22, fontWeight: '800', marginTop: Spacing.xs },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.xs },
+  name: { color: Colors.text, fontSize: 22, fontWeight: '800' },
+  badge: { marginTop: 2 },
+  verifiedNote: { color: Colors.primaryBright, fontSize: 12, fontWeight: '700' },
   statsRow: { flexDirection: 'row', gap: Spacing.lg, marginBottom: Spacing.sm },
   stat: { color: Colors.muted, fontSize: 14 },
   statNum: { color: Colors.text, fontWeight: '800' },
