@@ -613,7 +613,12 @@ do not rename).
    still nullable for old events).
 4. ~~`usePartyStats` loads all "going" rows client-side~~ — done 2026-11-15
    (`party_counts`, decision 16).
-5. Moderation is manual (reports table); auto-hide after N reports planned.
+5. Moderation is manual (reports table); ~~auto-hide after N reports~~ done
+   2026-11-16 (`migration_trust.sql`, 3 reports).
+8. **Launch blockers found 2026-11-20** (not built): in-app account deletion
+   (Google Play requires it for apps with sign-up, plus a web link), a
+   privacy policy page linked from the app and the store listing, and
+   "Forgot password" on the sign-in screen.
 6. Get 5–10 real organizers publishing regularly (the app is useless empty).
 7. Songkick auto-import of Skopje concerts is the planned content seed
    (needs Dari's free Songkick API key, kept server-side).
