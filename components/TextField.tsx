@@ -31,7 +31,7 @@ const makeStyles = (Colors: Palette) =>
     backgroundColor: Colors.surface,
     color: Colors.text,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.inputBorder,
     borderRadius: 12,
     paddingHorizontal: Spacing.md,
     paddingVertical: 12,

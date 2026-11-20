@@ -82,7 +82,8 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
           {cover ? (
             <Image source={{ uri: cover.url }} style={styles.mediaImage} resizeMode="cover" />
           ) : (
-            <Icon name="calendar" size={28} color={Colors.primaryBright} />
+            // No photo: the event's category icon, big, instead of a generic calendar.
+            <Icon name={category.icon} size={46} color={Colors.primaryBright} strokeWidth={1.5} />
           )}
           {live && (
             <View style={styles.live}>
@@ -105,7 +106,9 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
           </Text>
           <View style={styles.placeRow}>
             <Icon name={category.icon} size={13} color={Colors.primaryBright} />
-            <Text style={styles.category}>{category.label}</Text>
+            <Text style={styles.category} numberOfLines={1}>
+              {category.label}
+            </Text>
             {place !== '' && (
               <Text style={styles.place} numberOfLines={1}>
                 {`· ${place}`}
@@ -175,7 +178,8 @@ const makeStyles = (Colors: Palette) =>
     when: { color: Colors.primaryBright, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
     title: { color: Colors.text, fontSize: 17, fontWeight: '700' },
     placeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    category: { color: Colors.textSoft, fontSize: 13, fontWeight: '700' },
+    // Never shrinks: the place is the part that gets cut ("Live music" stays one line).
+    category: { flexShrink: 0, color: Colors.textSoft, fontSize: 13, fontWeight: '700' },
     place: { flexShrink: 1, color: Colors.muted, fontSize: 13 },
     meter: {
       gap: 6,

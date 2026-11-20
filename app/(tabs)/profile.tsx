@@ -149,7 +149,7 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <Icon name="users" size={44} color={Colors.muted} strokeWidth={1.6} />
+        <Icon name="user" size={44} color={Colors.muted} strokeWidth={1.6} />
         <Text style={styles.title}>You are not signed in</Text>
         <Text style={styles.subtitle}>Sign in to publish events and keep track of your plans.</Text>
         <Link href="/auth" asChild>

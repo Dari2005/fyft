@@ -466,7 +466,10 @@ export default function PartyDetailScreen() {
                     )}
                   </TouchableOpacity>
                 </Link>
-                {!isOrganizer && (
+                {/* With a venue name, Follow would look like following the
+                    venue but follows the posting account, so it lives on that
+                    account's page instead. */}
+                {!isOrganizer && !party.host_name && (
                   <FollowButton
                     compact
                     profile={{

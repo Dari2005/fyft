@@ -29,7 +29,8 @@ export type IconName =
   | 'wine'
   | 'chevronDown'
   | 'grid'
-  | 'verified';
+  | 'verified'
+  | 'user';
 
 /**
  * Small stroke icons drawn as inline SVG (24x24 viewBox), used instead of
@@ -201,6 +202,12 @@ export default function Icon({
         <>
           <Line x1={4.5} y1={7} x2={19.5} y2={7} {...p} />
           <Path d="M9 7V4.5h6V7M6.5 7l1 13h9l1-13" {...p} />
+        </>
+      )}
+      {name === 'user' && (
+        <>
+          <Circle cx={12} cy={8.5} r={3.6} {...p} />
+          <Path d="M5 20v-.8c0-3.1 3.1-5.2 7-5.2s7 2.1 7 5.2v.8" {...p} />
         </>
       )}
       {name === 'verified' && (

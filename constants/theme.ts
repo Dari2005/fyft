@@ -31,6 +31,8 @@ export interface Palette {
   textSoft: string;
   muted: string;
   border: string;
+  /** Edge of text fields: must reach 3:1 against surface (WCAG 1.4.11). */
+  inputBorder: string;
   /** Hairline divider inside cards. */
   divider: string;
   /** Empty part of the crowd meter bar — must stay visible on `surface`. */
@@ -61,6 +63,7 @@ export const darkColors: Palette = {
   textSoft: '#d0d0d8',
   muted: '#8e8e9a',
   border: '#4a2748',
+  inputBorder: '#94508f',
   divider: '#4a2748',
   track: '#3d3d4a',
   danger: '#ef4444',
@@ -86,6 +89,7 @@ export const lightColors: Palette = {
   textSoft: '#3a3c44',
   muted: '#62646d',
   border: '#d2d4da',
+  inputBorder: '#80838c',
   divider: '#e6e7eb',
   track: '#c9ccd3',
   danger: '#dc2626',

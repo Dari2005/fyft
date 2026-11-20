@@ -162,7 +162,7 @@ const makeStyles = (Colors: Palette) =>
     alignItems: 'center',
     backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.inputBorder,
     borderRadius: 14,
     marginHorizontal: Spacing.md,
     paddingHorizontal: Spacing.sm,
