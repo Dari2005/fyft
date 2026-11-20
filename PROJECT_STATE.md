@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-16 (smart notifications; trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
+_Last updated: 2026-11-20 (design + accessibility review; smart notifications; trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
 
 ## What this is
 
@@ -348,6 +348,20 @@ do not rename).
   works from it anymore.
 
 ## Not verified yet
+
+- **Design critique + accessibility review (2026-11-20, no code changed)** —
+  browser preview at 375 px, dark and light, with 2 temporary
+  "DESIGN TEST" events (inserted with fake counts, then deleted). Text
+  contrast passes AA in both themes (muted 5.6–6.1:1 dark, 4.8–5.9:1 light).
+  Open findings, not fixed yet: (1) on the event page a host name shows
+  "Stanica 26 · Follow" but Follow follows the posting account, not the
+  venue; (2) text-field and search borders are 1.2–1.5:1 (WCAG 1.4.11 wants
+  3:1 for input edges); (3) card category "Live music" wraps to two lines
+  and squeezes the place; (4) cards without a photo spend a third of the width
+  on a calendar icon; (5) signed-out Profile uses the two-people icon (reads
+  as "friends"); (6) Follow button 84x31 and Directions 96x28 (Directions has
+  hitSlop; Follow compact to check). Signed-in screens (Profile, Create,
+  Notifications) were not seen — needs Dari signed in.
 
 - **Smart notifications (2026-11-16, JS-only + `migration_smart_notifications.sql`,
   run by Claude in Dari's Chrome)** — new `notification_prefs` columns
