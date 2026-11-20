@@ -34,6 +34,9 @@ export interface Party {
   starts_at: string;
   capacity: number | null;
   created_at: string;
+  /** Where it happens (lib/venues.ts); separate from who listed it
+   * (organizer_id). Undefined before migration_venues.sql. */
+  venue_id?: string | null;
   /** Set when 3 users reported the event; then only its organizer can see it
    * (supabase/migration_trust.sql). Undefined before that migration. */
   hidden_at?: string | null;

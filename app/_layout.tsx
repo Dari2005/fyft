@@ -108,6 +108,7 @@ function ThemedStack() {
         <Stack.Screen name="create" options={{ title: 'New Event' }} />
         <Stack.Screen name="party/[id]" options={{ title: 'Event', headerShown: false }} />
         <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
+        <Stack.Screen name="venue/[id]" options={{ title: 'Venue' }} />
         <Stack.Screen name="people" options={{ title: 'Organizers' }} />
         <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
       </Stack>

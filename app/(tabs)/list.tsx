@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/AuthContext';
 import { useDialog } from '@/lib/DialogContext';
 import { useSocial } from '@/lib/SocialContext';
+import { useVenues } from '@/lib/venues';
 import { useParties } from '@/hooks/useParties';
 import { usePartyStats } from '@/hooks/usePartyStats';
 import { haversineKm } from '@/lib/geo';
@@ -61,7 +62,9 @@ export default function PartyListScreen() {
   const { notify } = useDialog();
   const { parties, loading, error, refresh } = useParties();
   const { stats, refresh: refreshStats } = usePartyStats();
-  const { followingIds, refresh: refreshSocial } = useSocial();
+  const { followingIds, isFollowingVenue, refresh: refreshSocial } = useSocial();
+  const { venues } = useVenues();
+  const venueNames = useMemo(() => new Map(venues.map((v) => [v.id, v.name])), [venues]);
   const insets = useSafeAreaInsets();
   const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
   const [sort, setSort] = useState<SortMode>('soonest');
@@ -112,7 +115,7 @@ export default function PartyListScreen() {
 
   const sections = useMemo<Section[]>(() => {
     const now = new Date();
-    const matches = makeEventMatcher(filters, { now, followingIds });
+    const matches = makeEventMatcher(filters, { now, followingIds, followedVenue: isFollowingVenue, venueNames });
     const list = parties.filter(matches).sort((a, b) => {
       switch (sort) {
         case 'nearest': {
@@ -141,7 +144,7 @@ export default function PartyListScreen() {
       else out.push({ key: g.key, title: g.title, data: [p] });
     }
     return out;
-  }, [parties, filters, followingIds, sort, stats, distanceOf]);
+  }, [parties, filters, followingIds, isFollowingVenue, venueNames, sort, stats, distanceOf]);
 
   /**
    * Empty "Tonight / Tomorrow / This weekend": instead of a dead end, offer
@@ -151,7 +154,7 @@ export default function PartyListScreen() {
     if (sections.length > 0 || filters.time === 'all') return null;
     const now = new Date();
     const count = (time: TimeFilter) =>
-      parties.filter(makeEventMatcher({ ...filters, time }, { now, followingIds })).length;
+      parties.filter(makeEventMatcher({ ...filters, time }, { now, followingIds, followedVenue: isFollowingVenue, venueNames })).length;
     const when =
       filters.time === 'tonight'
         ? nightWindows(now).tonightLabel.toLowerCase()
@@ -178,7 +181,7 @@ export default function PartyListScreen() {
       };
     }
     return null;
-  }, [sections, filters, parties, followingIds]);
+  }, [sections, filters, parties, followingIds, isFollowingVenue, venueNames]);
 
   const isFiltering = hasFilters(filters);
   const needsLogin = !user && filters.people !== 'all';

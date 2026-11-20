@@ -27,6 +27,10 @@ export const DEFAULT_FILTERS: EventFilters = {
 export interface FilterContext {
   now: Date;
   followingIds: Set<string>;
+  /** Venues the user follows: their events count as "Following" too. */
+  followedVenue?: (venueId: string) => boolean;
+  /** For search: venue names by id (lib/venues). */
+  venueNames?: Map<string, string>;
 }
 
 export function isFiltering(f: EventFilters): boolean {
@@ -75,6 +79,7 @@ export function makeEventMatcher(
         p.title.toLowerCase().includes(q) ||
         (p.address?.toLowerCase().includes(q) ?? false) ||
         (p.host_name?.toLowerCase().includes(q) ?? false) ||
+        ((p.venue_id && ctx.venueNames?.get(p.venue_id)?.toLowerCase().includes(q)) ?? false) ||
         categoryInfo(p.party_type).label.toLowerCase().includes(q)
       )
     ) {
@@ -83,7 +88,13 @@ export function makeEventMatcher(
 
     if (f.category !== 'all' && categoryOf(p.party_type) !== f.category) return false;
 
-    if (f.people === 'following' && !ctx.followingIds.has(p.organizer_id)) return false;
+    if (
+      f.people === 'following' &&
+      !ctx.followingIds.has(p.organizer_id) &&
+      !(p.venue_id && ctx.followedVenue?.(p.venue_id))
+    ) {
+      return false;
+    }
 
     const start = new Date(p.starts_at);
     const t = start.getTime();

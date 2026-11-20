@@ -25,6 +25,7 @@ import { crowdColor, crowdFor } from '@/lib/crowd';
 import { reportParty } from '@/lib/reports';
 import { eventShareMessage } from '@/lib/shareLink';
 import { useIsVerified } from '@/lib/verified';
+import { useVenue } from '@/lib/venues';
 import Avatar from '@/components/Avatar';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { categoryInfo } from '@/lib/categories';
@@ -121,6 +122,7 @@ export default function PartyDetailScreen() {
     refresh: refreshRsvps,
   } = useRsvps(id, user?.id ?? null);
   const organizerVerified = useIsVerified(party?.organizer_id);
+  const venue = useVenue(party?.venue_id);
 
   // Coming back to the page (e.g. after signing in) re-reads the count and
   // my status; the first focus duplicates the hook's own load, which is fine.
@@ -156,6 +158,7 @@ export default function PartyDetailScreen() {
           capacity: data.capacity,
           created_at: data.created_at,
           host_name: data.host_name ?? null,
+          venue_id: data.venue_id ?? null,
           hidden_at: data.hidden_at ?? null,
           organizer_username: data.profiles?.username ?? undefined,
         });
@@ -240,7 +243,7 @@ export default function PartyDetailScreen() {
       id: party.id,
       title: party.title,
       when: formatWhen(party.starts_at),
-      hostName: party.host_name,
+      hostName: venue?.name ?? party.host_name,
       address: party.address,
     });
     Share.share({ message }).catch(() =>
@@ -428,7 +431,47 @@ export default function PartyDetailScreen() {
             )}
           </View>
 
-          {party.organizer_username && (
+          {/* With a venue, the venue is the public identity: tap for its page,
+              Follow follows the VENUE. The listing account is a small line. */}
+          {venue && (
+            <>
+              <Text style={styles.sectionTitle}>Venue</Text>
+              <View style={styles.hostBox}>
+                <Link href={{ pathname: '/venue/[id]', params: { id: venue.id } }} asChild>
+                  <TouchableOpacity
+                    style={styles.hostInfo}
+                    activeOpacity={0.7}
+                    accessibilityRole="link"
+                    accessibilityLabel={`${venue.name}, open venue`}
+                  >
+                    <Avatar profile={{ username: venue.name, avatar_url: venue.image_url }} size={34} />
+                    <View style={styles.hostText}>
+                      <Text style={styles.hostName} numberOfLines={1}>
+                        {venue.name}
+                      </Text>
+                      {venue.address ? (
+                        <Text style={styles.hostBy} numberOfLines={1}>
+                          {venue.address}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                </Link>
+                <FollowButton compact venue={{ id: venue.id, name: venue.name }} />
+              </View>
+              {party.organizer_username && (
+                <Link href={{ pathname: '/user/[id]', params: { id: party.organizer_id } }} asChild>
+                  <TouchableOpacity style={styles.listedBy} hitSlop={8}>
+                    <Text style={styles.listedByText}>
+                      {organizerVerified ? 'Listed by Fyft' : `Listed by @${party.organizer_username}`}
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              )}
+            </>
+          )}
+
+          {!venue && party.organizer_username && (
             <>
               <Text style={styles.sectionTitle}>Hosted by</Text>
               <View style={styles.hostBox}>
@@ -699,6 +742,8 @@ const makeStyles = (Colors: Palette) =>
   hostName: { color: Colors.text, fontSize: 15, fontWeight: '700', flexShrink: 1 },
   hostText: { flexShrink: 1 },
   hostNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1 },
+  listedBy: { alignSelf: 'flex-start', marginTop: Spacing.xs, paddingVertical: 2 },
+  listedByText: { color: Colors.muted, fontSize: 12 },
   hiddenBox: {
     flexDirection: 'row',
     gap: Spacing.sm,

@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useParties } from '@/hooks/useParties';
 import { usePartyStats } from '@/hooks/usePartyStats';
 import { useSocial } from '@/lib/SocialContext';
+import { useVenues } from '@/lib/venues';
 import {
   DEFAULT_FILTERS,
   isFiltering as hasFilters,
@@ -40,7 +41,9 @@ export default function MapScreen() {
   const styles = useThemedStyles(makeStyles);
   const { user } = useAuth();
   const { parties, loading, error, refresh } = useParties();
-  const { followingIds, refresh: refreshSocial } = useSocial();
+  const { followingIds, isFollowingVenue, refresh: refreshSocial } = useSocial();
+  const { venues } = useVenues();
+  const venueNames = useMemo(() => new Map(venues.map((v) => [v.id, v.name])), [venues]);
   const { stats, refresh: refreshStats } = usePartyStats();
   const insets = useSafeAreaInsets();
   const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
@@ -112,9 +115,9 @@ export default function MapScreen() {
   );
   // Same search + filters as the Events tab; only matching pins are drawn.
   const pinned = useMemo(() => {
-    const matches = makeEventMatcher(filters, { now: new Date(), followingIds });
+    const matches = makeEventMatcher(filters, { now: new Date(), followingIds, followedVenue: isFollowingVenue, venueNames });
     return located.filter(matches);
-  }, [located, filters, followingIds]);
+  }, [located, filters, followingIds, isFollowingVenue, venueNames]);
   const selected = pinned.find((p) => p.id === selectedId) ?? null;
 
   /**

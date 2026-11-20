@@ -28,6 +28,8 @@ import PrimaryButton from '@/components/PrimaryButton';
 import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import { parsePartyMedia, type PartyMedia } from '@/lib/types';
+import { useIsVerified } from '@/lib/verified';
+import { useVenues, type Venue } from '@/lib/venues';
 
 /** Default map region: Skopje center. */
 const SKOPJE_REGION: Region = {
@@ -55,6 +57,18 @@ export default function CreatePartyScreen() {
   const [description, setDescription] = useState('');
   /** Optional club / host name, shown instead of the posting account. */
   const [hostName, setHostName] = useState('');
+  /** Venue (lib/venues): only verified organizers may pick one (the DB
+   * enforces it too, see migration_venues.sql). */
+  const canPickVenue = useIsVerified(user?.id);
+  const { venues } = useVenues();
+  const [venueId, setVenueId] = useState<string | null>(null);
+  const [venueQuery, setVenueQuery] = useState('');
+  const selectedVenue = venues.find((v) => v.id === venueId) ?? null;
+  const venueMatches = (() => {
+    const q = venueQuery.trim().toLowerCase();
+    if (!q) return [];
+    return venues.filter((v) => v.name.toLowerCase().includes(q)).slice(0, 6);
+  })();
   const [category, setCategory] = useState<CategoryKey | null>(null);
   const [startsAt, setStartsAt] = useState<Date>(() => {
     const d = new Date();
@@ -110,6 +124,7 @@ export default function CreatePartyScreen() {
       setStartsAt(new Date(data.starts_at));
       setAddress(data.address ?? '');
       setHostName(data.host_name ?? '');
+      setVenueId(data.venue_id ?? null);
       if (data.latitude != null && data.longitude != null) {
         setPin({ latitude: data.latitude, longitude: data.longitude });
       }
@@ -118,6 +133,20 @@ export default function CreatePartyScreen() {
       setLoadingParty(false);
     })();
   }, [editId, user]);
+
+  /** Choosing a venue also fills the address and the map pin from it. */
+  const chooseVenue = (v: Venue) => {
+    setVenueId(v.id);
+    setVenueQuery('');
+    if (v.address) setAddress(v.address);
+    if (v.latitude != null && v.longitude != null) {
+      setPin({ latitude: v.latitude, longitude: v.longitude });
+      mapRef.current?.animateToRegion(
+        { latitude: v.latitude, longitude: v.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+        500
+      );
+    }
+  };
 
   /** Pick photos/videos from the library (max MAX_MEDIA_ITEMS per party). */
   const pickMedia = async () => {
@@ -297,12 +326,16 @@ export default function CreatePartyScreen() {
           capacity: cap,
           media: [...existingMedia, ...uploaded],
         };
+        // Only verified organizers touch venue_id (others keep whatever is there).
+        if (canPickVenue) changes.venue_id = venueId;
         let { error: updErr } = await supabase.from('parties').update(changes).eq('id', editId);
-        // host_name column not there yet (migration_host_name.sql not run):
-        // save everything else rather than failing the whole edit.
-        if (updErr?.message.includes('host_name')) {
-          delete changes.host_name;
-          ({ error: updErr } = await supabase.from('parties').update(changes).eq('id', editId));
+        // A column not there yet (migration not run): save everything else
+        // rather than failing the whole edit.
+        for (const col of ['host_name', 'venue_id']) {
+          if (updErr?.message.includes(col)) {
+            delete changes[col];
+            ({ error: updErr } = await supabase.from('parties').update(changes).eq('id', editId));
+          }
         }
         if (updErr) throw updErr;
         router.replace({ pathname: '/party/[id]', params: { id: editId } });
@@ -343,6 +376,7 @@ export default function CreatePartyScreen() {
         capacity: cap,
         media,
       };
+      if (canPickVenue && venueId) payload.venue_id = venueId;
 
       let insertResult = await supabase
         .from('parties')
@@ -354,7 +388,7 @@ export default function CreatePartyScreen() {
       // retired — if the DB still requires it, satisfy it with a default.
       if (insertResult.error) {
         let dropped = false;
-        for (const col of ['media', 'party_type', 'host_name']) {
+        for (const col of ['media', 'party_type', 'host_name', 'venue_id']) {
           if (insertResult.error.message.includes(col)) {
             delete payload[col];
             dropped = true;
@@ -503,8 +537,71 @@ export default function CreatePartyScreen() {
           />
         </View>
 
-        {/* Host: optional. Shown on the event page instead of the account
-            that posted it (one account often posts for many venues). */}
+        {/* Venue (verified organizers only): picked from the venue list, so
+            the event is linked to the venue people follow. */}
+        {canPickVenue && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Venue</Text>
+            {selectedVenue ? (
+              <View style={styles.field}>
+                <Icon name="pin" size={16} color={Colors.primaryBright} />
+                <Text style={[styles.fieldText, styles.venueChosen]} numberOfLines={1}>
+                  {selectedVenue.name}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setVenueId(null)}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove venue ${selectedVenue.name}`}
+                >
+                  <Icon name="close" size={18} color={Colors.muted} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <View style={styles.field}>
+                  <Icon name="search" size={16} color={Colors.muted} />
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={venueQuery}
+                    onChangeText={setVenueQuery}
+                    placeholder={venues.length ? 'Search venues' : 'No venues yet'}
+                    placeholderTextColor={Colors.muted}
+                    accessibilityLabel="Search venues"
+                    editable={venues.length > 0}
+                  />
+                </View>
+                {venueMatches.map((v) => (
+                  <TouchableOpacity
+                    key={v.id}
+                    style={styles.venueOption}
+                    onPress={() => chooseVenue(v)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Choose ${v.name}`}
+                  >
+                    <Text style={styles.fieldText} numberOfLines={1}>
+                      {v.name}
+                    </Text>
+                    {v.address ? (
+                      <Text style={styles.venueOptionAddress} numberOfLines={1}>
+                        {v.address}
+                      </Text>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+                {venueQuery.trim() !== '' && venueMatches.length === 0 && (
+                  <Text style={styles.hint}>
+                    No venue with that name. Add it in Supabase, or leave this empty.
+                  </Text>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {/* Host: optional free text, for events without a venue. Shown on the
+            event page instead of the account that posted it. */}
+        {!selectedVenue && (
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Who is hosting?</Text>
           <View style={styles.field}>
@@ -519,6 +616,7 @@ export default function CreatePartyScreen() {
             />
           </View>
         </View>
+        )}
 
         {/* Category: required, one of the fixed three (lib/categories). */}
         <View style={styles.section}>
@@ -816,6 +914,14 @@ const makeStyles = (Colors: Palette) =>
   },
   fieldText: { color: Colors.text, fontSize: 15, fontWeight: '600' },
   fieldInput: { flex: 1, color: Colors.text, fontSize: 15, paddingVertical: 10 },
+  venueChosen: { flex: 1, paddingVertical: 10 },
+  venueOption: {
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  venueOptionAddress: { color: Colors.muted, fontSize: 12, marginTop: 2 },
   dateRow: { flexDirection: 'row', gap: Spacing.sm },
   dateField: { flex: 1 },
   pickerDone: { alignSelf: 'flex-end', paddingVertical: 4 },

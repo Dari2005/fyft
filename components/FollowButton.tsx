@@ -7,30 +7,48 @@ import { outline, Spacing, type Palette } from '@/constants/theme';
 import { useColors, useThemedStyles } from '@/lib/ThemeContext';
 import type { ProfileLite } from '@/lib/types';
 
-interface FollowButtonProps {
-  profile: ProfileLite;
+type FollowButtonProps = {
   /** Compact pill for list rows; default is a slightly larger button. */
   compact?: boolean;
-}
+  /** Called after a successful follow / unfollow (e.g. to update a count). */
+  onChange?: (following: boolean) => void;
+} & (
+  | { profile: ProfileLite; venue?: undefined }
+  | { venue: { id: string; name: string }; profile?: undefined }
+);
 
-/** Follow / Following toggle. Sends signed-out users to the sign-in screen. */
-export default function FollowButton({ profile, compact = false }: FollowButtonProps) {
+/**
+ * Follow / Following toggle for an organizer (profile) or a venue.
+ * Sends signed-out users to the sign-in screen.
+ */
+export default function FollowButton({ profile, venue, compact = false, onChange }: FollowButtonProps) {
   const Colors = useColors();
   const styles = useThemedStyles(makeStyles);
-  const { isFollowing, follow, unfollow } = useSocial();
+  const { isFollowing, follow, unfollow, isFollowingVenue, followVenue, unfollowVenue } =
+    useSocial();
   const { ask, notify } = useDialog();
   const [busy, setBusy] = useState(false);
-  const active = isFollowing(profile.id);
+  const active = venue ? isFollowingVenue(venue.id) : isFollowing(profile!.id);
+  const name = venue ? venue.name : profile!.username;
 
   const onPress = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const result = active ? await unfollow(profile.id) : await follow(profile);
+      const result = venue
+        ? active
+          ? await unfollowVenue(venue.id)
+          : await followVenue(venue.id)
+        : active
+          ? await unfollow(profile!.id)
+          : await follow(profile!);
+      if (result === 'ok') onChange?.(!active);
       if (result === 'logged-out') {
         ask({
           title: 'Sign in to follow',
-          message: 'Follow organizers to hear about their next events.',
+          message: venue
+            ? `Follow ${venue.name} to hear about its next events.`
+            : 'Follow organizers to hear about their next events.',
           confirmLabel: 'Sign in',
           onConfirm: () => router.push('/auth'),
         });
@@ -51,7 +69,7 @@ export default function FollowButton({ profile, compact = false }: FollowButtonP
       accessibilityRole="button"
       accessibilityState={{ selected: active, busy }}
       accessibilityLabel={
-        active ? `Following ${profile.username}. Tap to unfollow.` : `Follow ${profile.username}`
+        active ? `Following ${name}. Tap to unfollow.` : `Follow ${name}`
       }
       style={[
         styles.base,

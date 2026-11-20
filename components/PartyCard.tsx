@@ -8,6 +8,7 @@ import { crowdColor, crowdFor } from '@/lib/crowd';
 import Icon from '@/components/Icon';
 import { categoryInfo } from '@/lib/categories';
 import { useIsVerified } from '@/lib/verified';
+import { useVenue } from '@/lib/venues';
 import type { Party, PartyStats } from '@/lib/types';
 
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -42,8 +43,10 @@ export default function PartyCard({ party, stats, distanceKm }: PartyCardProps) 
   const crowd = crowdFor(going, party.capacity);
   const tint = crowdColor(crowd.level, Colors);
   const cover = party.media.find((m) => m.type === 'image');
+  // The venue name is what people recognize; the address is the fallback.
+  const venue = useVenue(party.venue_id);
   const place =
-    [party.address, distanceKm != null ? formatDistance(distanceKm) : null]
+    [venue?.name ?? party.address, distanceKm != null ? formatDistance(distanceKm) : null]
       .filter(Boolean)
       .join(' · ');
   const category = categoryInfo(party.party_type);

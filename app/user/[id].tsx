@@ -29,6 +29,7 @@ function mapParty(row: Record<string, any>): Party {
     capacity: row.capacity,
     created_at: row.created_at,
     host_name: row.host_name ?? null,
+    venue_id: row.venue_id ?? null,
     organizer_username: row.profiles?.username ?? undefined,
   };
 }

@@ -21,6 +21,10 @@ interface SocialContextValue {
   follow: (profile: ProfileLite) => Promise<'ok' | 'logged-out' | 'error'>;
   unfollow: (userId: string) => Promise<'ok' | 'error'>;
   refresh: () => Promise<void>;
+  /** Venues the signed-in user follows (venue_followers, own rows only). */
+  isFollowingVenue: (venueId: string) => boolean;
+  followVenue: (venueId: string) => Promise<'ok' | 'logged-out' | 'error'>;
+  unfollowVenue: (venueId: string) => Promise<'ok' | 'error'>;
 }
 
 const SocialContext = createContext<SocialContextValue | null>(null);
@@ -47,12 +51,22 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const userId = user?.id ?? null;
   const [following, setFollowing] = useState<ProfileLite[]>([]);
   const [loading, setLoading] = useState(false);
+  const [venueIds, setVenueIds] = useState<Set<string>>(new Set());
 
   const refresh = useCallback(async () => {
     if (!userId) {
       setFollowing([]);
+      setVenueIds(new Set());
       return;
     }
+    // Venue follows: optional until migration_venues.sql is run.
+    supabase
+      .from('venue_followers')
+      .select('venue_id')
+      .eq('user_id', userId)
+      .then(({ data, error }) => {
+        if (!error) setVenueIds(new Set((data ?? []).map((r) => r.venue_id as string)));
+      });
     try {
       const { data, error } = await supabase
         .from('follows')
@@ -115,6 +129,48 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     [userId, following, refresh]
   );
 
+  const followVenue = useCallback<SocialContextValue['followVenue']>(
+    async (venueId) => {
+      if (!userId) return 'logged-out';
+      setVenueIds((prev) => new Set(prev).add(venueId));
+      const { error } = await supabase
+        .from('venue_followers')
+        .insert({ user_id: userId, venue_id: venueId });
+      if (error && error.code !== '23505') {
+        setVenueIds((prev) => {
+          const next = new Set(prev);
+          next.delete(venueId);
+          return next;
+        });
+        return 'error';
+      }
+      return 'ok';
+    },
+    [userId]
+  );
+
+  const unfollowVenue = useCallback<SocialContextValue['unfollowVenue']>(
+    async (venueId) => {
+      if (!userId) return 'error';
+      setVenueIds((prev) => {
+        const next = new Set(prev);
+        next.delete(venueId);
+        return next;
+      });
+      const { error } = await supabase
+        .from('venue_followers')
+        .delete()
+        .eq('user_id', userId)
+        .eq('venue_id', venueId);
+      if (error) {
+        setVenueIds((prev) => new Set(prev).add(venueId));
+        return 'error';
+      }
+      return 'ok';
+    },
+    [userId]
+  );
+
   const followingIds = useMemo(() => new Set(following.map((p) => p.id)), [following]);
 
   const value = useMemo<SocialContextValue>(
@@ -126,8 +182,11 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       follow,
       unfollow,
       refresh,
+      isFollowingVenue: (id: string) => venueIds.has(id),
+      followVenue,
+      unfollowVenue,
     }),
-    [following, followingIds, loading, follow, unfollow, refresh]
+    [following, followingIds, loading, follow, unfollow, refresh, venueIds, followVenue, unfollowVenue]
   );
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
