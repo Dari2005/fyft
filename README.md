@@ -40,6 +40,15 @@ in [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
   recipient; nobody learns who else is going.
 - **Profile:** your plans (private), your events, appearance (light / dark),
   notification settings. Sign in with email/password or Google.
+- **Venues** (clubs, bars, kafanas, concert places): a venue is not an
+  account. An event has `organizer_id` (who listed it) and an optional
+  `venue_id` (where it happens). People follow venues and get "New event at
+  <venue>" pushes; each venue has a simple page with its address, follower
+  count and upcoming events. Only verified organizers can pick a venue when
+  publishing (enforced in the database). Venues are added in the SQL editor:
+  `insert into venues (name, address, latitude, longitude) values (...)`,
+  then `select link_events_to_venues();` links older events whose host name
+  matches.
 - **Trust:** organizers verified by Fyft get a badge on their events and
   profile (set only in the SQL editor:
   `update profiles set is_verified = true where username = '...'`). An event
@@ -60,6 +69,7 @@ app/                      expo-router routes
   create.tsx              new / edit event (?edit=<id>)
   auth.tsx, auth-callback.tsx   sign in / sign up, Google OAuth return
   user/[id].tsx           organizer page (follower count + upcoming events)
+  venue/[id].tsx          venue page (address, followers, upcoming events)
   people.tsx              find / manage organizers you follow
   notifications.tsx       notification settings
   _layout.tsx             providers: theme, auth, follows, dialogs
@@ -96,6 +106,7 @@ docs/e/index.html         share-link landing page (GitHub Pages)
        confirmed email required to publish)
    12. `migration_smart_notifications.sql` ("getting busy" and event-change
        pushes)
+   13. `migration_venues.sql` (venues, venue follows, venue pushes)
 3. **Realtime:** only `party_counts` should be in the `supabase_realtime`
    publication (the migrations set this up). Never add `rsvps`, `follows` or
    `comments`: Realtime does not apply RLS to DELETE events, so it would leak

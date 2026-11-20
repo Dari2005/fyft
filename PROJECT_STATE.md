@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-20 (design + accessibility review; smart notifications; trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
+_Last updated: 2026-11-20 (venues; design fixes; design + accessibility review; smart notifications; trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
 
 ## What this is
 
@@ -348,6 +348,35 @@ do not rename).
   works from it anymore.
 
 ## Not verified yet
+
+- **Venues (2026-11-20, JS-only + `migration_venues.sql`, run by Claude in
+  Dari's Chrome)** — Decision (Dari, 2026-11-20): people follow VENUES
+  (Stanica 26, Ciao), not the account that lists them. A venue is not an
+  account; Dari manages venues in the SQL editor; `organizer_id` and
+  `venue_id` stay independent. Only verified organizers may pick a venue
+  (DB guard), so nobody can push a fake party "at Stanica" to its followers.
+  Later, venue owners get access only when Dari approves them (future
+  `venue_members`; not built). Event page: "Venue" box with Follow (venue)
+  + "Listed by Fyft"; the old "Hosted by"/host_name stays for events without
+  a venue. Cards show the venue name; search and the Following filter include
+  venues. New event: venue search (verified only) fills address + pin.
+  Push: notify_new_party adds venue followers ("New event at <venue>"), one
+  push per person. Checked: rolled-back SQL test (venue follower count 2;
+  verified insert with venue ok; unverified with venue refused, without ok;
+  client insert into venues refused; a user sees only own follow rows; push
+  queue: venue followers got "New event at TEST Venue", organizer follower
+  got "@… posted", the person following both got ONE push), anon API
+  (venue_followers and venue insert → 401), browser at 375 px with a
+  temporary venue + event (card, event page, venue page; deleted after).
+  tsc + lint pass. NOT verified: the New event venue picker (needs sign-in),
+  Follow venue tapping (needs sign-in), a real push on the phone, two
+  unexplained 404s in the browser console on the venue page. No real venues
+  exist yet — Dari must add them.
+- **Design fixes (2026-11-20, a14dd44, JS-only)** — findings 1–5 of the
+  review below fixed (category icon on photo-less cards, one-line category,
+  `inputBorder` color 3:1 on fields and search, no Follow next to a host
+  name, single-person icon). Finding 6 was not a problem (Follow has
+  hitSlop 8).
 
 - **Design critique + accessibility review (2026-11-20, no code changed)** —
   browser preview at 375 px, dark and light, with 2 temporary
