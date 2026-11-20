@@ -39,7 +39,12 @@ in [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
   API, so they work when nobody has the app open. Each push goes only to its
   recipient; nobody learns who else is going.
 - **Profile:** your plans (private), your events, appearance (light / dark),
-  notification settings. Sign in with email/password or Google.
+  notification settings, privacy policy, **Delete account** (deletes the
+  account and everything it owns, including uploaded photos). Sign in with
+  email/password or Google; "Forgot password?" emails a link that opens
+  `fyft://reset-password`.
+- **Public pages** (GitHub Pages, `docs/`): `privacy/` (privacy policy) and
+  `delete-account/` (how to delete an account), both needed for Google Play.
 - **Venues** (clubs, bars, kafanas, concert places): a venue is not an
   account. An event has `organizer_id` (who listed it) and an optional
   `venue_id` (where it happens). People follow venues and get "New event at
@@ -83,6 +88,7 @@ scripts/make-logo.js      renders icon / splash / favicon PNGs
 scripts/web-preview/      stubs for the browser preview (maps, notifications)
 docs/designs/             design documents
 docs/e/index.html         share-link landing page (GitHub Pages)
+docs/privacy/, docs/delete-account/   privacy policy and account deletion pages
 ```
 
 ## Setup
@@ -107,6 +113,7 @@ docs/e/index.html         share-link landing page (GitHub Pages)
    12. `migration_smart_notifications.sql` ("getting busy" and event-change
        pushes)
    13. `migration_venues.sql` (venues, venue follows, venue pushes)
+   14. `migration_delete_account.sql` (in-app account deletion)
 3. **Realtime:** only `party_counts` should be in the `supabase_realtime`
    publication (the migrations set this up). Never add `rsvps`, `follows` or
    `comments`: Realtime does not apply RLS to DELETE events, so it would leak

@@ -349,6 +349,25 @@ do not rename).
 
 ## Not verified yet
 
+- **Play Store blockers (2026-11-20, JS-only + `migration_delete_account.sql`,
+  run by Claude)** — Delete account: `delete_my_account()` (security
+  definer, deletes `auth.uid()` only, execute for authenticated only); the
+  app first removes the user's files in `party-media/<uid>/`, then calls it,
+  then signs out locally. Profile footer: "Privacy policy · Delete account"
+  (ConfirmDialog, destructive). Forgot password: link on Sign in →
+  `resetPasswordForEmail` with redirect `fyft://reset-password` (allowed by
+  `fyft://**`), new `app/reset-password.tsx` reads tokens from the link,
+  sets the session, saves the new password; the message never reveals
+  whether the email exists. Pages: `docs/privacy/`, `docs/delete-account/`
+  (`lib/legal.ts`), linked from Profile (signed in and out) and sign-up.
+  Checked: rolled-back SQL test (auth user, profile, events, push tokens,
+  follows gone; other user kept; anon → permission denied), browser (sign-up
+  legal line, "Forgot password?" with empty email → message, expired-link
+  screen). tsc + lint pass. NOT verified: a real reset email → app on the
+  phone, deleting a real account in the app (Storage cleanup), the pages
+  online (needs GitHub Pages). Privacy text decision to confirm with Dari:
+  "meant for 18 and over".
+
 - **Venues (2026-11-20, JS-only + `migration_venues.sql`, run by Claude in
   Dari's Chrome)** — Decision (Dari, 2026-11-20): people follow VENUES
   (Stanica 26, Ciao), not the account that lists them. A venue is not an
@@ -615,10 +634,13 @@ do not rename).
    (`party_counts`, decision 16).
 5. Moderation is manual (reports table); ~~auto-hide after N reports~~ done
    2026-11-16 (`migration_trust.sql`, 3 reports).
-8. **Launch blockers found 2026-11-20** (not built): in-app account deletion
-   (Google Play requires it for apps with sign-up, plus a web link), a
-   privacy policy page linked from the app and the store listing, and
-   "Forgot password" on the sign-in screen.
+8. ~~Launch blockers found 2026-11-20~~ built the same day (account
+   deletion, privacy policy, forgot password) — see "Not verified yet".
+   Still open: the contact email on both public pages (Dari is making a
+   separate Fyft Gmail), GitHub Pages must be on, and Supabase Auth "Site URL"
+   is still `http://localhost:3000`, so the sign-up confirmation email lands
+   on a dead page after confirming (the account IS confirmed). Fix: set Site
+   URL to `https://dari2005.github.io/fyft/` (Dari's call; dashboard setting).
 6. Get 5–10 real organizers publishing regularly (the app is useless empty).
 7. Songkick auto-import of Skopje concerts is the planned content seed
    (needs Dari's free Songkick API key, kept server-side).
