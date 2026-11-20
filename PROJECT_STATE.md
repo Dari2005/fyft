@@ -4,7 +4,7 @@
 > if anything below changed. Keep it short and factual. **Never put secrets
 > here** (this repo is public).
 
-_Last updated: 2026-11-20 (venues; design fixes; design + accessibility review; smart notifications; trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
+_Last updated: 2026-11-20 (GitHub Pages on; account deletion, forgot password, privacy page; venues; design fixes; design + accessibility review; smart notifications; trust: verified, auto-hide, confirmed email; share links; README rewritten; security review of the privacy migrations: no findings)_
 
 ## What this is
 
@@ -365,7 +365,7 @@ do not rename).
   legal line, "Forgot password?" with empty email → message, expired-link
   screen). tsc + lint pass. NOT verified: a real reset email → app on the
   phone, deleting a real account in the app (Storage cleanup), the pages
-  online (needs GitHub Pages). Privacy text decision to confirm with Dari:
+  online: live since 2026-11-20 (GitHub Pages on). Privacy text decision to confirm with Dari:
   "meant for 18 and over".
 
 - **Venues (2026-11-20, JS-only + `migration_venues.sql`, run by Claude in
@@ -457,7 +457,7 @@ do not rename).
   `intent://` link (fallback back to the page with `noapp=1`) or `fyft://`
   elsewhere, else shows "Fyft is not on this phone". tsc + lint pass; page
   states checked in the browser at phone width. NOT done/verified: GitHub
-  Pages must be turned on by Dari (Settings → Pages → main, /docs); link →
+  Pages turned on 2026-11-20 by Claude in Dari's Chrome (main, /docs; pages return 200); link →
   app on the phone; that the first-open sign-up screen does not hide the
   event. Of the 4-feature prompt Dari chose only Share (Who's Going broke
   decision 8/16; smart notifications and venue profiles left for after launch).
@@ -637,7 +637,7 @@ do not rename).
 8. ~~Launch blockers found 2026-11-20~~ built the same day (account
    deletion, privacy policy, forgot password) — see "Not verified yet".
    Still open: the contact email on both public pages (Dari is making a
-   separate Fyft Gmail), GitHub Pages must be on, and Supabase Auth "Site URL"
+   separate Fyft Gmail), and Supabase Auth "Site URL"
    is still `http://localhost:3000`, so the sign-up confirmation email lands
    on a dead page after confirming (the account IS confirmed). Fix: set Site
    URL to `https://dari2005.github.io/fyft/` (Dari's call; dashboard setting).
