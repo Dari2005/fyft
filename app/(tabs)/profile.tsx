@@ -19,6 +19,8 @@ import { useParties } from '@/hooks/useParties';
 import { supabase } from '@/lib/supabase';
 import { uploadPartyMedia } from '@/lib/media';
 import { LIVE_WINDOW_MS } from '@/lib/tonight';
+import { openPrivacyPolicy } from '@/lib/legal';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import PartyCard from '@/components/PartyCard';
 import PrimaryButton from '@/components/PrimaryButton';
 import AppearancePicker from '@/components/AppearancePicker';
@@ -71,7 +73,9 @@ export default function ProfileScreen() {
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { preference, setPreference } = useTheme();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { notify } = useDialog();
   const { parties, refresh } = useParties();
   const { following } = useSocial();
@@ -156,6 +160,9 @@ export default function ProfileScreen() {
           <PrimaryButton title="Sign In" onPress={() => {}} />
         </Link>
         <AppearancePicker />
+        <TouchableOpacity onPress={openPrivacyPolicy} hitSlop={10} accessibilityRole="link">
+          <Text style={styles.footerLink}>Privacy policy</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -273,6 +280,43 @@ export default function ProfileScreen() {
       <TouchableOpacity onPress={signOut} style={styles.signOut}>
         <Text style={styles.signOutText}>Sign out</Text>
       </TouchableOpacity>
+
+      <View style={styles.footerLinks}>
+        <TouchableOpacity onPress={openPrivacyPolicy} hitSlop={10} accessibilityRole="link">
+          <Text style={styles.footerLink}>Privacy policy</Text>
+        </TouchableOpacity>
+        <Text style={styles.footerDot}>·</Text>
+        <TouchableOpacity
+          onPress={() => setConfirmDelete(true)}
+          hitSlop={10}
+          accessibilityRole="button"
+        >
+          <Text style={styles.footerLink}>Delete account</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ConfirmDialog
+        visible={confirmDelete}
+        icon="trash"
+        destructive
+        title="Delete your account?"
+        message="Your profile, your events, your plans, who you follow and your photos are deleted for good. People going to your events are told they are cancelled. This cannot be undone."
+        confirmLabel="Delete account"
+        loading={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={async () => {
+          setDeleting(true);
+          const result = await deleteAccount();
+          setDeleting(false);
+          setConfirmDelete(false);
+          if (result === 'ok') {
+            router.replace('/');
+            notify('Account deleted', 'Your account and its data are gone.', 'check');
+          } else {
+            notify("Couldn't delete your account", 'Check your connection and try again.');
+          }
+        }}
+      />
     </ScrollView>
   );
 }
@@ -390,4 +434,13 @@ const makeStyles = (Colors: Palette) =>
     newButtonText: { color: Colors.primaryText, fontSize: 15, fontWeight: '700' },
     signOut: { alignItems: 'center', paddingVertical: Spacing.md, marginTop: Spacing.sm },
     signOutText: { color: Colors.danger, fontSize: 15, fontWeight: '600' },
+    footerLinks: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingBottom: Spacing.md,
+    },
+    footerLink: { color: Colors.muted, fontSize: 13, textDecorationLine: 'underline' },
+    footerDot: { color: Colors.muted, fontSize: 13 },
   });

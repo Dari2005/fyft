@@ -15,6 +15,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useDialog } from '@/lib/DialogContext';
+import { openPrivacyPolicy } from '@/lib/legal';
 import Logo from '@/components/Logo';
 import TextField from '@/components/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
@@ -39,7 +40,28 @@ function close() {
  */
 export default function AuthScreen() {
   const styles = useThemedStyles(makeStyles);
-  const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle, sendPasswordReset } = useAuth();
+  const [resetting, setResetting] = useState(false);
+
+  /** Emails a reset link to the address typed above (does not say whether
+   * the address has an account, so nobody can probe emails with it). */
+  const forgotPassword = async () => {
+    setError(null);
+    setNotice(null);
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed.includes('@')) {
+      setError('Type your email above first, then tap "Forgot password?".');
+      return;
+    }
+    setResetting(true);
+    const { error: resetError } = await sendPasswordReset(trimmed);
+    setResetting(false);
+    if (resetError && /rate|seconds/i.test(resetError.message)) {
+      setError('Too many tries. Wait a minute and try again.');
+      return;
+    }
+    setNotice(`If ${trimmed} has a Fyft account, we sent it a link to set a new password.`);
+  };
   const { notify } = useDialog();
   const navigation = useNavigation();
   const isFocused = useIsFocused();
@@ -207,6 +229,18 @@ export default function AuthScreen() {
           onSubmitEditing={submit}
         />
 
+        {!signup && (
+          <TouchableOpacity
+            style={styles.forgot}
+            onPress={forgotPassword}
+            hitSlop={10}
+            accessibilityRole="button"
+            disabled={resetting}
+          >
+            <Text style={styles.forgotText}>{resetting ? 'Sending…' : 'Forgot password?'}</Text>
+          </TouchableOpacity>
+        )}
+
         {error && <Text style={styles.error}>{error}</Text>}
         {notice && <Text style={styles.notice}>{notice}</Text>}
 
@@ -216,6 +250,16 @@ export default function AuthScreen() {
           loading={loading}
           disabled={googleLoading}
         />
+
+        {signup && (
+          <Text style={styles.legal}>
+            By creating an account you agree to the{' '}
+            <Text style={styles.legalLink} onPress={openPrivacyPolicy} accessibilityRole="link">
+              Privacy policy
+            </Text>
+            .
+          </Text>
+        )}
 
         <View style={styles.switchRow}>
           <Text style={styles.muted}>
@@ -338,6 +382,16 @@ const makeStyles = (Colors: Palette) =>
     orText: { color: Colors.muted, fontSize: 13 },
     error: { color: Colors.danger, fontSize: 14, marginBottom: Spacing.sm },
     notice: { color: Colors.success, fontSize: 14, marginBottom: Spacing.sm },
+    forgot: { alignSelf: 'flex-end', marginTop: -Spacing.xs, marginBottom: Spacing.sm },
+    forgotText: { color: Colors.primaryBright, fontSize: 14, fontWeight: '600' },
+    legal: {
+      color: Colors.muted,
+      fontSize: 12,
+      textAlign: 'center',
+      marginTop: Spacing.sm,
+      lineHeight: 17,
+    },
+    legalLink: { color: Colors.textSoft, textDecorationLine: 'underline' },
     switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.md },
     muted: { color: Colors.muted, fontSize: 14 },
     switchLink: { color: Colors.primaryBright, fontSize: 14, fontWeight: '700' },

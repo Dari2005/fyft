@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fyft Privacy Policy</title>
+<!-- Served by GitHub Pages from /docs on main: https://dari2005.github.io/fyft/privacy/
+     Linked from the app (lib/legal.ts) and the Play Store listing.
+     Keep it in sync with what the app really does (see PROJECT_STATE.md). -->
+<style>
+  :root { --bg:#0b0b0f; --card:#15151b; --text:#f2f2f5; --soft:#d0d0d8; --muted:#8e8e9a; --accent:#f08ce9; --border:#4a2748; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#e6e7eb; --card:#ffffff; --text:#1a1b20; --soft:#3a3c44; --muted:#62646d; --accent:#a3279f; --border:#d2d4da; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--soft); font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { color:var(--text); font-size:28px; margin:0 0 4px; }
+  h2 { color:var(--text); font-size:19px; margin:32px 0 8px; }
+  .date { color:var(--muted); font-size:14px; margin:0 0 24px; }
+  .box { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
+  a { color:var(--accent); }
+  li { margin:4px 0; }
+  .todo { color:var(--accent); font-weight:700; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Fyft Privacy Policy</h1>
+  <p class="date">Last updated: 20 November 2026</p>
+
+  <div class="box">
+    <strong>In short:</strong> Fyft shows how many people are going to events in Skopje.
+    Nobody can see <em>who</em> is going where: your "I'm going" is counted, never shown.
+    We do not sell your data, show ads, or use third-party tracking.
+  </div>
+
+  <h2>Who we are</h2>
+  <p>Fyft is an independent app made in Skopje, North Macedonia. It is responsible
+  for the personal data described here. Contact:
+  <span class="todo" id="contact">contact email will be added before launch</span>.</p>
+
+  <h2>What we collect and why</h2>
+  <ul>
+    <li><strong>Account:</strong> your email address, username and password (stored
+      hashed by our database provider, we never see it). If you use "Continue with
+      Google", we receive your email address and name from Google. Used to sign you in.</li>
+    <li><strong>Profile picture</strong> (optional): public, shown on your profile and events.</li>
+    <li><strong>Events you publish:</strong> title, description, time, place, map
+      location, capacity, photos and videos. These are public; that is their purpose.</li>
+    <li><strong>"I'm going":</strong> stored so the app can count it, remind you and
+      show your own plans. It is private: other users, organizers and venues only
+      ever see the total number.</li>
+    <li><strong>Who and which venues you follow:</strong> private. Only the number of
+      followers is shown to others.</li>
+    <li><strong>Reports</strong> you send about an event: seen only by Fyft, to review it.</li>
+    <li><strong>Notifications:</strong> a push token for your device and your
+      notification settings. If you turn on "New events near me", we save the
+      location you set, only to match new events near it. It is never shown to anyone.</li>
+    <li><strong>Your location on the phone:</strong> used on the device to show
+      distances and centre the map. It is not stored unless you turn on "New events near me".</li>
+  </ul>
+
+  <h2>Who processes data for us</h2>
+  <ul>
+    <li><strong>Supabase</strong>: database, sign-in and file storage.</li>
+    <li><strong>Expo</strong> and <strong>Google (Firebase Cloud Messaging)</strong>:
+      delivering push notifications.</li>
+    <li><strong>Google</strong>: "Continue with Google" sign-in and the map.</li>
+    <li><strong>Komoot (Photon)</strong>: when you search an address while creating an
+      event, the text you type is sent to their address search.</li>
+    <li><strong>GitHub Pages</strong>: hosts this page and the pages that shared event
+      links open.</li>
+  </ul>
+  <p>We do not sell personal data and do not share it for advertising.</p>
+
+  <h2>How long we keep it</h2>
+  <p>Until you delete your account. Finished events stop being shown in the app but stay
+  in the database as part of your account until you delete it.</p>
+
+  <h2>Deleting your account</h2>
+  <p>In the app: <strong>Profile → Delete account</strong>. This permanently deletes your
+  profile, your events, your plans, who you follow, your notification settings and
+  your photos. People going to your events are told they are cancelled. See also
+  <a href="../delete-account/">how to delete your account</a>.</p>
+
+  <h2>Your rights</h2>
+  <p>You can ask to see, correct or delete your personal data, or object to how it is
+  used, by writing to the contact above. You can also complain to the Personal Data
+  Protection Agency of North Macedonia (Агенција за заштита на личните податоци).</p>
+
+  <h2>Age</h2>
+  <p>Fyft is about nights out and is meant for people aged 18 and over.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the date at the top changes too. Important changes are
+  announced in the app.</p>
+</main>
+</body>
+</html>

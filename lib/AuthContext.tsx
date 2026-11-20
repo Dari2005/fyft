@@ -13,6 +13,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { AuthError, Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { unregisterPush } from './notifications';
+import { MEDIA_BUCKET } from './media';
 
 export type AuthResult = { error: AuthError | null };
 /** 'unavailable' = the browser preview, where the app link cannot come back. */
@@ -29,7 +30,14 @@ interface AuthContextValue {
   signUp: (email: string, password: string, username: string) => Promise<AuthResult>;
   signInWithGoogle: () => Promise<GoogleResult>;
   signOut: () => Promise<void>;
+  /** Emails a reset link that opens app/reset-password. */
+  sendPasswordReset: (email: string) => Promise<AuthResult>;
+  /** Deletes the account and everything it owns (migration_delete_account.sql). */
+  deleteAccount: () => Promise<'ok' | 'error'>;
 }
+
+/** Route the password-reset email link opens: app/reset-password.tsx. */
+export const RESET_PASSWORD_PATH = 'reset-password';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -111,6 +119,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  /**
+   * "Forgot password": Supabase emails a link that comes back to
+   * fyft://reset-password with a recovery session (allowed by `fyft://**`
+   * in Auth → URL Configuration → Redirect URLs).
+   */
+  const sendPasswordReset = useCallback(async (email: string): Promise<AuthResult> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: Linking.createURL(RESET_PASSWORD_PATH),
+    });
+    return { error };
+  }, []);
+
+  const deleteAccount = useCallback(async (): Promise<'ok' | 'error'> => {
+    const uid = session?.user.id;
+    if (!uid) return 'error';
+    try {
+      // 1) Photos/videos in the user's Storage folder (best effort: a file
+      //    left behind must not block deleting the account).
+      const { data: files } = await supabase.storage.from(MEDIA_BUCKET).list(uid, { limit: 1000 });
+      if (files && files.length > 0) {
+        await supabase.storage.from(MEDIA_BUCKET).remove(files.map((f) => `${uid}/${f.name}`));
+      }
+      // 2) The account and everything it owns (cascade in the database).
+      const { error } = await supabase.rpc('delete_my_account');
+      if (error) return 'error';
+      // 3) Forget the session on this device (the server session is gone).
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+      return 'ok';
+    } catch {
+      return 'error';
+    }
+  }, [session]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
@@ -120,8 +161,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp,
       signInWithGoogle,
       signOut,
+      sendPasswordReset,
+      deleteAccount,
     }),
-    [session, loading, signIn, signUp, signInWithGoogle, signOut]
+    [session, loading, signIn, signUp, signInWithGoogle, signOut, sendPasswordReset, deleteAccount]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

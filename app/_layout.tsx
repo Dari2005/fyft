@@ -105,6 +105,7 @@ function ThemedStack() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ title: 'Create account', presentation: 'modal' }} />
         <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password" options={{ title: 'New password' }} />
         <Stack.Screen name="create" options={{ title: 'New Event' }} />
         <Stack.Screen name="party/[id]" options={{ title: 'Event', headerShown: false }} />
         <Stack.Screen name="user/[id]" options={{ title: 'Profile' }} />
